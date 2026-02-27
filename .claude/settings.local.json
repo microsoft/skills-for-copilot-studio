@@ -11,7 +11,9 @@
       "WebFetch(domain:docs.claude.com)",
       "Bash(cd:*)",
       "Bash(tail:*)",
-      "Bash(mv:*)"
+      "Bash(mv:*)",
+      "Skill(add-child-agent)",
+      "Skill(add-knowledge)"
     ]
   }
 }

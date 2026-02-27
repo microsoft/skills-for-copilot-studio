@@ -26,14 +26,12 @@ Create a new child agent (AgentDialog) that the parent agent's orchestrator can 
    - Child agent name and display name
    - What the child agent specializes in (for the description and instructions)
    - What inputs the child agent needs (if any)
-   - Whether it needs its own knowledge sources
+   - Whether it will need its own knowledge sources (handled in Phase 2 — see below)
 
-4. **Create the child agent directory structure**:
+4. **Create the child agent directory** (Phase 1 — plain agent only, NO knowledge):
    ```
    src/<parent-agent>/agents/<ChildAgentName>/
-   ├── agent.mcs.yml
-   ├── knowledge/          (if needed)
-   └── actions/            (if needed)
+   └── agent.mcs.yml
    ```
 
 5. **Generate `agent.mcs.yml`** following this pattern:
@@ -41,10 +39,6 @@ Create a new child agent (AgentDialog) that the parent agent's orchestrator can 
 ```yaml
 # Name: <Child Agent Name>
 kind: AgentDialog
-inputs:
-  - kind: AutomaticTaskInput
-    propertyName: AdditionalInput
-    description: <Description of what additional context this agent needs>
 
 beginDialog:
   kind: OnToolSelected
@@ -58,7 +52,7 @@ inputType:
   properties:
     AdditionalInput:
       displayName: Additional Input
-      description: <Same description as in inputs>
+      description: <Description of what additional context this agent needs>
       type: String
 
 outputType: {}
@@ -67,19 +61,28 @@ outputType: {}
 6. **Key fields explained**:
    - `beginDialog.description` — This is what the parent orchestrator reads to decide when to route. Be specific and action-oriented (e.g., "This agent handles billing inquiries, refund requests, and payment issues").
    - `settings.instructions` — The child agent's system prompt. Define its personality, scope, and behavior guidelines.
-   - `inputs` — Use `AutomaticTaskInput` for context the orchestrator should pass. The parent fills these automatically.
+   - `inputType` — for context the orchestrator should pass. The parent fills these automatically.
 
-7. **Optionally add knowledge sources** in the child's `knowledge/` directory using the same `KnowledgeSourceConfiguration` format.
+## Two-Phase Workflow (Important)
+
+Child agents MUST be created in two phases:
+
+**Phase 1 — Create the plain agent** (steps 1–6 above):
+- Create ONLY `agent.mcs.yml` with configuration, instructions, inputs, and outputs.
+- Do NOT create a `knowledge/` directory or any knowledge sources yet.
+- Tell the user: "The child agent has been created. Please push these changes to your environment using the Copilot Studio VS Code Extension before we can add knowledge sources to it."
+
+**Phase 2 — Add knowledge sources** (only after the user confirms they pushed):
+- Once the user confirms the child agent has been pushed and exists in the environment, you can add knowledge sources to it using `/add-knowledge`.
+- Create the `knowledge/` directory under the child agent and add knowledge source files there.
+
+This constraint exists because knowledge sources reference the agent they belong to — the child agent must exist in the environment first.
 
 ## Example: Customer Support Child Agent
 
 ```yaml
 # Name: Billing Support Agent
 kind: AgentDialog
-inputs:
-  - kind: AutomaticTaskInput
-    propertyName: CustomerQuery
-    description: The customer's billing-related question or issue
 
 beginDialog:
   kind: OnToolSelected
