@@ -10,7 +10,8 @@
       "Bash(python -c:*)",
       "WebFetch(domain:docs.claude.com)",
       "Bash(cd:*)",
-      "Bash(tail:*)"
+      "Bash(tail:*)",
+      "Bash(mv:*)"
     ]
   }
 }

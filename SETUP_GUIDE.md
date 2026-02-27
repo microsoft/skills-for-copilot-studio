@@ -52,7 +52,7 @@ copilot-studio-dev/
 │   └── skills/                         # Skills (slash commands)
 │       ├── lookup-schema/SKILL.md
 │       ├── new-topic/SKILL.md
-│       ├── add-action/SKILL.md
+│       ├── add-node/SKILL.md
 │       ├── validate/SKILL.md
 │       ├── list-topics/SKILL.md
 │       ├── list-kinds/SKILL.md
@@ -388,7 +388,7 @@ If something goes wrong, you can re-clone the original agent using the VS Code E
 |-------|-------------|
 | `/lookup-schema <name>` | Look up and explain a schema definition |
 | `/new-topic <description>` | Create a new topic |
-| `/add-action <type> to <topic>` | Add an action to a topic |
+| `/add-node <type> to <topic>` | Add a node to a topic |
 | `/validate <path>` | Validate a YAML file |
 | `/list-topics` | List all topics in the solution |
 | `/list-kinds` | List all available kind values |

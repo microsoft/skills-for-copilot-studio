@@ -37,7 +37,7 @@ The above ones are already used as examples with real parameter values, like "se
 
 - `/lookup-schema` - Query schema definitions
 - `/new-topic` - Create topic from template or schema
-- `/add-action` - Add action to existing topic
+- `/add-node` - Add node to existing topic
 - `/validate` - Validate YAML structure
 - `/add-knowledge` - Add public website knowledge
 - `/list-topics` - List solution topics

@@ -1,12 +1,14 @@
 ---
-description: Add or modify an action node in an existing Copilot Studio topic. Use when the user asks to add a question, message, condition, or other action to a topic.
-argument-hint: <action-type> to <topic-name>
+description: Add or modify a node in an existing Copilot Studio topic. Use when the user asks to add a question, message, condition, variable, or other node to a topic.
+argument-hint: <node-type> to <topic-name>
 allowed-tools: Bash(python *), Read, Write, Edit, Glob
 ---
 
-# Add Action to Topic
+# Add Node to Topic
 
-Add a new action node to an existing Copilot Studio topic, or modify an existing action.
+Add a new node to an existing Copilot Studio topic, or modify an existing one.
+
+In Copilot Studio, the elements inside a topic's `actions` array are **nodes** (SendActivity, Question, ConditionGroup, etc.). These are different from **actions** (`actions/*.mcs.yml`), which are connector-based TaskDialogs. This skill handles nodes within topics.
 
 ## Instructions
 
@@ -17,28 +19,28 @@ Add a new action node to an existing Copilot Studio topic, or modify an existing
    NEVER hardcode an agent name.
 
 2. **Parse the arguments** to identify:
-   - The action type (SendActivity, Question, SetVariable, ConditionGroup, etc.)
+   - The node type (SendActivity, Question, SetVariable, ConditionGroup, etc.)
    - The target topic file
-   - If modifying an existing action, which action to modify
+   - If modifying an existing node, which node to modify
 
-3. **Look up the action schema**:
+3. **Look up the node schema**:
    ```bash
-   python scripts/schema-lookup.py resolve <ActionType>
+   python scripts/schema-lookup.py resolve <NodeType>
    ```
 
 4. **Read the existing topic file** to understand its current structure.
 
-5. **Generate or modify the action node** with:
+5. **Generate or modify the node** with:
    - A unique ID (format: `<nodeType>_<6-8 random alphanumeric>`)
    - All required properties from the schema
    - Appropriate default values
 
 6. **Determine the correct insertion point** in the actions array and present the plan to the user before writing.
 
-## Common Action Types
+## Common Node Types
 
-| Action | Purpose | Key Properties |
-|--------|---------|----------------|
+| Node | Purpose | Key Properties |
+|------|---------|----------------|
 | `SendActivity` | Send message | `kind`, `id`, `activity` |
 | `Question` | Ask user input | `kind`, `id`, `variable`, `prompt`, `entity` |
 | `SetVariable` | Set/compute value | `kind`, `id`, `variable`, `value` |
@@ -64,7 +66,7 @@ When the agent has `GenerativeActionsEnabled: true`:
 - Variable init on first assignment: `variable: init:Topic.MyVar`
 - Common: `Text()`, `Now()`, `IsBlank()`, `!IsBlank()`
 
-## Example: Adding a Question Action
+## Example: Adding a Question Node
 
 ```yaml
 - kind: Question
@@ -80,5 +82,5 @@ When the agent has `GenerativeActionsEnabled: true`:
 ## Important Notes
 
 - **Unique IDs**: Use random 6-8 alphanumeric characters. Duplicate IDs cause Copilot Studio errors.
-- Verify the action type exists in the schema before generating.
+- Verify the node type exists in the schema before generating.
 - For ConditionGroup, include at least one condition item with its own unique ID.
