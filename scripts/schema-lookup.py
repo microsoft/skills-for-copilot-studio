@@ -8,6 +8,7 @@ without loading the entire file into memory. It supports:
 - Searching for definitions by keyword
 - Resolving $ref chains to get complete definitions
 - Listing all available definitions
+- Validating YAML files against schema and best practices
 
 Usage:
     python schema-lookup.py lookup <definition-name>
@@ -16,6 +17,7 @@ Usage:
     python schema-lookup.py resolve <definition-name>
     python schema-lookup.py kinds
     python schema-lookup.py summary <definition-name>
+    python schema-lookup.py validate <path-to-yaml-file>
 """
 
 import json
@@ -218,6 +220,209 @@ def format_definition(name: str, definition: Dict[str, Any], compact: bool = Fal
         return json.dumps({name: definition}, indent=2)
 
 
+def validate_yaml_file(filepath: str, definitions: Dict[str, Any]) -> None:
+    """Validate a Copilot Studio YAML file against schema and best practices."""
+    try:
+        import yaml
+    except ImportError:
+        print("[FAIL] PyYAML is not installed. Run: pip install pyyaml>=6.0")
+        sys.exit(1)
+
+    path = Path(filepath)
+    if not path.exists():
+        print(f"[FAIL] File not found: {filepath}")
+        sys.exit(1)
+
+    passes = 0
+    warnings = 0
+    failures = 0
+
+    # 1. YAML parsing
+    try:
+        with open(path, 'r', encoding='utf-8') as f:
+            data = yaml.safe_load(f)
+        if data is None:
+            print(f"[FAIL] File is empty or not valid YAML")
+            sys.exit(1)
+        print(f"[PASS] YAML parsing successful")
+        passes += 1
+    except yaml.YAMLError as e:
+        print(f"[FAIL] YAML parsing error: {e}")
+        sys.exit(1)
+
+    # 2. Kind detection
+    kind = data.get("kind")
+    if kind:
+        print(f"[PASS] Kind detected: {kind}")
+        passes += 1
+        known_kinds = find_kind_values(definitions)
+        if kind in known_kinds:
+            print(f"[PASS] Kind '{kind}' exists in schema")
+            passes += 1
+        else:
+            print(f"[WARN] Kind '{kind}' not found in schema kind values")
+            warnings += 1
+    else:
+        print(f"[FAIL] No 'kind' property found at root level")
+        failures += 1
+
+    # 3. Required properties check based on kind
+    if kind == "AdaptiveDialog":
+        if "beginDialog" in data:
+            print(f"[PASS] Required 'beginDialog' property present")
+            passes += 1
+            bd = data["beginDialog"]
+            if isinstance(bd, dict):
+                if "kind" in bd:
+                    print(f"[PASS] beginDialog.kind: {bd['kind']}")
+                    passes += 1
+                else:
+                    print(f"[FAIL] beginDialog missing 'kind' property")
+                    failures += 1
+                if "id" in bd:
+                    print(f"[PASS] beginDialog.id: {bd['id']}")
+                    passes += 1
+                else:
+                    print(f"[FAIL] beginDialog missing 'id' property")
+                    failures += 1
+        else:
+            print(f"[FAIL] AdaptiveDialog missing required 'beginDialog' property")
+            failures += 1
+    elif kind == "GptComponentMetadata":
+        for prop in ["displayName", "instructions"]:
+            if prop in data:
+                print(f"[PASS] Required '{prop}' property present")
+                passes += 1
+            else:
+                print(f"[WARN] Missing '{prop}' property (recommended)")
+                warnings += 1
+    elif kind == "KnowledgeSourceConfiguration":
+        if "source" in data:
+            print(f"[PASS] Required 'source' property present")
+            passes += 1
+        else:
+            print(f"[FAIL] Missing required 'source' property")
+            failures += 1
+
+    # 4. Duplicate ID detection
+    ids_found = []
+    def collect_ids(obj):
+        if isinstance(obj, dict):
+            if "id" in obj and isinstance(obj["id"], str):
+                ids_found.append(obj["id"])
+            for v in obj.values():
+                collect_ids(v)
+        elif isinstance(obj, list):
+            for item in obj:
+                collect_ids(item)
+
+    collect_ids(data)
+    seen = set()
+    duplicates = set()
+    for node_id in ids_found:
+        if node_id in seen:
+            duplicates.add(node_id)
+        seen.add(node_id)
+
+    if duplicates:
+        for dup in sorted(duplicates):
+            print(f"[FAIL] Duplicate ID found: {dup}")
+            failures += 1
+    elif ids_found:
+        print(f"[PASS] All {len(ids_found)} node IDs are unique")
+        passes += 1
+
+    # 5. _REPLACE placeholder check
+    yaml_text = path.read_text(encoding='utf-8')
+    replace_count = yaml_text.count("_REPLACE")
+    if replace_count > 0:
+        print(f"[FAIL] Found {replace_count} unresolved '_REPLACE' placeholder(s)")
+        failures += 1
+    else:
+        print(f"[PASS] No '_REPLACE' placeholders remaining")
+        passes += 1
+
+    # 6. Power Fx = prefix check
+    def check_powerfx(obj, path_str=""):
+        pfx_issues = []
+        if isinstance(obj, dict):
+            for key, val in obj.items():
+                if key in ("condition", "value") and isinstance(val, str):
+                    # These fields often need = prefix for expressions
+                    # But not all values are expressions (plain strings are ok)
+                    pass
+                if key == "condition" and isinstance(val, str) and not val.startswith("="):
+                    pfx_issues.append(f"  condition at {path_str}.{key}: '{val}' (may need '=' prefix)")
+                for issue in check_powerfx(val, f"{path_str}.{key}"):
+                    pfx_issues.append(issue)
+        elif isinstance(obj, list):
+            for i, item in enumerate(obj):
+                for issue in check_powerfx(item, f"{path_str}[{i}]"):
+                    pfx_issues.append(issue)
+        return pfx_issues
+
+    pfx_issues = check_powerfx(data)
+    if pfx_issues:
+        for issue in pfx_issues:
+            print(f"[WARN] Possible missing '=' prefix: {issue}")
+            warnings += 1
+    else:
+        print(f"[PASS] No Power Fx prefix issues detected")
+        passes += 1
+
+    # 7. Variable scope check
+    def check_variables(obj):
+        var_issues = []
+        if isinstance(obj, dict):
+            if "variable" in obj and isinstance(obj["variable"], str):
+                var = obj["variable"]
+                # Strip init: prefix
+                clean_var = var.replace("init:", "")
+                if not (clean_var.startswith("Topic.") or clean_var.startswith("System.") or
+                        clean_var.startswith("Global.") or clean_var.startswith("User.")):
+                    var_issues.append(f"Variable '{var}' missing scope prefix (Topic., System., Global., User.)")
+            for v in obj.values():
+                var_issues.extend(check_variables(v))
+        elif isinstance(obj, list):
+            for item in obj:
+                var_issues.extend(check_variables(item))
+        return var_issues
+
+    var_issues = check_variables(data)
+    if var_issues:
+        for issue in var_issues:
+            print(f"[WARN] {issue}")
+            warnings += 1
+    else:
+        print(f"[PASS] Variable scopes look correct")
+        passes += 1
+
+    # 8. inputType/outputType consistency
+    if "inputs" in data and "inputType" in data:
+        input_names = set()
+        for inp in data.get("inputs", []):
+            if isinstance(inp, dict) and "propertyName" in inp:
+                input_names.add(inp["propertyName"])
+        input_type_props = set(data.get("inputType", {}).get("properties", {}).keys())
+        if input_names == input_type_props:
+            print(f"[PASS] inputs and inputType.properties are consistent")
+            passes += 1
+        else:
+            missing_in_type = input_names - input_type_props
+            missing_in_inputs = input_type_props - input_names
+            if missing_in_type:
+                print(f"[WARN] inputs defined but missing from inputType: {missing_in_type}")
+                warnings += 1
+            if missing_in_inputs:
+                print(f"[WARN] inputType properties missing from inputs: {missing_in_inputs}")
+                warnings += 1
+
+    # Summary
+    print(f"\nSummary: {passes} passed, {warnings} warnings, {failures} failures")
+    if failures > 0:
+        sys.exit(1)
+
+
 def print_help():
     """Print usage help."""
     print(__doc__)
@@ -301,15 +506,24 @@ def main():
             print("Error: Please provide a definition name")
             print("Usage: python schema-lookup.py summary <definition-name>")
             sys.exit(1)
-        
+
         name = sys.argv[2]
         definition = lookup_definition(name, definitions)
-        
+
         if definition:
             print(format_definition(name, definition, compact=True))
         else:
             print(f"Definition '{name}' not found.")
-    
+
+    elif command == "validate":
+        if len(sys.argv) < 3:
+            print("Error: Please provide a YAML file path")
+            print("Usage: python schema-lookup.py validate <path-to-yaml-file>")
+            sys.exit(1)
+
+        filepath = sys.argv[2]
+        validate_yaml_file(filepath, definitions)
+
     else:
         print(f"Unknown command: {command}")
         print_help()

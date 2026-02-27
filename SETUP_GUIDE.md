@@ -15,7 +15,7 @@ Before starting, ensure you have the following installed and configured:
 | Node.js | 18+ | `node --version` |
 | Python | 3.8+ | `python --version` |
 | Claude Code CLI | Latest | `claude --version` |
-| Copilot Studio VS Code Extension | Latest | `install via VS Code marketplace` |
+| Copilot Studio VS Code Extension | Latest | Install via VS Code marketplace |
 | Visual Studio Code | Latest | `code --version` |
 
 You also need access to a Power Platform environment with Copilot Studio and an existing agent to test with.
@@ -47,15 +47,20 @@ Copy the provided setup files into your project directory. The folder structure 
 ```
 copilot-studio-dev/
 ├── CLAUDE.md                           # Project instructions for Claude Code
+├── REFERENCE.md                        # Reference tables
 ├── .claude/
-│   └── commands/                       # Custom slash commands
-│       ├── add-action.md
-│       ├── add-knowledge.md
-│       ├── list-kinds.md
-│       ├── list-topics.md
-│       ├── lookup-schema.md
-│       ├── new-topic.md
-│       └── validate.md
+│   └── skills/                         # Skills (slash commands)
+│       ├── lookup-schema/SKILL.md
+│       ├── new-topic/SKILL.md
+│       ├── add-action/SKILL.md
+│       ├── validate/SKILL.md
+│       ├── list-topics/SKILL.md
+│       ├── list-kinds/SKILL.md
+│       ├── add-knowledge/SKILL.md
+│       ├── edit-agent/SKILL.md
+│       ├── edit-triggers/SKILL.md
+│       ├── add-child-agent/SKILL.md
+│       └── add-generative-answers/SKILL.md
 ├── reference/
 │   └── bot.schema.yaml-authoring.json  # YOUR schema file goes here
 ├── scripts/
@@ -93,6 +98,12 @@ Copy-Item "C:\Path\To\bot.schema.yaml-authoring.json" -Destination ".\reference\
 cp /path/to/bot.schema.yaml-authoring.json ./reference/
 ```
 
+### Step 1.4: Install Python Dependencies
+
+```bash
+pip install -r requirements.txt
+```
+
 **Checkpoint 2:** Verify the schema file is in place and readable:
 
 ```bash
@@ -105,7 +116,7 @@ Expected output: A list of definition names from your schema file.
 
 ## Part 2: Install the VS Code Copilot Studio Extension
 
-Follo these steps: https://github.com/microsoft/vscode-copilotstudio
+Follow these steps: https://github.com/microsoft/vscode-copilotstudio
 
 ---
 
@@ -113,11 +124,11 @@ Follo these steps: https://github.com/microsoft/vscode-copilotstudio
 
 ### Step 3.1: Clone the Agent
 
-Clone the agent via the VS Code Extension.
+Clone the agent via the VS Code Copilot Studio Extension.
 
-The guideline is to put the agent folder into the `src/` directory with the unpacked yamls files.
+The guideline is to put the agent folder into the `src/` directory with the unpacked YAML files.
 
-**Checkpoint 4:** Verify the clone was successful:
+**Checkpoint 3:** Verify the clone was successful:
 
 **Windows:**
 ```powershell
@@ -138,7 +149,7 @@ After cloning, your project structure should look like this:
 ```
 copilot-studio-dev/
 ├── CLAUDE.md
-├── .claude/commands/
+├── .claude/skills/
 ├── reference/
 │   └── bot.schema.yaml-authoring.json
 ├── scripts/
@@ -150,8 +161,8 @@ copilot-studio-dev/
         ├── settings.mcs.yml        # Agent settings
         ├── connectionreferences.mcs.yml
         ├── topics/                 # Topic YAML files
-        │   ├── greeting.topic.mcs.yml
-        │   ├── fallback.topic.mcs.yml
+        │   ├── Greeting.mcs.yml
+        │   ├── Fallback.mcs.yml
         │   └── ...
         ├── actions/                # Connector actions
         ├── knowledge/              # Knowledge sources
@@ -180,14 +191,14 @@ claude
 
 Claude Code will automatically read the `CLAUDE.md` file and understand the project context.
 
-**Checkpoint 5:** Verify Claude Code loaded the project instructions:
+**Checkpoint 4:** Verify Claude Code loaded the project instructions:
 
 In Claude Code, type:
 ```
-What custom commands are available in this project?
+What skills are available in this project?
 ```
 
-Claude should list the available `/project:` commands.
+Claude should list the available skills.
 
 ---
 
@@ -227,13 +238,21 @@ python scripts/schema-lookup.py kinds
 
 Expected output: All available `kind` discriminator values from your schema.
 
-**Checkpoint 6:** All four commands should execute without errors and return meaningful data from your schema file.
+### Step 5.5: Test Validation
+
+```bash
+python scripts/schema-lookup.py validate src/<your-agent-name>/topics/Greeting.mcs.yml
+```
+
+Expected output: A `[PASS]`/`[WARN]`/`[FAIL]` validation report.
+
+**Checkpoint 5:** All five commands should execute without errors and return meaningful data from your schema file.
 
 ---
 
-## Part 6: Test Claude Code Custom Commands
+## Part 6: Test Claude Code Skills
 
-### Step 6.1: Test Lookup Schema Command
+### Step 6.1: Test Lookup Schema Skill
 
 In Claude Code, type:
 ```
@@ -242,15 +261,15 @@ In Claude Code, type:
 
 Claude should run the schema lookup script and explain the `SendActivity` definition.
 
-### Step 6.2: Test List Topics Command
+### Step 6.2: Test List Topics Skill
 
 ```
 /list-topics
 ```
 
-Claude should find and list all topics in your cloned solution.
+Claude should find and list all topics in your cloned agent.
 
-### Step 6.3: Test List Kinds Command
+### Step 6.3: Test List Kinds Skill
 
 ```
 /list-kinds
@@ -258,7 +277,7 @@ Claude should find and list all topics in your cloned solution.
 
 Claude should display all available `kind` values from the schema.
 
-**Checkpoint 7:** All custom commands should work and Claude should use the schema lookup script instead of loading the schema into context.
+**Checkpoint 6:** All skills should work and Claude should use the schema lookup script instead of loading the schema into context.
 
 ---
 
@@ -269,24 +288,24 @@ Claude should display all available `kind` values from the schema.
 Ask Claude to create a new topic:
 
 ```
-Create a new topic called "Product Information" that responds to questions about our products. 
+Create a new topic called "Product Information" that responds to questions about our products.
 It should ask the user which product they're interested in and then provide information.
 ```
 
 Claude should:
 1. Use the schema lookup to verify the correct structure
 2. Generate a valid YAML file with unique IDs
-3. Save it to the appropriate location in `src/botcomponents/`
+3. Save it to the appropriate location in `src/<your-agent-name>/topics/`
 
 ### Step 7.2: Validate the Generated Topic
 
 ```
-/validate src/botcomponents/<agent-name>/topics/product-information.topic.mcs.yml
+/validate src/<your-agent-name>/topics/ProductInformation.topic.mcs.yml
 ```
 
 Claude should validate the generated YAML against the schema.
 
-**Checkpoint 8:** The generated YAML should pass validation with no errors.
+**Checkpoint 7:** The generated YAML should pass validation with no errors.
 
 ---
 
@@ -313,37 +332,20 @@ Open the modified file and verify:
 - All required properties are present
 - The file still has valid YAML syntax
 
-**Checkpoint 9:** The modified topic should be valid and include the new action.
+**Checkpoint 8:** The modified topic should be valid and include the new action.
 
 ---
 
-## Part 9: Pack and Import the Solution
+## Part 9: Push Changes to Environment
 
-### Step 9.1: Pack the Modified Solution
+After making changes, push them back using the **Copilot Studio VS Code Extension**:
 
-After making changes, pack the solution:
+1. Open the VS Code Command Palette (`Ctrl+Shift+P` / `Cmd+Shift+P`)
+2. Search for "Copilot Studio: Push" or use the extension's push functionality
+3. Select the agent and confirm the push
+4. Open Copilot Studio in your browser to verify the changes
 
-```bash
-pac solution pack --zipfile ./output/MyAgent_modified.zip --folder ./src --allowWrite --allowDelete
-```
-
-### Step 9.2: Import to Development Environment
-
-Import the modified solution to your development environment:
-
-```bash
-pac solution import --path ./output/MyAgent_modified.zip --environment https://YOUR-DEV-ORG.crm.dynamics.com --publish-changes
-```
-
-### Step 9.3: Verify in Copilot Studio
-
-Open Copilot Studio in your browser and verify:
-1. The agent loads without errors
-2. New topics appear in the topic list
-3. Modified topics render correctly in the canvas
-4. Test the conversation flow in the test panel
-
-**Checkpoint 10:** The agent should work correctly in Copilot Studio with all your changes visible.
+**Checkpoint 9:** The agent should load correctly in Copilot Studio with all your changes visible.
 
 ---
 
@@ -358,23 +360,11 @@ Open Copilot Studio in your browser and verify:
 | Topic doesn't render in canvas | Complex YAML not supported | Simplify the structure, use portal for complex edits |
 | Duplicate ID error | Non-unique node IDs | Regenerate IDs for copied nodes |
 | Power Fx error | Missing `=` prefix | Ensure expressions start with `=` |
-
-### Viewing Import Errors
-
-If the import fails, check the error details:
-
-```bash
-pac solution import --path ./output/MyAgent_modified.zip --environment <url> --publish-changes --verbose
-```
+| Validation script fails | PyYAML not installed | Run `pip install -r requirements.txt` |
 
 ### Reverting Changes
 
-If something goes wrong, you can re-clone the original solution:
-
-```bash
-rm -rf ./src
-pac solution clone --name "YOUR_SOLUTION_NAME" --outputDirectory ./src
-```
+If something goes wrong, you can re-clone the original agent using the VS Code Extension.
 
 ---
 
@@ -390,29 +380,23 @@ pac solution clone --name "YOUR_SOLUTION_NAME" --outputDirectory ./src
 | `python scripts/schema-lookup.py list` | List all definitions |
 | `python scripts/schema-lookup.py kinds` | List all kind values |
 | `python scripts/schema-lookup.py summary <name>` | Get a compact summary |
+| `python scripts/schema-lookup.py validate <file>` | Validate a YAML file |
 
-### Claude Code Custom Commands
+### Claude Code Skills
 
-| Command | Description |
-|---------|-------------|
-| `/project:lookup-schema <name>` | Look up and explain a schema definition |
-| `/project:new-topic <description>` | Create a new topic |
-| `/project:add-action <type> to <topic>` | Add an action to a topic |
-| `/project:validate <path>` | Validate a YAML file |
-| `/project:list-topics` | List all topics in the solution |
-| `/project:list-kinds` | List all available kind values |
-| `/project:add-knowledge <url>` | Add a public website knowledge source |
-
-### PAC CLI Commands
-
-| Command | Description |
-|---------|-------------|
-| `pac auth create --url <url>` | Authenticate with environment |
-| `pac solution clone --name <name> --outputDirectory ./src` | Clone solution |
-| `pac solution pack --zipfile <path> --folder ./src` | Pack solution |
-| `pac solution import --path <path> --environment <url>` | Import solution |
-| `pac copilot list --environment <url>` | List copilots |
-| `pac copilot publish --bot <id> --environment <url>` | Publish agent |
+| Skill | Description |
+|-------|-------------|
+| `/lookup-schema <name>` | Look up and explain a schema definition |
+| `/new-topic <description>` | Create a new topic |
+| `/add-action <type> to <topic>` | Add an action to a topic |
+| `/validate <path>` | Validate a YAML file |
+| `/list-topics` | List all topics in the solution |
+| `/list-kinds` | List all available kind values |
+| `/add-knowledge <url>` | Add a public website knowledge source |
+| `/edit-agent <what to change>` | Edit agent settings or instructions |
+| `/edit-triggers <topic>` | Modify topic trigger phrases |
+| `/add-child-agent <description>` | Add a child agent |
+| `/add-generative-answers <topic>` | Add generative answer nodes |
 
 ---
 
@@ -422,15 +406,15 @@ Use this checklist to verify your setup is complete:
 
 - [ ] Project directory created with correct structure
 - [ ] `bot.schema.yaml-authoring.json` placed in `reference/`
+- [ ] Python dependencies installed (`pip install -r requirements.txt`)
 - [ ] Schema lookup script tested and working
-- [ ] PAC CLI authenticated with Power Platform
-- [ ] Existing agent solution cloned to `src/`
+- [ ] VS Code Copilot Studio Extension installed
+- [ ] Existing agent cloned to `src/`
 - [ ] Claude Code initialized and reading `CLAUDE.md`
-- [ ] Custom commands tested and working
+- [ ] Skills tested and working
 - [ ] YAML generation tested
 - [ ] YAML modification tested
-- [ ] Solution pack and import tested
-- [ ] Agent verified in Copilot Studio portal
+- [ ] Changes pushed via VS Code Extension and verified in Copilot Studio
 
 ---
 
@@ -444,4 +428,4 @@ After completing this setup:
 4. **Always test in a development environment** before production
 5. **Use version control** (Git) to track your changes
 
-For more information on Copilot Studio YAML syntax, refer to your research reports and the official Microsoft documentation.
+For more information on Copilot Studio YAML syntax, refer to the official Microsoft documentation.

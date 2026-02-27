@@ -12,7 +12,7 @@ project-root/
 ├── CLAUDE.md                               # This file (project instructions)
 ├── REFERENCE.md                            # Trigger/action/variable reference tables
 ├── reference/bot.schema.yaml-authoring.json  # Schema (DO NOT LOAD THIS - it's too long. You'll have helpers to look things inside this file)
-├── templates/                              # YAML templates pasted by the user
+├── templates/                              # YAML templates for common patterns
 └── src/AGENT-NAME/                         # YAML files representing the agent
 ```
 
@@ -28,38 +28,32 @@ python scripts/schema-lookup.py search trigger          # Search by keyword
 python scripts/schema-lookup.py resolve AdaptiveDialog  # Resolve with $refs
 python scripts/schema-lookup.py kinds                   # List all kind values
 python scripts/schema-lookup.py summary Question        # Compact overview
+python scripts/schema-lookup.py validate <file.yml>     # Validate a YAML file
 ```
 
 The above ones are already used as examples with real parameter values, like "search trigger" instead of "search WHAT-TO-SEARCH".
 
+## Available Skills
 
-## Other useful custom commands
+- `/lookup-schema` - Query schema definitions
+- `/new-topic` - Create topic from template or schema
+- `/add-action` - Add action to existing topic
+- `/validate` - Validate YAML structure
+- `/add-knowledge` - Add public website knowledge
+- `/list-topics` - List solution topics
+- `/list-kinds` - List available kind values
+- `/edit-agent` - Edit agent settings/instructions
+- `/edit-triggers` - Modify topic trigger phrases
+- `/add-child-agent` - Add/configure child agents
+- `/add-generative-answers` - Add generative answer nodes
 
-- `/project:lookup-schema` - Query schema definitions
-- `/project:new-topic` - Create topic from template
-- `/project:add-action` - Add action to existing topic
-- `/project:validate` - Validate YAML structure
-- `/project:add-knowledge` - Add public website knowledge
-- `/project:list-topics` - List solution topics
-- `/project:list-kinds` - List available kind values
+## Agent Discovery (Important)
 
+The agent name is dynamic — users clone their own agent. **NEVER hardcode an agent name or path.** Always auto-discover via `Glob: src/**/agent.mcs.yml`. If multiple agents found, ask which one.
 
-## Generative Orchestration Guidelines
+## Generative Orchestration (Key Rule)
 
-When `GenerativeActionsEnabled: true` in agent settings, you can use topic inputs/outputs instead of hardcoded questions/messages:
-
-**Topic Inputs** — Auto-collect user info based on a model description. No need for explicit question nodes.
-- Still use question nodes when: conditional asks (ask X only if Y - as in this case the input is only required in a specific branch and not always), or end-of-flow confirmation ("are you satisfied? - because again, you can't reply to a satisfaciton question before seeing the outcome, thus it can't be an input").
-
-**Topic Outputs** — Return values to the orchestrator, which then generates the user-facing message.
-- Example: A "sum two numbers" topic uses two inputs, sets the result as an output variable, and lets the orchestrator phrase the response, according to the agent instrucitons.
-- Do NOT use `SendActivity` to show final outputs except it makes sense (very rare). Instead, maybe if you want to show a precise message in a specific point of the flow, that could still make sense.
-
-
-## Create Generative Answers - disambiguation
-
-Use the node `SearchAndSummarizeContent` whenever you want to generate a response grounded in data (what people call "Generative answer", the vast majority of cases), while use the node `AnswerQuestionWithAI` when you want to respond to a query by only looking at the conversation history and the model general knowledge.
-
+When `GenerativeActionsEnabled: true` in settings: use **topic inputs/outputs** instead of hardcoded questions/messages. Use `SearchAndSummarizeContent` for grounded answers; use `AnswerQuestionWithAI` for general knowledge only. See skills and REFERENCE.md for detailed patterns.
 
 ## Limitations
 
@@ -70,7 +64,6 @@ Since you only have the agent YAML and can't create other Power Platform stuff, 
 Respond: "These should be configured through the Copilot Studio UI as they require other Power Platform components in addition to YAML modifications."
 
 **Exception**: You CAN modify existing components or reference them in new topics.
-
 
 ## ID Generation
 
@@ -83,12 +76,11 @@ A good practice to avoid conflict would be to use 6-8 random characters after th
 
 **Template `_REPLACE` Pattern**: Templates in `templates/` use `_REPLACE` placeholder IDs (e.g., `sendMessage_REPLACE1`). When creating a topic from a template, you MUST replace all `_REPLACE` IDs with unique random IDs. This prevents duplicate IDs when templates are reused across multiple topics.
 
-
 ## Power Fx Basics
 
 - In the YAML, expressions start with `=` prefix: `condition: =System.FallbackCount < 3`
 - String interpolation uses `{}`: `activity: "Error: {System.Error.Message}"`
-
+- Variable init on first assignment: `variable: init:Topic.MyVar`
 
 ## Publish new changes: Workflow
 
@@ -96,4 +88,3 @@ If the user asks general information, this is a list of steps in this process th
 1. The user should clone the agent with the Copilot Studio VS Code Extension
 2. You can author changes in YAML
 3. The user should push the agent changes with the Copilot Studio VS Code Extension back to its Power Platform environment
-

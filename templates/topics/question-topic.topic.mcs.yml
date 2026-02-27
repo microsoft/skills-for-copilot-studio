@@ -1,0 +1,51 @@
+# Name: <Topic Name>
+# Template: Topic with a question and conditional branching
+# NOTE: Replace all _REPLACE IDs with unique random IDs before use
+kind: AdaptiveDialog
+beginDialog:
+  kind: OnRecognizedIntent
+  id: main
+  intent:
+    displayName: <Topic Name>
+    triggerQueries:
+      - <phrase 1>
+      - <phrase 2>
+      - <phrase 3>
+
+  actions:
+    - kind: SendActivity
+      id: sendMessage_REPLACE1
+      activity:
+        text:
+          - <Welcome message for this topic>
+
+    - kind: Question
+      id: question_REPLACE2
+      variable: init:Topic.UserChoice
+      prompt: <Question prompt>
+      entity: StringPrebuiltEntity
+      alwaysPrompt: true
+      interruptionPolicy:
+        allowInterruption: false
+
+    - kind: ConditionGroup
+      id: conditionGroup_REPLACE3
+      conditions:
+        - id: conditionItem_REPLACE4
+          condition: =Topic.UserChoice = '<Option 1>'
+          actions:
+            - kind: SendActivity
+              id: sendMessage_REPLACE5
+              activity: <Response for Option 1>
+
+        - id: conditionItem_REPLACE6
+          condition: =Topic.UserChoice = '<Option 2>'
+          actions:
+            - kind: SendActivity
+              id: sendMessage_REPLACE7
+              activity: <Response for Option 2>
+
+      elseActions:
+        - kind: SendActivity
+          id: sendMessage_REPLACE8
+          activity: <Response for any other option>

@@ -1,0 +1,48 @@
+# Name: On Error
+# Template: Error handling with test mode detection and telemetry logging
+# NOTE: Replace all _REPLACE IDs with unique random IDs before use
+kind: AdaptiveDialog
+startBehavior: UseLatestPublishedContentAndCancelOtherTopics
+beginDialog:
+  kind: OnError
+  id: main
+  actions:
+    - kind: SetVariable
+      id: setVariable_REPLACE1
+      variable: init:Topic.CurrentTime
+      value: =Text(Now(), DateTimeFormat.UTC)
+
+    - kind: ConditionGroup
+      id: conditionGroup_REPLACE2
+      conditions:
+        - id: conditionItem_REPLACE3
+          condition: =System.Conversation.InTestMode = true
+          actions:
+            - kind: SendActivity
+              id: sendMessage_REPLACE4
+              activity: |-
+                Error Message: {System.Error.Message}
+                Error Code: {System.Error.Code}
+                Conversation Id: {System.Conversation.Id}
+                Time (UTC): {Topic.CurrentTime}
+
+      elseActions:
+        - kind: SendActivity
+          id: sendMessage_REPLACE5
+          activity:
+            text:
+              - |-
+                An error has occurred.
+                Error code: {System.Error.Code}
+                Conversation Id: {System.Conversation.Id}
+                Time (UTC): {Topic.CurrentTime}.
+            speak:
+              - An error has occurred, please try again.
+
+    - kind: LogCustomTelemetryEvent
+      id: logTelemetry_REPLACE6
+      eventName: OnErrorLog
+      properties: "={ErrorMessage: System.Error.Message, ErrorCode: System.Error.Code, TimeUTC: Topic.CurrentTime, ConversationId: System.Conversation.Id}"
+
+    - kind: CancelAllDialogs
+      id: cancelAllDialogs_REPLACE7

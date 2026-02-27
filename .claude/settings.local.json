@@ -2,12 +2,15 @@
   "permissions": {
     "allow": [
       "WebSearch",
-      "Bash(dir:*)",
-      "Bash(where:*)",
-      "Bash(type:*)",
-      "Bash(findstr:*)",
+      "Bash(ls:*)",
+      "Bash(find:*)",
+      "Bash(grep:*)",
+      "Bash(cat:*)",
       "Bash(python:*)",
-      "Bash(python -c:*)"
+      "Bash(python -c:*)",
+      "WebFetch(domain:docs.claude.com)",
+      "Bash(cd:*)",
+      "Bash(tail:*)"
     ]
   }
 }

@@ -1,0 +1,23 @@
+# Name: Knowledge Search
+# Template: Generative answers from knowledge sources (fallback search)
+# NOTE: Replace all _REPLACE IDs with unique random IDs before use
+kind: AdaptiveDialog
+beginDialog:
+  kind: OnUnknownIntent
+  id: main
+  priority: -1
+  actions:
+    - kind: SearchAndSummarizeContent
+      id: searchContent_REPLACE1
+      variable: Topic.Answer
+      userInput: =System.Activity.Text
+
+    - kind: ConditionGroup
+      id: conditionGroup_REPLACE2
+      conditions:
+        - id: conditionItem_REPLACE3
+          condition: =!IsBlank(Topic.Answer)
+          actions:
+            - kind: EndDialog
+              id: endDialog_REPLACE4
+              clearTopicQueue: true

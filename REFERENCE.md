@@ -42,7 +42,8 @@ This file contains reference tables for Copilot Studio YAML authoring. For workf
 | `EndDialog` | End current topic |
 | `CancelAllDialogs` | Cancel all topics |
 | `ClearAllVariables` | Clear variables |
-| `SearchAndSummarizeContent` | Generative answers |
+| `SearchAndSummarizeContent` | Generative answers (grounded in knowledge) |
+| `AnswerQuestionWithAI` | AI answer (conversation history + general knowledge only) |
 | `EditTable` | Modify a collection |
 | `CSATQuestion` | Customer satisfaction |
 | `LogCustomTelemetryEvent` | Logging |
@@ -71,31 +72,9 @@ This file contains reference tables for Copilot Studio YAML authoring. For workf
 | `NumberPrebuiltEntity` | Numeric inputs |
 | `StringPrebuiltEntity` | Free text |
 | `DateTimePrebuiltEntity` | Date/time |
+| `EMailPrebuiltEntity` | Email addresses |
 
-## Template _REPLACE Pattern
-
-Templates in `templates/` use `_REPLACE` placeholder IDs to signal that unique IDs must be generated when using the template.
-
-**Why this pattern exists:**
-- Templates are reused across multiple topics
-- If templates had real IDs, duplicates would occur
-- Duplicate IDs cause Copilot Studio import/rendering errors
-
-**How to use:**
-1. Copy the template to your target location
-2. Replace ALL `_REPLACE` occurrences with unique random IDs
-3. Use format: `<nodeType>_<6-8 random alphanumeric chars>`
-
-**Example:**
-```yaml
-# Template has:
-id: sendMessage_REPLACE1
-
-# Replace with:
-id: sendMessage_k7xPm2
-```
-
-## Power Fx Expression Examples
+## Power Fx Expression Reference
 
 ```yaml
 # Arithmetic
@@ -108,25 +87,129 @@ value: =Text(Now(), DateTimeFormat.UTC)
 condition: =System.FallbackCount < 3
 condition: =Topic.EndConversation = true
 condition: =!IsBlank(Topic.Answer)
+condition: =System.Conversation.InTestMode = true
+condition: =System.SignInReason = SignInReason.SignInRequired
+condition: =System.Recognizer.SelectedIntent.TopicId = "NoTopic"
 
-# String interpolation in activity
+# String interpolation in activity (uses {} without =)
 activity: "Error: {System.Error.Message}"
+activity: "Error code: {System.Error.Code}, Time (UTC): {Topic.CurrentTime}"
 
 # Record creation
-value: "={ DisplayName: Topic.Name, TopicId: \"NoTopic\", Score: 1.0 }"
+value: "={ DisplayName: Topic.NoneOfTheseDisplayName, TopicId: \"NoTopic\", TriggerId: \"NoTrigger\", Score: 1.0 }"
+
+# Variable initialization (first assignment uses init: prefix)
+variable: init:Topic.UserEmail
+variable: init:Topic.CurrentTime
+# Subsequent assignments omit init:
+variable: Topic.UserEmail
 ```
 
-## Error Prevention Checklist
+## Generative Orchestration Patterns
 
-1. **Duplicate IDs** - All node IDs must be unique within a topic
-2. **Missing required properties** - Use schema lookup to verify
-3. **Invalid Power Fx syntax** - Expressions must start with `=`
-4. **Incorrect $ref paths** - Use schema lookup to find valid references
-5. **Breaking canvas round-trip** - Complex edits may not render correctly in UI
+When `GenerativeActionsEnabled: true` in `settings.mcs.yml`:
 
-## Testing After Editing
+### Topic Inputs (AutomaticTaskInput)
 
-1. Import the solution to a development environment first
-2. Open the agent in Copilot Studio to verify canvas rendering
-3. Test the conversation flow in the test panel
-4. Check for any error messages in the authoring canvas
+Auto-collect user info — the orchestrator prompts the user based on the description. No explicit Question node needed.
+
+```yaml
+inputs:
+  - kind: AutomaticTaskInput
+    propertyName: userName
+    description: "The user's name"
+    entity: StringPrebuiltEntity
+    shouldPromptUser: true
+
+  - kind: AutomaticTaskInput
+    propertyName: orderNumber
+    description: "The order number to look up"
+    entity: NumberPrebuiltEntity
+    shouldPromptUser: true
+```
+
+**When to still use Question nodes instead of inputs:**
+- Conditional asks: ask X only if condition Y is met (input is only needed in a specific branch)
+- End-of-flow confirmations: "Are you satisfied?" (can't answer before seeing the outcome)
+
+### Topic Outputs
+
+Return values to the orchestrator, which generates the user-facing message.
+
+```yaml
+outputType:
+  properties:
+    result:
+      displayName: result
+      description: The computed result
+      type: String
+```
+
+- Do NOT use `SendActivity` to show final outputs (rare exception: precise mid-flow messages).
+- The orchestrator phrases the response based on the agent instructions.
+
+### inputType/outputType Schema
+
+Always define schemas that match your inputs/outputs:
+
+```yaml
+inputType:
+  properties:
+    userName:
+      displayName: userName
+      description: "The user's name"
+      type: String
+    orderNumber:
+      displayName: orderNumber
+      type: Number
+
+outputType:
+  properties:
+    result:
+      displayName: result
+      description: The lookup result
+      type: String
+```
+
+## Generative Answers Pattern
+
+### SearchAndSummarizeContent (grounded in knowledge)
+
+```yaml
+- kind: SearchAndSummarizeContent
+  id: search-content_abc123
+  variable: Topic.Answer
+  userInput: =System.Activity.Text
+
+- kind: ConditionGroup
+  id: conditionGroup_def456
+  conditions:
+    - id: conditionItem_ghi789
+      condition: =!IsBlank(Topic.Answer)
+      actions:
+        - kind: EndDialog
+          id: endDialog_jkl012
+          clearTopicQueue: true
+```
+
+Always follow `SearchAndSummarizeContent` with a `ConditionGroup` to check if an answer was found.
+
+### AnswerQuestionWithAI (no knowledge sources)
+
+Use only when you want the model to respond from conversation history and general knowledge — no external data.
+
+## Available Templates
+
+| Template | File | Pattern |
+|----------|------|---------|
+| Greeting | `templates/topics/greeting.topic.mcs.yml` | OnConversationStart welcome |
+| Fallback | `templates/topics/fallback.topic.mcs.yml` | OnUnknownIntent with escalation |
+| Arithmetic | `templates/topics/arithmeticsum.topic.mcs.yml` | Inputs/outputs with computation |
+| Question + Branching | `templates/topics/question-topic.topic.mcs.yml` | Question with ConditionGroup |
+| Knowledge Search | `templates/topics/search-topic.topic.mcs.yml` | SearchAndSummarizeContent fallback |
+| Authentication | `templates/topics/auth-topic.topic.mcs.yml` | OnSignIn with OAuthInput |
+| Error Handler | `templates/topics/error-handler.topic.mcs.yml` | OnError with telemetry |
+| Disambiguation | `templates/topics/disambiguation.topic.mcs.yml` | OnSelectIntent flow |
+| Agent | `templates/agents/agent.mcs.yml` | GptComponentMetadata |
+| Connector Action | `templates/actions/connector-action.mcs.yml` | TaskDialog with connector |
+| Knowledge Source | `templates/knowledge/public-website.knowledge.mcs.yml` | Public website |

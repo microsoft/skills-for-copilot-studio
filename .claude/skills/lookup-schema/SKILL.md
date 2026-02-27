@@ -1,10 +1,12 @@
+---
+description: Look up Copilot Studio YAML schema definitions. Use when the user asks about schema structure, element properties, or how to use a specific YAML kind.
+argument-hint: <definition-name>
+allowed-tools: Bash(python *)
+---
+
 # Lookup Schema Definition
 
-Look up the schema definition for a Copilot Studio YAML element.
-
-## Arguments
-
-- `$ARGUMENTS` - The name of the definition to look up (e.g., SendActivity, Question, ConditionGroup)
+Look up and explain a Copilot Studio YAML schema definition.
 
 ## Instructions
 
@@ -18,19 +20,19 @@ Look up the schema definition for a Copilot Studio YAML element.
    python scripts/schema-lookup.py search $ARGUMENTS
    ```
 
-3. If the definition contains `$ref` references that need to be resolved, use:
+3. If the definition contains `$ref` references that need resolution, use:
    ```bash
    python scripts/schema-lookup.py resolve $ARGUMENTS
    ```
 
-4. Present the schema definition to the user in a readable format, explaining:
+4. Present the schema definition in a readable format, explaining:
    - What the element does (from the description)
    - Required properties
    - Optional properties and their types
    - Any related definitions that might be useful
 
-## Example Usage
+## Example
 
-User: `/project:lookup-schema SendActivity`
+User: `/lookup-schema SendActivity`
 
 Response should include the full schema definition and explain how to use it in YAML.

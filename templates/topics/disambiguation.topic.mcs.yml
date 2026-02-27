@@ -1,0 +1,45 @@
+# Name: Multiple Topics Matched
+# Template: Disambiguation when multiple topics match the user's message
+# NOTE: Replace all _REPLACE IDs with unique random IDs before use
+kind: AdaptiveDialog
+beginDialog:
+  kind: OnSelectIntent
+  id: main
+  triggerBehavior: Always
+  actions:
+    - kind: SetVariable
+      id: setVariable_REPLACE1
+      variable: init:Topic.IntentOptions
+      value: =System.Recognizer.IntentOptions
+
+    - kind: SetTextVariable
+      id: setTextVariable_REPLACE2
+      variable: Topic.NoneOfTheseDisplayName
+      value: None of these
+
+    - kind: EditTable
+      id: editTable_REPLACE3
+      changeType: Add
+      itemsVariable: Topic.IntentOptions
+      value: "={ DisplayName: Topic.NoneOfTheseDisplayName, TopicId: \"NoTopic\", TriggerId: \"NoTrigger\", Score: 1.0 }"
+
+    - kind: Question
+      id: question_REPLACE4
+      interruptionPolicy:
+        allowInterruption: false
+      alwaysPrompt: true
+      variable: System.Recognizer.SelectedIntent
+      prompt: "To clarify, did you mean:"
+      entity:
+        kind: DynamicClosedListEntity
+        items: =Topic.IntentOptions
+
+    - kind: ConditionGroup
+      id: conditionGroup_REPLACE5
+      conditions:
+        - id: conditionItem_REPLACE6
+          condition: =System.Recognizer.SelectedIntent.TopicId = "NoTopic"
+          actions:
+            - kind: ReplaceDialog
+              id: replaceDialog_REPLACE7
+              dialog: <AGENT_SCHEMA>.topic.Fallback

@@ -1,0 +1,22 @@
+# Name: Sign In
+# Template: Authentication flow with sign-in reason check
+# NOTE: Replace all _REPLACE IDs with unique random IDs before use
+kind: AdaptiveDialog
+beginDialog:
+  kind: OnSignIn
+  id: main
+  actions:
+    - kind: ConditionGroup
+      id: conditionGroup_REPLACE1
+      conditions:
+        - id: conditionItem_REPLACE2
+          condition: =System.SignInReason = SignInReason.SignInRequired
+          actions:
+            - kind: SendActivity
+              id: sendMessage_REPLACE3
+              activity: Hello! To be able to help you, I'll need you to sign in.
+
+    - kind: OAuthInput
+      id: oauthInput_REPLACE4
+      title: Login
+      text: To continue, please login
