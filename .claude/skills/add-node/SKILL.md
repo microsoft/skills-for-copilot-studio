@@ -1,7 +1,7 @@
 ---
 description: Add or modify a node in an existing Copilot Studio topic. Use when the user asks to add a question, message, condition, variable, or other node to a topic. Do NOT use this for generative answers or knowledge search — use /add-generative-answers instead.
 argument-hint: <node-type> to <topic-name>
-allowed-tools: Bash(python *), Read, Write, Edit, Glob
+allowed-tools: Bash(python scripts/schema-lookup.py *), Read, Write, Edit, Glob
 ---
 
 # Add Node to Topic

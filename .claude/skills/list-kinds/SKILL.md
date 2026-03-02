@@ -1,7 +1,7 @@
 ---
 description: List all available kind discriminator values from the Copilot Studio YAML schema. Use when the user asks what kinds/types are available.
 argument-hint: <optional-filter-keyword>
-allowed-tools: Bash(python *)
+allowed-tools: Bash(python scripts/schema-lookup.py *)
 ---
 
 # List Available Kind Values

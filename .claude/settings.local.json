@@ -2,15 +2,7 @@
   "permissions": {
     "allow": [
       "WebSearch",
-      "Bash(ls:*)",
-      "Bash(find:*)",
-      "Bash(grep:*)",
-      "Bash(cat:*)",
-      "Bash(python:*)",
-      "Bash(python -c:*)",
       "WebFetch(domain:docs.claude.com)",
-      "Bash(cd:*)",
-      "Bash(tail:*)",
       "Bash(mv:*)",
       "Skill(add-child-agent)",
       "Skill(add-knowledge)",

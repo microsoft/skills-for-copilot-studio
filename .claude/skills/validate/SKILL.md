@@ -1,7 +1,7 @@
 ---
 description: Validate a Copilot Studio YAML file against the schema and best practices. Use when the user asks to check, validate, or verify a YAML file.
 argument-hint: <path-to-yaml-file>
-allowed-tools: Bash(python *), Read, Glob
+allowed-tools: Bash(python scripts/schema-lookup.py *), Read, Glob
 ---
 
 # Validate YAML Structure

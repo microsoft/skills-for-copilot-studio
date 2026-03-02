@@ -1,7 +1,7 @@
 ---
 description: Add a knowledge source (public website or SharePoint) to a Copilot Studio agent. Use when the user asks to add a knowledge source, documentation URL, website, or SharePoint site for the agent to search.
 argument-hint: <url>
-allowed-tools: Bash(python *), Read, Write, Glob
+allowed-tools: Bash(python scripts/schema-lookup.py *), Read, Write, Glob
 ---
 
 # Add Knowledge Source

@@ -26,3 +26,4 @@ tmpclaude-*
 # Environment files (if used in the future)
 .env
 .env.local
+nul
