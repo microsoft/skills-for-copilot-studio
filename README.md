@@ -79,6 +79,7 @@ After making changes, push them back using the **Copilot Studio VS Code Extensio
 | `/add-child-agent` | Add/configure child agents |
 | `/add-generative-answers` | Add generative answer nodes |
 | `/add-global-variable` | Add a global variable |
+| `/run-tests` | Run tests and analyze failures |
 
 ## Key Resources
 

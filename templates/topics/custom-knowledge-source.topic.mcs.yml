@@ -1,0 +1,27 @@
+# Name: Custom Knowledge Source
+# Template: Custom search API as a knowledge source via OnKnowledgeRequested (YAML-only, no UI)
+# NOTE: Replace all _REPLACE IDs with unique random IDs before use
+# NOTE: Replace the HTTP connector action reference with your actual connector action
+kind: AdaptiveDialog
+beginDialog:
+  kind: OnKnowledgeRequested
+  id: main
+  actions:
+    # Step 1: Call your custom search API using a connector action
+    # Replace "AGENT_SCHEMA.topic.YOUR_SEARCH_ACTION" with your actual connector action reference
+    - kind: BeginDialog
+      id: beginDialog_REPLACE1
+      dialog: AGENT_SCHEMA.topic.YOUR_SEARCH_ACTION
+      input:
+        binding:
+          query: =System.SearchQuery
+      output:
+        binding:
+          results: Topic.RawResults
+
+    # Step 2: Transform API results into the required schema and set System.SearchResults
+    # Each result must have: Content, ContentLocation, Title
+    - kind: SetVariable
+      id: setVariable_REPLACE2
+      variable: System.SearchResults
+      value: "=ForAll(Topic.RawResults, { Content: ThisRecord.body, ContentLocation: ThisRecord.url, Title: ThisRecord.title })"

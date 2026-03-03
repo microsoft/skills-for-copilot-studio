@@ -1,0 +1,37 @@
+# Name: <Child Agent Display Name>    ← Required: display name shown in Copilot Studio
+# <Child Agent Name>                  ← Required: internal agent identifier (no spaces)
+kind: AgentDialog
+
+beginDialog:
+  kind: OnToolSelected
+  id: main
+  # Optional: add a condition to restrict when this agent is available (remove if not needed)
+  # condition: =System.Activity.Channel = ChannelId.MsTeams
+  description: <When should the parent orchestrator route to this child agent — be specific about the types of questions and tasks it handles, and include example user messages>
+
+settings:
+  instructions: |
+    You are a specialist assistant that handles <specialization area>.
+
+    Rules:
+    - Be concise and clear in your responses
+    - Only answer questions within your specialization
+    - If a question is outside your scope, politely say you only handle <specialization area>
+
+# Optional: define input properties if the parent needs to pass context to this child agent
+# Use inputType: {} if no inputs are needed
+inputType:
+  properties:
+    AdditionalInput:
+      displayName: Additional Input
+      description: <Description of what context the parent agent passes to this child>
+      type: String
+
+# Optional: define output properties if this child agent needs to return structured data
+# Use outputType: {} if no outputs are needed
+outputType:
+  properties:
+    Result:
+      displayName: Result
+      description: <Description of what this child agent returns to the parent>
+      type: String

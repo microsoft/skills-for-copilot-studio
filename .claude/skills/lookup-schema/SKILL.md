@@ -1,7 +1,7 @@
 ---
 description: Look up Copilot Studio YAML schema definitions. Use when the user asks about schema structure, element properties, or how to use a specific YAML kind.
 argument-hint: <definition-name>
-allowed-tools: Bash(python *)
+allowed-tools: Bash(python scripts/schema-lookup.py *)
 ---
 
 # Lookup Schema Definition

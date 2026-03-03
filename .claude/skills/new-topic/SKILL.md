@@ -1,7 +1,7 @@
 ---
 description: Create a new Copilot Studio topic YAML file. Use when the user asks to create a new topic, conversation flow, or dialog for their agent.
 argument-hint: <topic description>
-allowed-tools: Bash(python *), Read, Write, Glob
+allowed-tools: Bash(python scripts/schema-lookup.py *), Read, Write, Glob
 ---
 
 # Create New Topic

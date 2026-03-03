@@ -5,7 +5,12 @@ src/
 *.zip
 
 # Agent tests
-tests/
+tests/test-results*
+tests/settings.json
+tests/.token_cache.json
+tests/node_modules/
+tests/.token_cache.json
+tests/package-lock.json
 
 # Python cache
 __pycache__/
@@ -21,3 +26,4 @@ tmpclaude-*
 # Environment files (if used in the future)
 .env
 .env.local
+nul

@@ -1,7 +1,7 @@
 ---
 description: Add or modify a node in an existing Copilot Studio topic. Use when the user asks to add a question, message, condition, variable, or other node to a topic. Do NOT use this for generative answers or knowledge search — use /add-generative-answers instead.
 argument-hint: <node-type> to <topic-name>
-allowed-tools: Bash(python *), Read, Write, Edit, Glob
+allowed-tools: Bash(python scripts/schema-lookup.py *), Read, Write, Edit, Glob
 ---
 
 # Add Node to Topic
@@ -46,6 +46,7 @@ In Copilot Studio, the elements inside a topic's `actions` array are **nodes** (
 | `SendActivity` | Send message | `kind`, `id`, `activity` |
 | `Question` | Ask user input | `kind`, `id`, `variable`, `prompt`, `entity` |
 | `SetVariable` | Set/compute value | `kind`, `id`, `variable`, `value` |
+| `SetTextVariable` | Set text with interpolation (YAML-only, no canvas) | `kind`, `id`, `variable`, `value` |
 | `ConditionGroup` | Branching logic | `kind`, `id`, `conditions` |
 | `BeginDialog` | Call another topic | `kind`, `id`, `dialog` |
 | `EndDialog` | End topic | `kind`, `id` |

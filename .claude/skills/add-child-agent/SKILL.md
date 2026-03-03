@@ -1,7 +1,7 @@
 ---
 description: Add or configure a child agent (AgentDialog) for Copilot Studio. Use when the user asks to create a sub-agent, child agent, or specialist agent.
 argument-hint: <child agent description>
-allowed-tools: Bash(python *), Read, Write, Glob
+allowed-tools: Bash(python scripts/schema-lookup.py *), Read, Write, Glob
 ---
 
 # Add Child Agent
@@ -34,29 +34,14 @@ Create a new child agent (AgentDialog) that the parent agent's orchestrator can 
    └── agent.mcs.yml
    ```
 
-5. **Generate `agent.mcs.yml`** following this pattern:
+5. **Generate `agent.mcs.yml`** using `templates/agents/child-agent.mcs.yml` as the starting template. Read the template, then customize all placeholder values (`<...>`) based on the user's requirements.
 
-```yaml
-# Name: <Child Agent Name>
-kind: AgentDialog
-
-beginDialog:
-  kind: OnToolSelected
-  id: main
-  description: <When should the orchestrator route to this agent — be specific>
-
-settings:
-  instructions: <Detailed instructions for the child agent's behavior>
-
-inputType:
-  properties:
-    AdditionalInput:
-      displayName: Additional Input
-      description: <Description of what additional context this agent needs>
-      type: String
-
-outputType: {}
-```
+   Key structure:
+   - `kind: AgentDialog` — marks this as a child agent
+   - `beginDialog.kind: OnToolSelected` with a `description` — tells the parent orchestrator when to route here
+   - `settings.instructions` — the child agent's system prompt
+   - `inputType` — context the orchestrator passes in
+   - `outputType` — what the child agent returns (use `outputType: {}` if no structured output is needed)
 
 6. **Key fields explained**:
    - `beginDialog.description` — This is what the parent orchestrator reads to decide when to route. Be specific and action-oriented (e.g., "This agent handles billing inquiries, refund requests, and payment issues").

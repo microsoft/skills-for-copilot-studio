@@ -1,0 +1,13 @@
+{
+  "name": "copilot-studio-tests",
+  "version": "1.0.0",
+  "description": "Test runner for Copilot Studio agents",
+  "main": "run-tests.js",
+  "scripts": {
+    "test": "node run-tests.js"
+  },
+  "type": "commonjs",
+  "dependencies": {
+    "@azure/msal-node": "^5.0.5"
+  }
+}

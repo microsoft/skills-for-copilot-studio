@@ -1,0 +1,12 @@
+{
+  "mode": "automatic",
+  "dataverse": {
+    "environmentUrl": "https://YOUR_ORG.crm.dynamics.com",
+    "tenantId": "YOUR_TENANT_ID",
+    "clientId": "YOUR_CLIENT_ID"
+  },
+  "testRun": {
+    "agentConfigurationId": "YOUR_AGENT_CONFIGURATION_ID",
+    "agentTestSetId": "YOUR_AGENT_TEST_SET_ID"
+  }
+}

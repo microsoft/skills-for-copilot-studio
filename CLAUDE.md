@@ -13,6 +13,10 @@ project-root/
 ├── REFERENCE.md                            # Trigger/action/variable reference tables
 ├── reference/bot.schema.yaml-authoring.json  # Schema (DO NOT LOAD THIS - it's too long. You'll have helpers to look things inside this file)
 ├── templates/                              # YAML templates for common patterns
+├── tests/                                  # Test runner for published agents
+│   ├── run-tests.js                        # Test execution script (Dataverse API)
+│   ├── settings.json                       # Test configuration (user fills in)
+│   └── test-results-*.csv                  # Downloaded test results
 └── src/AGENT-NAME/                         # YAML files representing the agent
     ├── topics/                             # Conversation topics
     ├── actions/                            # Connector-based actions
@@ -52,6 +56,7 @@ The above ones are already used as examples with real parameter values, like "se
 - `/add-child-agent` - Add/configure child agents
 - `/add-generative-answers` - Add generative answer nodes (use this instead of `/add-node` for SearchAndSummarizeContent / AnswerQuestionWithAI)
 - `/add-global-variable` - Add a global variable (persists across topics, optionally visible to AI orchestrator)
+- `/run-tests` - Run tests against a published agent, analyze failures, and propose YAML fixes
 - `/add-glossary` - Add a JIT glossary (loads customer acronyms on first message, stores in Global.Glossary, improves knowledge retrieval)
 - `/add-user-context` - Provision M365 user profile fields (country, department, etc.) JIT into global variables for personalized, context-aware answers
 

@@ -1,7 +1,7 @@
 ---
 description: Edit Copilot Studio agent settings, instructions, or configuration. Use when the user asks to change agent instructions, display name, conversation starters, AI settings, or generative actions toggle.
 argument-hint: <what to change>
-allowed-tools: Bash(python *), Read, Edit, Glob
+allowed-tools: Bash(python scripts/schema-lookup.py *), Read, Edit, Glob
 ---
 
 # Edit Agent Settings/Instructions

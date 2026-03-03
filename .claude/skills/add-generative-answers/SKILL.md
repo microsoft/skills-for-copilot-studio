@@ -1,7 +1,7 @@
 ---
 description: Add generative answer nodes (SearchAndSummarizeContent or AnswerQuestionWithAI) to a Copilot Studio topic. Use this instead of /add-node when the user asks to add grounded answers, knowledge search, generative answers, or AI-powered responses — these nodes require specific patterns (ConditionGroup follow-up, knowledge source references, autoSend, responseCaptureType) that /add-node does not cover.
 argument-hint: <topic-name or "new">
-allowed-tools: Bash(python *), Read, Write, Edit, Glob
+allowed-tools: Bash(python scripts/schema-lookup.py *), Read, Write, Edit, Glob
 ---
 
 # Add Generative Answers
@@ -38,6 +38,7 @@ If the user just wants the agent to answer questions from its knowledge, adding 
 4. **Read `settings.mcs.yml`** to check if `GenerativeActionsEnabled: true`. This determines the best pattern:
    - **`GenerativeActionsEnabled: true`** → prefer **Pattern 2 (Orchestrator)**: use topic inputs/outputs and let the orchestrator handle the response. This is the best approach for generative-orchestrated agents.
    - **`GenerativeActionsEnabled: false`** (or not set) → use **Pattern 1 (Direct Response)**: `autoSend: false` + manual SendActivity, or **Pattern 3 (Fallback Search)** for a simple all-knowledge fallback.
+   - **Verbatim/exact content needed** → use **Pattern 4 (Precision Search)**: `SearchKnowledgeSources` + `CreateSearchQuery` for raw results without AI summarization (insurance policies, HR docs, legal text).
 
 5. **Ask the user** to clarify the behavior (if not already clear from their request):
    - Should it search **all knowledge sources** or only **specific ones**?
@@ -46,172 +47,17 @@ If the user just wants the agent to answer questions from its knowledge, adding 
 
 6. **Generate unique IDs** for all nodes (format: `<nodeType>_<6-8 random alphanumeric>`).
 
-## SearchAndSummarizeContent Properties
-
-```yaml
-- kind: SearchAndSummarizeContent
-  id: searchContent_<random>
-  autoSend: false
-  variable: Topic.Answer
-  userInput: =System.Activity.Text
-  fileSearchDataSource:
-    searchFilesMode:
-      kind: DoNotSearchFiles
-  knowledgeSources:
-    kind: SearchSpecificKnowledgeSources
-    knowledgeSources:
-      - <schemaName>.topic.<KnowledgeSourceFileName>
-  applyModelKnowledgeSetting: false
-  responseCaptureType: FullResponse
-```
-
-### Property Reference
-
-| Property | Description |
-|----------|-------------|
-| `autoSend` | If `true`, the node automatically sends the response to the chat. If `false`, the response is saved into `variable` for manual handling (send a message, build an adaptive card, pass to orchestrator, etc.). |
-| `variable` | Where the response is stored. With `responseCaptureType: FullResponse`, access it via `Variable.Text.Content`, `Variable.Text.MarkdownContent`, and `Variable.Text.CitationSources`. |
-| `userInput` | The input from which the response is generated. Common options: `=System.Activity.Text` (user's last message), `=Topic.SomeInput` (a topic input variable), or a crafted expression combining strings and variables. |
-| `responseCaptureType` | Set to `FullResponse` to capture the full structured response (content, markdown, citations). |
-| `knowledgeSources` | Restrict the search to specific knowledge sources. Use `kind: SearchSpecificKnowledgeSources` with a list of knowledge source references. Omit this property to search all agent knowledge. **The knowledge source must already exist** (added via `/add-knowledge`). Reference format: filename without `.mcs.yml`. |
-| `applyModelKnowledgeSetting` | If `true`, also uses general model knowledge in addition to the specified knowledge sources. If `false`, only searches the configured knowledge sources. |
-| `fileSearchDataSource` | Controls file search behavior. `kind: DoNotSearchFiles` disables file search. |
-
-### `userInput` Options
-
-`System.Activity.Text` is the last message sent by the user. But other options exist:
-
-- **User's last message**: `userInput: =System.Activity.Text` — most common for direct Q&A
-- **Topic input variable**: `userInput: =Topic.QuestionToBeAnswered` — when the orchestrator or a previous node provides the question
-- **Crafted expression**: You can combine strings with variables to build a specific query, e.g., ask the user for a topic and then search for "Give me information about " & that topic
+7. **Build the YAML** using the appropriate pattern. For full YAML examples, see [patterns.md](patterns.md). For the complete property reference table, see [property-reference.md](property-reference.md).
 
 ## SearchAndSummarizeContent vs AnswerQuestionWithAI
 
-| Node | Use When | Data Source |
-|------|----------|-------------|
-| `SearchAndSummarizeContent` | You want answers grounded in the agent's knowledge sources (websites, SharePoint, Dataverse) | Agent's configured knowledge |
-| `AnswerQuestionWithAI` | You want a response based only on conversation history and general model knowledge | No external data |
+| Node | Use When | Data Source | Output |
+|------|----------|-------------|--------|
+| `SearchAndSummarizeContent` | You want answers grounded in the agent's knowledge sources (websites, SharePoint, Dataverse) | Agent's configured knowledge | AI-summarized response |
+| `SearchKnowledgeSources` | You need verbatim/exact content — insurance policies, legal text, HR docs — where AI summarization could lose details | Agent's configured knowledge | Raw search results (no AI summary) |
+| `AnswerQuestionWithAI` | You want a response based only on conversation history and general model knowledge | No external data | AI-generated response |
 
-**Use `SearchAndSummarizeContent`** for the vast majority of cases (what people call "generative answers"). Use `AnswerQuestionWithAI` only when you explicitly want the model to respond without consulting knowledge sources.
-
-## Pattern 1: Direct Response (autoSend: false + manual send)
-
-Use when you want to control how the response is displayed (custom formatting, adaptive cards, or processing the result before showing it).
-
-```yaml
-actions:
-  - kind: SearchAndSummarizeContent
-    id: searchContent_<random>
-    autoSend: false
-    variable: Topic.Answer
-    userInput: =System.Activity.Text
-    fileSearchDataSource:
-      searchFilesMode:
-        kind: DoNotSearchFiles
-    knowledgeSources:
-      kind: SearchSpecificKnowledgeSources
-      knowledgeSources:
-        - <schemaName>.topic.<KnowledgeSourceName>
-    applyModelKnowledgeSetting: false
-    responseCaptureType: FullResponse
-
-  - kind: ConditionGroup
-    id: conditionGroup_<random>
-    conditions:
-      - id: conditionItem_<random>
-        condition: =!IsBlank(Topic.Answer)
-        actions:
-          - kind: SendActivity
-            id: sendActivity_<random>
-            activity: "{Topic.Answer.Text.MarkdownContent}"
-```
-
-Since `autoSend: false`, the response is stored in `Topic.Answer`. The ConditionGroup checks if an answer was found, then SendActivity displays it using `{Topic.Answer.Text.MarkdownContent}`.
-
-## Pattern 2: Orchestrator Pattern (inputs/outputs)
-
-Use when the agent has `GenerativeActionsEnabled: true` and you want the orchestrator to incorporate the search result into its response. The topic takes an input question, searches knowledge, and returns the result as an output — the orchestrator then formulates the final user-facing message.
-
-```yaml
-kind: AdaptiveDialog
-inputs:
-  - kind: AutomaticTaskInput
-    propertyName: QuestionToBeAnswered
-    description: Your question about <topic subject>
-    shouldPromptUser: true
-
-modelDescription: This topic provides information about <topic subject>
-beginDialog:
-  kind: OnRecognizedIntent
-  id: main
-  intent: {}
-  actions:
-    - kind: SearchAndSummarizeContent
-      id: searchContent_<random>
-      autoSend: false
-      variable: Topic.SearchResult
-      userInput: =Topic.QuestionToBeAnswered
-      fileSearchDataSource:
-        searchFilesMode:
-          kind: DoNotSearchFiles
-      knowledgeSources:
-        kind: SearchSpecificKnowledgeSources
-        knowledgeSources:
-          - <schemaName>.topic.<KnowledgeSourceName>
-      applyModelKnowledgeSetting: false
-      responseCaptureType: FullResponse
-
-    - kind: SetVariable
-      id: setVariable_<random>
-      variable: Topic.Response
-      value: =Topic.SearchResult.Text.Content
-
-inputType:
-  properties:
-    QuestionToBeAnswered:
-      displayName: QuestionToBeAnswered
-      description: Your question about <topic subject>
-      type: String
-
-outputType:
-  properties:
-    Response:
-      displayName: Response
-      description: The answer to the provided question
-      type: String
-```
-
-This works because the orchestrator collects `QuestionToBeAnswered` from the user, the topic searches knowledge and extracts the content into `Topic.Response`, and the orchestrator uses that output to formulate a response. No explicit SendActivity needed — the orchestrator handles it.
-
-## Pattern 3: Fallback Search (all knowledge, autoSend default)
-
-The simplest pattern — a fallback topic that searches all agent knowledge when no other topic matches. This is the pattern used in the agent's default Search topic.
-
-```yaml
-# Name: Knowledge Search
-kind: AdaptiveDialog
-beginDialog:
-  kind: OnUnknownIntent
-  id: main
-  priority: -1
-  actions:
-    - kind: SearchAndSummarizeContent
-      id: searchContent_<random>
-      variable: Topic.Answer
-      userInput: =System.Activity.Text
-
-    - kind: ConditionGroup
-      id: conditionGroup_<random>
-      conditions:
-        - id: conditionItem_<random>
-          condition: =!IsBlank(Topic.Answer)
-          actions:
-            - kind: EndDialog
-              id: endDialog_<random>
-              clearTopicQueue: true
-```
-
-The `priority: -1` ensures this runs before the standard fallback, giving knowledge sources a chance to answer before the "I don't understand" message. This pattern searches **all** agent knowledge sources (no `knowledgeSources` restriction).
+**Use `SearchAndSummarizeContent`** for the vast majority of cases (what people call "generative answers"). Use `SearchKnowledgeSources` when you need raw, unsummarized results for precision scenarios (pair with `CreateSearchQuery` for better search accuracy). Use `AnswerQuestionWithAI` only when you explicitly want the model to respond without consulting knowledge sources.
 
 ## Knowledge Source References
 

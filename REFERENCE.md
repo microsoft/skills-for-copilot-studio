@@ -28,6 +28,8 @@ This file contains reference tables for Copilot Studio YAML authoring. For workf
 | `OnSelectIntent` | Multiple topics matched (disambiguation) |
 | `OnSignIn` | Authentication required |
 | `OnToolSelected` | Child agent invocation |
+| `OnKnowledgeRequested` | Custom knowledge source search triggered (YAML-only, no UI) |
+| `OnGeneratedResponse` | Intercept AI-generated response before sending |
 
 ## Action Types
 
@@ -49,6 +51,8 @@ This file contains reference tables for Copilot Studio YAML authoring. For workf
 | `CSATQuestion` | Customer satisfaction |
 | `LogCustomTelemetryEvent` | Logging |
 | `OAuthInput` | Sign-in prompt |
+| `SearchKnowledgeSources` | Search knowledge sources (returns raw results, no AI summary) |
+| `CreateSearchQuery` | AI-generated search query from user input |
 
 ## System Variables
 
@@ -64,6 +68,11 @@ This file contains reference tables for Copilot Studio YAML authoring. For workf
 | `System.SignInReason` | Why sign-in was triggered |
 | `System.Recognizer.IntentOptions` | Matched intents for disambiguation |
 | `System.Recognizer.SelectedIntent` | User's selected intent |
+| `System.SearchQuery` | AI-rewritten search query (available in `OnKnowledgeRequested`) |
+| `System.KeywordSearchQuery` | Keyword version of search query (available in `OnKnowledgeRequested`) |
+| `System.SearchResults` | Table to populate with custom search results — schema: Content, ContentLocation, Title (available in `OnKnowledgeRequested`) |
+| `System.ContinueResponse` | Set to `false` in `OnGeneratedResponse` to suppress auto-send |
+| `System.Response.FormattedText` | The AI-generated response text (available in `OnGeneratedResponse`) |
 
 ### Variable Scopes
 
@@ -231,6 +240,51 @@ Always follow `SearchAndSummarizeContent` with a `ConditionGroup` to check if an
 
 Use only when you want the model to respond from conversation history and general knowledge — no external data.
 
+### Dynamic Knowledge URLs
+
+Knowledge source URLs support `{VariableName}` placeholders for dynamic routing based on user context. For example:
+
+```yaml
+source:
+  kind: PublicSiteSearchSource
+  site: "https://docs.example.com/{Global.Region}/api"
+```
+
+Use global variables combined with Power Fx `LookUp()` to set region or context-based values, then reference them in knowledge source URLs.
+
+## Response Post-Processing Patterns
+
+### Citation Removal via OnGeneratedResponse
+
+Use the `OnGeneratedResponse` trigger to intercept AI responses and strip citation markers (`[1]`, `[2]`, etc.) before sending to the user.
+
+**Pattern: Suppress auto-send and clean up**
+
+```yaml
+kind: AdaptiveDialog
+beginDialog:
+  kind: OnGeneratedResponse
+  id: main
+  actions:
+    - kind: SetVariable
+      id: setVariable_<random>
+      variable: System.ContinueResponse
+      value: =false
+
+    - kind: SetVariable
+      id: setVariable_<random>
+      variable: Topic.CleanedText
+      value: "=Substitute(Substitute(Substitute(Substitute(Substitute(System.Response.FormattedText, \"[1]\", \"\"), \"[2]\", \"\"), \"[3]\", \"\"), \"[4]\", \"\"), \"[5]\", \"\")"
+
+    - kind: SendActivity
+      id: sendActivity_<random>
+      activity: "{Topic.CleanedText}"
+```
+
+This sets `System.ContinueResponse = false` to prevent the original response from being sent, then uses nested `Substitute()` calls to strip citation markers and sends the cleaned text manually.
+
+See also: the **Remove Citations** template in Available Templates.
+
 ## Available Templates
 
 | Template | File | Pattern |
@@ -240,6 +294,8 @@ Use only when you want the model to respond from conversation history and genera
 | Arithmetic | `templates/topics/arithmeticsum.topic.mcs.yml` | Inputs/outputs with computation |
 | Question + Branching | `templates/topics/question-topic.topic.mcs.yml` | Question with ConditionGroup |
 | Knowledge Search | `templates/topics/search-topic.topic.mcs.yml` | SearchAndSummarizeContent fallback |
+| Custom Knowledge Source | `templates/topics/custom-knowledge-source.topic.mcs.yml` | OnKnowledgeRequested with custom API (YAML-only) |
+| Remove Citations | `templates/topics/remove-citations.topic.mcs.yml` | OnGeneratedResponse citation stripping |
 | Authentication | `templates/topics/auth-topic.topic.mcs.yml` | OnSignIn with OAuthInput |
 | Error Handler | `templates/topics/error-handler.topic.mcs.yml` | OnError with telemetry |
 | Disambiguation | `templates/topics/disambiguation.topic.mcs.yml` | OnSelectIntent flow |

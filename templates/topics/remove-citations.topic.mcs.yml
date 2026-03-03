@@ -1,0 +1,24 @@
+# Name: Remove Citations
+# Template: Strip citation markers [1][2] etc. from AI-generated responses via OnGeneratedResponse
+# NOTE: Replace all _REPLACE IDs with unique random IDs before use
+kind: AdaptiveDialog
+beginDialog:
+  kind: OnGeneratedResponse
+  id: main
+  actions:
+    # Suppress the original AI response from being sent automatically
+    - kind: SetVariable
+      id: setVariable_REPLACE1
+      variable: System.ContinueResponse
+      value: =false
+
+    # Strip citation markers [1] through [5] using nested Substitute()
+    - kind: SetVariable
+      id: setVariable_REPLACE2
+      variable: init:Topic.CleanedText
+      value: "=Substitute(Substitute(Substitute(Substitute(Substitute(System.Response.FormattedText, \"[1]\", \"\"), \"[2]\", \"\"), \"[3]\", \"\"), \"[4]\", \"\"), \"[5]\", \"\")"
+
+    # Send the cleaned response
+    - kind: SendActivity
+      id: sendActivity_REPLACE3
+      activity: "{Topic.CleanedText}"
