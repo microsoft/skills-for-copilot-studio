@@ -21,16 +21,29 @@ Add a knowledge source to the agent. Supports **Public Website**, **SharePoint**
    - Name / description (optional)
 
 3. **Determine the source type** from the user's request:
-   - If the URL contains `sharepoint.com` → use `SharePointSearchSource`
+   - If the URL contains `sharepoint.com` → use `SharePointSearchSource` (but first normalize the URL — see below)
    - If the user wants to connect a **custom search API or database** → use `OnKnowledgeRequested` (see Custom API section below)
    - Otherwise → use `PublicSiteSearchSource`
 
-4. **Look up the knowledge source schema**:
+4. **If SharePoint: normalize the URL** before using it. Copilot Studio requires a direct folder path like:
+   `https://contoso.sharepoint.com/sites/MySite/Shared%20Documents/MyFolder`
+
+   Users often paste URLs in other formats. Handle them as follows:
+
+   | URL pattern | Example | Action |
+   |---|---|---|
+   | **Direct path** (`/sites/.../Shared%20Documents/...`) | `https://x.sharepoint.com/sites/Site/Shared%20Documents/Folder` | **Use as-is** — this is the correct format |
+   | **AllItems.aspx with `?id=` param** (`...AllItems.aspx?id=...`) | `https://x.sharepoint.com/.../AllItems.aspx?id=%2Fsites%2FSite%2FShared%20Documents%2FFolder&viewid=...` | **Extract and decode** the `id` query parameter. URL-decode it to get the path (e.g. `/sites/Site/Shared%20Documents/Folder`), then prepend the origin (`https://x.sharepoint.com`) to build the direct path. Drop all query parameters (`?id=`, `&viewid=`, etc.) |
+   | **Sharing link** (`/:f:/s/...` or `/:x:/s/...`) | `https://x.sharepoint.com/:f:/s/Site/EncodedToken?e=abc` | **Cannot convert** — these are opaque sharing tokens with no extractable folder path. Ask the user: *"That's a SharePoint sharing link — I can't extract the folder path from it. Could you navigate to the folder in SharePoint, copy the URL from the browser address bar, and paste it here?"* |
+
+   **Encoding rule:** Spaces in the final URL must be encoded as `%20` (e.g. `Shared%20Documents`, not `Shared Documents`).
+
+5. **Look up the knowledge source schema**:
    ```bash
    python scripts/schema-lookup.py resolve KnowledgeSourceConfiguration
    ```
 
-5. **Generate the knowledge source YAML**.
+6. **Generate the knowledge source YAML**.
 
    **Public Website:**
    ```yaml
@@ -52,9 +65,9 @@ Add a knowledge source to the agent. Supports **Public Website**, **SharePoint**
      site: https://contoso.sharepoint.com/sites/MySite/Shared%20Documents/MyFolder
    ```
 
-6. **Always include `# Name:` and a description comment** at the top. These are important for identifying the knowledge source.
+7. **Always include `# Name:` and a description comment** at the top. These are important for identifying the knowledge source.
 
-7. **Save** to `src/<agent-name>/knowledge/<descriptive-name>.knowledge.mcs.yml`
+8. **Save** to `src/<agent-name>/knowledge/<descriptive-name>.knowledge.mcs.yml`
 
 ## Custom API via OnKnowledgeRequested (YAML-only)
 
