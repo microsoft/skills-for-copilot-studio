@@ -57,8 +57,7 @@ The above ones are already used as examples with real parameter values, like "se
 - `/add-generative-answers` - Add generative answer nodes (use this instead of `/add-node` for SearchAndSummarizeContent / AnswerQuestionWithAI)
 - `/add-global-variable` - Add a global variable (persists across topics, optionally visible to AI orchestrator)
 - `/run-tests` - Run tests against a published agent, analyze failures, and propose YAML fixes
-- `/add-glossary` - Add a JIT glossary (loads customer acronyms on first message, stores in Global.Glossary, improves knowledge retrieval)
-- `/add-user-context` - Provision M365 user profile fields (country, department, etc.) JIT into global variables for personalized, context-aware answers
+- `/best-practices` - Best practices for JIT glossary (customer acronyms), JIT user context (M365 profile), and shared OnActivity initialization patterns
 
 ## Agent Discovery (Important)
 

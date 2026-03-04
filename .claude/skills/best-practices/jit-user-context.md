@@ -1,9 +1,4 @@
----
-name: add-user-context
-description: "Provision user profile information (country, department, display name, etc.) from Microsoft 365 into a global variable at the start of each conversation using an OnActivity JIT topic. USE FOR: user country, user profile, user department, M365 profile, user context, GetMyProfile, JIT user info, personalized knowledge, country-aware answers. DO NOT USE FOR: general knowledge sources (use add-knowledge), glossary (use add-glossary)."
----
-
-# Add JIT User Context from M365 Profile
+# JIT User Context Best Practice
 
 This pattern loads the current user's Microsoft 365 profile (country, department, display name, etc.) into global variables the first time each conversation receives a user message. The orchestrator uses these variables to personalize answers — for example, returning the Work From Home policy for the user's specific country without asking them to specify it.
 
@@ -33,7 +28,7 @@ Agent instructions reference {Global.UserCountry} ← single injection, context-
 Before authoring the YAML:
 1. **The M365 Users connector must be configured in Copilot Studio**. Go to the agent's Settings → Connections and add a connection for "Microsoft 365 Users".
 2. **Verify the connection reference name**. Read `src/<AGENT-NAME>/connectionreferences.mcs.yml` and note the exact `logicalName` for the M365 Users connector — you will use this as the `connectionReference` value. It is typically `shared_office365users` but may differ.
-3. The user's M365 profile must have the `country` field populated in Azure AD. If it is blank, the pattern falls back to `Global.UserCountry = ""` — see the fallback handling in Step 3.
+3. The user's M365 profile must have the `country` field populated in Azure AD. If it is blank, the pattern falls back to `Global.UserCountry = ""` — see the fallback handling in Step 2.
 
 ## Step 1 — Create the Global Variable
 
@@ -57,17 +52,9 @@ defaultValue: DEFAULT
 
 ## Step 2 — Create the Provisioning Topic
 
-> **If you are also loading a glossary via the `add-glossary` pattern, do not create a separate topic. Merge both into a single `conversation-init` topic — see below.**
+> **If you are also loading a glossary**, use the combined template at `templates/topics/conversation-init.topic.mcs.yml` instead. It merges both patterns into a single OnActivity topic with one `=IsBlank(Global.UserCountry)` condition.
 
-### Combined topic (user context + glossary)
-
-When both patterns are active, use a single `OnActivity` topic. Use the template at `templates/topics/conversation-init.topic.mcs.yml` and replace all `REPLACE` IDs and `<AGENT-SCHEMA-NAME>` placeholders.
-
-The single condition `=IsBlank(Global.UserCountry)` is sufficient — both variables are always provisioned together, so checking one is enough.
-
-### Standalone topic (user context only)
-
-If you are only loading user context without a glossary, create `src/<AGENT-NAME>/topics/conversation-init.topic.mcs.yml`:
+Create `src/<AGENT-NAME>/topics/conversation-init.topic.mcs.yml`:
 
 ```yaml
 kind: AdaptiveDialog
@@ -94,18 +81,18 @@ beginDialog:
 ```
 
 **Replace these placeholders:**
-- `REPLACE1`, `REPLACE2` — generate unique IDs using the ID Generation rules in `SKILL.md`
+- `REPLACE1`, `REPLACE2` — generate unique IDs (6-8 random alphanumeric characters)
 - `shared_office365users` — replace with the exact `logicalName` from `connectionreferences.mcs.yml`
 
 **How it works:**
-- `type: Message` — triggers only on actual user messages, not system events; see "Why `OnActivity (type: Message)`" above
+- `type: Message` — triggers only on actual user messages, not system events
 - `condition: =IsBlank(Global.UserCountry)` — JIT: loads once per conversation; subsequent messages skip this topic
 - `InvokeConnectorAction` calls the M365 Users connector's "Get my profile (V2)" operation, which returns the Azure AD profile of the currently authenticated user
 - `SingleVariableOutputBinding` captures the full profile response into `Topic.M365Profile`
 - `SetVariable` extracts `.country` from the profile object; uses `"Unknown"` as a fallback if the field is not populated in Azure AD
 - **Authentication required**: this connector uses the signed-in user's identity. The agent must have authentication configured (`OnSignIn` / OAuthInput) — if the user is not authenticated, the connector call will fail
 
-> **If combining with a glossary:** use the combined template and a single `condition: =IsBlank(Global.UserCountry)`. Both variables are loaded in one topic pass. — Update Agent Instructions
+## Step 3 — Update Agent Instructions
 
 In `src/<AGENT-NAME>/agents/agent.mcs.yml` or `settings.mcs.yml`:
 

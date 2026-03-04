@@ -1,9 +1,4 @@
----
-name: add-glossary
-description: "Add a JIT (Just-In-Time) glossary to a Copilot Studio agent so it automatically loads customer-specific acronyms at the start of each conversation. USE FOR: add glossary, customer acronyms, terminology, abbreviations, JIT glossary, OnActivity initialize, load glossary on start. DO NOT USE FOR: general knowledge sources (use add-knowledge), SharePoint or website indexing."
----
-
-# Add a JIT Glossary to a Copilot Studio Agent
+# JIT Glossary Best Practice
 
 A **JIT glossary** loads a list of customer-specific acronyms into a global variable the first time each conversation receives a user message. The orchestrator then uses that variable to interpret acronyms correctly before searching knowledge sources or generating answers — improving retrieval quality without adding noise to automatic searches.
 
@@ -22,18 +17,18 @@ OnActivity topic (type: Message)               ← fires on first user message
 Agent instructions reference {Global.Glossary} ← orchestrator uses it for context
 ```
 
+## Why `OnActivity (type: Message)` and not `OnConversationStart`
+
+- **`OnConversationStart` is not channel-universal.** It is not fired by M365 Copilot or other channel-embedded surfaces — any initialization placed there silently does not run for those users.
+- **`type: Message` confirms real usage intent.** There is no value in loading a glossary for a session that never produces a user message. Deferring until the first message avoids wasted connector calls and token consumption.
+- The `condition: =IsBlank(Global.Glossary)` guard ensures the topic runs exactly once per conversation regardless of how many messages follow.
+
 ## When to Use This Pattern
 
 - The customer uses internal acronyms that are not in public knowledge
 - You want to improve the quality of knowledge searches by helping the orchestrator understand user intent
 - The glossary content is stable and load-once per session is sufficient (no per-message refresh needed)
 - You do **not** want the glossary returned directly as an answer — it is context-only
-
-## Why `OnActivity (type: Message)` and not `OnConversationStart`
-
-- **`OnConversationStart` is not channel-universal.** It is not fired by M365 Copilot or other channel-embedded surfaces — any initialization placed there silently does not run for those users.
-- **`type: Message` confirms real usage intent.** There is no value in loading a glossary (or profile data) for a session that never produces a user message. Deferring until the first message avoids wasted connector calls and token consumption.
-- The `condition: =IsBlank(Global.Glossary)` guard ensures the topic runs exactly once per conversation regardless of how many messages follow.
 
 ## Step 1 — Prepare the CSV File
 
@@ -96,17 +91,9 @@ Or use the `add-global-variable` skill to generate this file.
 
 ## Step 4 — Create the Provisioning Topic
 
-> **If you are also loading user context (country, department) via the `add-user-context` pattern, do not create a separate topic. Merge both into a single `conversation-init` topic — see below.**
+> **If you are also loading user context**, use the combined template at `templates/topics/conversation-init.topic.mcs.yml` instead. It merges both patterns into a single OnActivity topic with one `=IsBlank(Global.UserCountry)` condition.
 
-### Combined topic (glossary + user context)
-
-When both patterns are active, use a single `OnActivity` topic to provision everything in one pass. Use the template at `templates/topics/conversation-init.topic.mcs.yml` and replace all `REPLACE` IDs and `<AGENT-SCHEMA-NAME>` placeholders.
-
-The single condition `=IsBlank(Global.UserCountry)` is sufficient — both variables are always provisioned together, so checking one is enough.
-
-### Standalone topic (glossary only)
-
-If you are only using the glossary pattern without user context, create `src/<AGENT-NAME>/topics/conversation-init.topic.mcs.yml`:
+Create `src/<AGENT-NAME>/topics/conversation-init.topic.mcs.yml`:
 
 ```yaml
 kind: AdaptiveDialog
@@ -135,11 +122,11 @@ beginDialog:
 ```
 
 **Replace these placeholders:**
-- `REPLACE1`, `REPLACE2` — generate unique IDs using the ID Generation rules in `SKILL.md`
+- `REPLACE1`, `REPLACE2` — generate unique IDs (6-8 random alphanumeric characters)
 - `<AGENT-SCHEMA-NAME>` — the schema name of your agent (e.g. `cr123_myAgent`)
 - The knowledge source reference `glossary` — must match the filename of the `.mcs.yml` file created in Step 2 (without the `.knowledge.mcs.yml` suffix)
 
-> **If combining with user context:** use the combined template and a single condition `=IsBlank(Global.UserCountry)`. Both variables are loaded in one topic pass. — Update Agent Instructions
+## Step 5 — Update Agent Instructions
 
 In `src/<AGENT-NAME>/agents/agent.mcs.yml` or `settings.mcs.yml`, add a glossary usage section to the agent's instructions:
 
