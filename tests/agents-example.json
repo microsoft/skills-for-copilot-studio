@@ -1,0 +1,10 @@
+{
+  "YOUR_AGENT_DISPLAY_NAME": {
+    "environmentId": "YOUR_ENVIRONMENT_ID",
+    "tenantId": "YOUR_TENANT_ID",
+    "agentIdentifier": "YOUR_AGENT_SCHEMA_NAME",
+    "clientId": "YOUR_CLIENT_ID",
+    "dataverseEndpoint": "https://YOUR_ORG.crm.dynamics.com/",
+    "localPath": "src/YOUR_AGENT_FOLDER"
+  }
+}

@@ -7,9 +7,9 @@ src/
 # Agent tests
 tests/test-results*
 tests/settings.json
+tests/agents.json
 tests/.token_cache.json
 tests/node_modules/
-tests/.token_cache.json
 tests/package-lock.json
 
 # Python cache

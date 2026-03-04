@@ -13,8 +13,11 @@ project-root/
 ├── REFERENCE.md                            # Trigger/action/variable reference tables
 ├── reference/bot.schema.yaml-authoring.json  # Schema (DO NOT LOAD THIS - it's too long. You'll have helpers to look things inside this file)
 ├── templates/                              # YAML templates for common patterns
-├── tests/                                  # Test runner for published agents
+├── tests/                                  # Test runner and chat scripts for published agents
 │   ├── run-tests.js                        # Test execution script (Dataverse API)
+│   ├── chat-with-agent.py                  # Direct chat with agent (CopilotStudio client)
+│   ├── requirements.txt                    # Python dependencies for chat-with-agent
+│   ├── agents.json                         # Local agent registry (auto-discovered or manual)
 │   ├── settings.json                       # Test configuration (user fills in)
 │   └── test-results-*.csv                  # Downloaded test results
 └── src/AGENT-NAME/                         # YAML files representing the agent
@@ -58,11 +61,50 @@ The above ones are already used as examples with real parameter values, like "se
 - `/add-generative-answers` - Add generative answer nodes (use this instead of `/add-node` for SearchAndSummarizeContent / AnswerQuestionWithAI)
 - `/add-global-variable` - Add a global variable (persists across topics, optionally visible to AI orchestrator)
 - `/run-tests` - Run tests against a published agent, analyze failures, and propose YAML fixes
+- `/chat-with-agent` - Send a message to a published agent and get its full response (point-testing)
 - `/best-practices` - Best practices for JIT glossary (customer acronyms), JIT user context (M365 profile), and shared OnActivity initialization patterns
 
 ## Agent Discovery (Important)
 
 The agent name is dynamic — users clone their own agent. **NEVER hardcode an agent name or path.** Always auto-discover via `Glob: src/**/agent.mcs.yml`. If multiple agents found, ask which one.
+
+## Agent Registry (Shared Convention)
+
+When a skill needs to connect to a published agent (e.g., `/chat-with-agent`, `/run-tests`), it must resolve agent connection metadata. Use `tests/agents.json` as the shared local registry.
+
+**File**: `tests/agents.json` (gitignored — contains user-specific environment data)
+
+**Format** — keyed by agent display name:
+```json
+{
+  "Agent 7": {
+    "environmentId": "6cc0c98e-...",
+    "tenantId": "8a235459-...",
+    "agentIdentifier": "copilots_header_9b50c",
+    "clientId": "user-provided-app-registration-id",
+    "dataverseEndpoint": "https://org5d9d4b6b.crm.dynamics.com/",
+    "localPath": "src/Agent 7"
+  }
+}
+```
+
+**Lookup convention** — when a skill needs connection info, follow these steps in order:
+
+1. **Check `tests/agents.json`** — if it exists and has a complete entry for the target agent, use it.
+2. **Auto-discover from VS Code extension clones** — glob for `**/.mcs/conn.json` (covers both `src/` subdirectories and the project root if Claude was initiated directly in a cloned agent folder). For each match:
+   - Read `.mcs/conn.json` for `EnvironmentId`, `AccountInfo.TenantId`, and `DataverseEndpoint`
+   - Read the sibling `settings.mcs.yml` (one level up from `.mcs/`) for `schemaName` (this is the `agentIdentifier`)
+   - Read the sibling `agent.mcs.yml` for the display name
+   - `localPath` is the agent directory relative to the project root
+3. **If no cloned agent found**, ask the user for `environmentId`, `agentIdentifier`, and `tenantId` manually.
+4. **`clientId` is always user-provided** — it's never in `.mcs/conn.json`. If missing, ask the user. The app registration must have `CopilotStudio.Copilots.Invoke` API permission and redirect URI `http://localhost`.
+5. **If multiple agents found**, ask the user which one to use.
+6. **Always persist** the resolved entry to `tests/agents.json` so the lookup only happens once.
+
+**Rules**:
+- Skills should read from `tests/agents.json` first — auto-discovery is a fallback, not the default path.
+- When writing to the registry, preserve all existing entries (other agents).
+- The `--agent` flag on scripts (e.g., `python tests/chat-with-agent.py --agent "Agent 7"`) selects which registry entry to use. If omitted and only one agent exists, use it automatically.
 
 ## Generative Orchestration (Key Rule)
 
