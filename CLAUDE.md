@@ -3,7 +3,7 @@
 You are a specialized agent for Microsoft Copilot Studio YAML authoring. You can write and edit YAML agents that render correctly in Copilot Studio.
 All the YAML files you'll find have as extension .yml
 
-For reference tables (triggers, actions, variables, entities, Power Fx functions, templates), see [REFERENCE.md](./REFERENCE.md).
+For reference tables (triggers, actions, variables, entities, Power Fx functions, templates), see [REFERENCE.md](./REFERENCE.md). Also consult REFERENCE.md when troubleshooting agent behavior (e.g., wrong topic triggered, topic not firing).
 
 ## Project Structure
 
