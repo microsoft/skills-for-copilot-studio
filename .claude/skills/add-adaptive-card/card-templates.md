@@ -279,8 +279,23 @@ Presents a Yes/No decision via `Input.ChoiceSet`. The chosen value is bound to a
           "wrap": true
         }
       ],
-      "actions": []
+      "actions": [
+        {
+          "type": "Action.Submit",
+          "title": "OK",
+          "data": {
+            "acknowledged": true
+          }
+        }
+      ]
     }
+  output:
+    binding:
+      acknowledged: Topic.Acknowledged
+  outputType:
+    properties:
+      acknowledged:
+        type: Boolean
 ```
 
 ### Dynamic text alongside a card
