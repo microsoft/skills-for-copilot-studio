@@ -10,7 +10,7 @@ Send a single utterance to a published Copilot Studio agent and display its full
 
 ## Prerequisites
 
-1. The user must have **pushed and published** their agent to Copilot Studio (via the VS Code Extension) before this skill can reach it. Claude and other AI assistants cannot publish changes to remote — the user must do this step manually.
+1. The agent must be **published** (not just pushed). Pushing with the VS Code Extension creates a draft — drafts are only testable in the Copilot Studio UI Test tab. This skill can only reach **published** content. The user must publish in the Copilot Studio UI at [copilotstudio.microsoft.com](https://copilotstudio.microsoft.com) after pushing.
 
 2. An **Azure App Registration** configured as follows:
    - **Platform**: Public client / Native (Mobile and desktop applications) — NOT SPA

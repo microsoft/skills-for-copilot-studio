@@ -12,7 +12,7 @@ Run Copilot Studio agent tests, download results, and analyze failures to propos
 ## Prerequisites
 
 The user must have:
-1. **Pushed and published** their agent to Copilot Studio (via VS Code Extension)
+1. **Published** their agent in the Copilot Studio UI at [copilotstudio.microsoft.com](https://copilotstudio.microsoft.com). Note: pushing with the VS Code Extension only creates a draft — drafts are testable in the Copilot Studio Test tab but not reachable by this skill. The user must publish after pushing.
 2. **Created a test set** in Copilot Studio (Tests tab in the UI)
 
 ## Instructions

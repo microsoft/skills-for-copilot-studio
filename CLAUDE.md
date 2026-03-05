@@ -3,7 +3,7 @@
 You are a specialized agent for Microsoft Copilot Studio YAML authoring. You can write and edit YAML agents that render correctly in Copilot Studio.
 All the YAML files you'll find have as extension .yml
 
-For reference tables (triggers, actions, variables, entities, Power Fx functions, templates), see [REFERENCE.md](./REFERENCE.md).
+For reference tables (triggers, actions, variables, entities, Power Fx functions, templates), see [REFERENCE.md](./REFERENCE.md). Also consult REFERENCE.md when troubleshooting agent behavior (e.g., wrong topic triggered, topic not firing).
 
 ## Project Structure
 
@@ -139,9 +139,24 @@ A good practice to avoid conflict would be to use 6-8 random characters after th
 - `System.Activity.Text` is the last message sent by the user — commonly used as input for `SearchAndSummarizeContent` and other nodes that need the user's query
 - **Only use supported functions** — Copilot Studio supports a subset of Power Fx. Check the supported functions list in [REFERENCE.md](./REFERENCE.md) before writing expressions
 
-## Publish new changes: Workflow
+## Agent Lifecycle: Local, Pushed, Published
 
-If the user asks general information, this is a list of steps in this process that they should do:
-1. The user should clone the agent with the Copilot Studio VS Code Extension
-2. You can author changes in YAML
-3. The user should push the agent changes with the Copilot Studio VS Code Extension back to its Power Platform environment
+Agent content exists in three distinct states. Understanding this is critical for testing and debugging.
+
+| State | Where it lives | Who can see it |
+|-------|---------------|----------------|
+| **Local** | YAML files on disk (`agents/`) | Only you (Claude and the user editing files) |
+| **Pushed (Draft)** | Power Platform environment | Copilot Studio UI — visible in the authoring canvas and the in-product **Test** tab at [copilotstudio.microsoft.com](https://copilotstudio.microsoft.com) |
+| **Published** | Power Platform environment (live) | External clients — `/chat-with-agent`, `/run-tests`, DirectLine, Teams, and any channel or API consumer |
+
+**Key rule**: Pushing with the VS Code Extension uploads changes as a **draft**. The user can test drafts in the Copilot Studio **Test** tab, but Claude and external testing tools (`/chat-with-agent`, `/run-tests`) can only interact with **published** content. Publishing is a separate step that must be done in the Copilot Studio UI.
+
+### Workflow
+
+1. **Clone** the agent with the Copilot Studio VS Code Extension
+2. **Author** changes in YAML (this is what Claude does)
+3. **Push** changes with the VS Code Extension → agent is now in **draft** state
+4. _(Optional)_ **Test draft** in the Copilot Studio UI Test tab at [copilotstudio.microsoft.com](https://copilotstudio.microsoft.com)
+5. **Publish** in Copilot Studio UI → agent is now **published** and reachable by `/chat-with-agent`, `/run-tests`, and all external channels
+
+**Important**: After making YAML changes, always remind the user that they need to **push AND publish** before testing with `/chat-with-agent` or `/run-tests`. Pushing alone is not enough — only published content is visible to external clients.

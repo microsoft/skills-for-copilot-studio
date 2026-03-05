@@ -17,6 +17,13 @@ This file contains reference tables for Copilot Studio YAML authoring. For workf
 
 ## Trigger Types
 
+Topics with `OnRecognizedIntent` have two routing mechanisms — which one matters depends on the orchestration mode:
+
+- **`modelDescription`** — used by **generative orchestration** (`GenerativeActionsEnabled: true`). The AI orchestrator reads this to decide routing. Primary mechanism for generative agents.
+- **Trigger phrases** (`triggerQueries`) — used by **classic orchestration**. Pattern-matched against the user's utterance. Secondary hints when generative orchestration is enabled.
+
+System triggers (`OnConversationStart`, `OnUnknownIntent`, `OnError`, etc.) fire automatically and don't use either mechanism.
+
 | Kind | Purpose |
 |------|---------|
 | `OnRecognizedIntent` | Trigger phrases matched |
