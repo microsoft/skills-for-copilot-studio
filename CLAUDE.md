@@ -49,7 +49,7 @@ The above ones are already used as examples with real parameter values, like "se
 
 - `/lookup-schema` - Query schema definitions
 - `/new-topic` - Create topic from template or schema
-- `/add-adaptive-card` - Generate and insert an Adaptive Card (info, hero, form, list, confirmation, status) into a topic's SendActivity node
+- `/add-adaptive-card` - Generate and insert an Adaptive Card (info, hero, form, list, confirmation, status) via an AdaptiveCardPrompt node in the topic
 - `/add-node` - Add node to existing topic (not for generative answers)
 - `/add-action` - Add a connector-based action from the verified catalog (Teams, Outlook, etc.)
 - `/validate` - Validate YAML structure
