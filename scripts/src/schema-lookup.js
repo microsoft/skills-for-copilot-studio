@@ -493,13 +493,42 @@ function validateYamlFile(filepath, definitions) {
   if (failures > 0) process.exit(1);
 }
 
+// --- Adaptive Cards schema ---
+
+function getAdaptiveCardSchemaPath() {
+  const scriptDir = __dirname;
+  let projectRoot = path.resolve(scriptDir, "..");
+  let schemaPath = path.join(projectRoot, "reference", "adaptive-card.schema.json");
+
+  if (!fs.existsSync(schemaPath)) {
+    projectRoot = path.resolve(scriptDir, "..", "..");
+    schemaPath = path.join(projectRoot, "reference", "adaptive-card.schema.json");
+  }
+
+  if (!fs.existsSync(schemaPath)) {
+    console.error(`Error: Adaptive Card schema not found at ${schemaPath}`);
+    process.exit(1);
+  }
+
+  return schemaPath;
+}
+
+function loadAdaptiveCardSchema() {
+  const schemaPath = getAdaptiveCardSchemaPath();
+  return JSON.parse(fs.readFileSync(schemaPath, "utf-8"));
+}
+
+function getAdaptiveCardDefinitions(schema) {
+  return schema.definitions || {};
+}
+
 // --- Help ---
 
 function printHelp() {
   console.log(`
 Copilot Studio YAML Schema Lookup Tool
 
-Usage:
+Copilot Studio schema:
     node schema-lookup.js lookup <definition-name>
     node schema-lookup.js search <keyword>
     node schema-lookup.js list
@@ -507,6 +536,13 @@ Usage:
     node schema-lookup.js kinds
     node schema-lookup.js summary <definition-name>
     node schema-lookup.js validate <path-to-yaml-file>
+
+Adaptive Cards schema:
+    node schema-lookup.js ac-lookup <element-name>     (e.g., TextBlock, Input.Text)
+    node schema-lookup.js ac-search <keyword>           (e.g., input, action)
+    node schema-lookup.js ac-list
+    node schema-lookup.js ac-resolve <element-name>
+    node schema-lookup.js ac-summary <element-name>
 `);
 }
 
@@ -617,6 +653,85 @@ function main() {
         process.exit(1);
       }
       validateYamlFile(args[1], definitions);
+      break;
+    }
+
+    case "ac-lookup": {
+      if (args.length < 2) {
+        console.error("Usage: node schema-lookup.js ac-lookup <element-name>");
+        process.exit(1);
+      }
+      const acSchema = loadAdaptiveCardSchema();
+      const acDefs = getAdaptiveCardDefinitions(acSchema);
+      const name = args[1];
+      const definition = lookupDefinition(name, acDefs);
+      if (definition) {
+        console.log(formatDefinition(name, definition, false));
+      } else {
+        const similar = searchDefinitions(name, acDefs).slice(0, 10);
+        console.log(`Definition '${name}' not found in Adaptive Cards schema.`);
+        if (similar.length > 0) {
+          console.log("Did you mean one of these?");
+          similar.forEach((s) => console.log(`  - ${s}`));
+        }
+      }
+      break;
+    }
+
+    case "ac-search": {
+      if (args.length < 2) {
+        console.error("Usage: node schema-lookup.js ac-search <keyword>");
+        process.exit(1);
+      }
+      const acSchema = loadAdaptiveCardSchema();
+      const acDefs = getAdaptiveCardDefinitions(acSchema);
+      const keyword = args[1];
+      const matches = searchDefinitions(keyword, acDefs);
+      if (matches.length > 0) {
+        console.log(`Found ${matches.length} Adaptive Card definitions matching '${keyword}':`);
+        matches.forEach((m) => console.log(`  - ${m}`));
+      } else {
+        console.log(`No Adaptive Card definitions found matching '${keyword}'`);
+      }
+      break;
+    }
+
+    case "ac-list": {
+      const acSchema = loadAdaptiveCardSchema();
+      const acDefs = getAdaptiveCardDefinitions(acSchema);
+      const allDefs = Object.keys(acDefs).sort();
+      console.log(`Adaptive Card definitions (${allDefs.length} total):`);
+      allDefs.forEach((name) => console.log(`  - ${name}`));
+      break;
+    }
+
+    case "ac-resolve": {
+      if (args.length < 2) {
+        console.error("Usage: node schema-lookup.js ac-resolve <element-name>");
+        process.exit(1);
+      }
+      const acSchema = loadAdaptiveCardSchema();
+      const acDefs = getAdaptiveCardDefinitions(acSchema);
+      const name = args[1];
+      const resolved = resolveDefinition(name, acDefs);
+      console.log(JSON.stringify({ [name]: resolved }, null, 2));
+      break;
+    }
+
+    case "ac-summary": {
+      if (args.length < 2) {
+        console.error("Usage: node schema-lookup.js ac-summary <element-name>");
+        process.exit(1);
+      }
+      const acSchema = loadAdaptiveCardSchema();
+      const acDefs = getAdaptiveCardDefinitions(acSchema);
+      const name = args[1];
+      const definition = lookupDefinition(name, acDefs);
+      if (definition) {
+        console.log(formatDefinition(name, definition, true));
+      } else {
+        console.log(`Definition '${name}' not found in Adaptive Cards schema.`);
+      }
       break;
     }
 
