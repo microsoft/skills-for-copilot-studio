@@ -69,13 +69,7 @@ cd my-copilot-project
 
 Use the **Copilot Studio VS Code Extension** to clone your agent into your project directory. The cloned agent will have YAML files for topics, actions, knowledge, and settings.
 
-**Checkpoint 2:** Verify the clone was successful:
-
-```bash
-find . -name "*.mcs.yml" | head -10
-```
-
-You should see YAML files for your agent's topics, actions, and configuration.
+**Checkpoint 2:** After cloning, you should see an `agent.mcs.yml`, `settings.mcs.yml`, and directories like `topics/`, `actions/`, and `knowledge/` in your project.
 
 ---
 
