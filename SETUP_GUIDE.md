@@ -44,13 +44,7 @@ claude plugin install /path/to/skills-for-copilot-studio --scope user
 
 ### Step 1.3: Verify Installation
 
-Start Claude Code (or your preferred tool) and check that the plugin is loaded:
-
-```
-What copilot-studio skills are available?
-```
-
-The agent should list the available skills prefixed with `copilot-studio:`.
+Start Claude Code (or your preferred tool) and type `/` in the input. You should see `copilot-studio:author`, `copilot-studio:test`, and `copilot-studio:troubleshoot` in the autocomplete menu.
 
 **Checkpoint 1:** All skills should be listed and the schema lookup script should be accessible.
 
