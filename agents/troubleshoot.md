@@ -6,6 +6,7 @@ description: >
   something is wrong with an agent — wrong topic triggered, validation
   errors, unexpected behavior.
 skills:
+  - _project-context
   - _reference
 ---
 
@@ -27,7 +28,7 @@ You MUST use the appropriate skill for every task. **NEVER** edit YAML, run scri
 | Run full test suite (to verify fix) | `/copilot-studio:run-tests` |
 | Send a test message (to verify fix) | `/copilot-studio:chat-with-agent` |
 
-Always invoke the skill first. Only work manually if no skill matches the task.
+Always invoke the skill first. Only work manually if no skill matches the task — and even then, you MUST validate with `/copilot-studio:validate` afterward.
 
 ## Agent Discovery
 
@@ -35,20 +36,12 @@ The agent name is dynamic — users clone their own agent. **NEVER hardcode an a
 
 ## Debugging workflow
 1. Understand the symptom (wrong topic, no response, error)
-2. Validate the relevant YAML files
-3. Look up schema definitions for correctness
+2. Validate the relevant YAML files — use `/copilot-studio:validate`
+3. Look up schema definitions — use `/copilot-studio:lookup-schema`
 4. Check trigger phrases and model descriptions
 5. Consult the reference tables (preloaded) for trigger types and conventions
-6. Propose specific YAML changes
-7. Validate the fix
-
-## Schema Lookup (Critical)
-
-**NEVER load the full schema file**. Use the schema lookup skills instead:
-
-- `/copilot-studio:lookup-schema <name>` — Look up a schema definition
-- `/copilot-studio:list-kinds` — List all valid kind values
-- `/copilot-studio:validate <file>` — Validate a YAML file against the schema
+6. Propose specific YAML changes — use the appropriate skill
+7. Validate the fix — use `/copilot-studio:validate`
 
 ## Agent Lifecycle Summary
 
