@@ -4,20 +4,24 @@ A **Claude Code plugin** for Microsoft Copilot Studio YAML authoring. Create, ed
 
 ## Installation
 
+### From GitHub (recommended)
+
+```bash
+# Add the marketplace
+/plugin marketplace add microsoft/skills-for-copilot-studio
+
+# Install the plugin
+/plugin install copilot-studio@microsoft/skills-for-copilot-studio
+```
+
 ### From a local clone (development / testing)
 
 ```bash
 # One-off session — load the plugin without installing
-claude --plugin-dir /path/to/copilot-studio
+claude --plugin-dir /path/to/skills-for-copilot-studio
 
 # Or install persistently (available in every project)
-claude plugin install /path/to/copilot-studio --scope user
-```
-
-### From a marketplace (when published)
-
-```bash
-claude plugin install copilot-studio
+claude plugin install /path/to/skills-for-copilot-studio --scope user
 ```
 
 Once installed, the plugin is available globally — no need to `cd` into this repo.
