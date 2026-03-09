@@ -1,5 +1,5 @@
 ---
-description: Run a batch test suite against a published Copilot Studio agent using the Dataverse API. Use when the user wants to run their full test set (with expected responses and pass/fail scoring), not for sending a single test message — use /chat-with-agent for that instead.
+description: Run or analyze tests for a published Copilot Studio agent. Two modes — run a batch test suite via the Copilot Studio Kit (Dataverse API), or import and analyze results from Copilot Studio's built-in evaluations. Not for sending a single test message — use /chat-with-agent for that instead.
 allowed-tools: Bash(node *run-tests.js *), Bash(npm install *), Read, Write, Glob, Grep, Edit
 context: fork
 agent: test
@@ -7,19 +7,34 @@ agent: test
 
 # Run Tests
 
-Run a Copilot Studio batch test suite via the Dataverse API, download results as CSV, analyze failures, and propose YAML fixes.
+Test a published Copilot Studio agent and analyze results. Supports two modes:
 
-This skill uses the [Power CAT Copilot Studio Kit](https://github.com/microsoft/Power-CAT-Copilot-Studio-Kit) — an open-source solution by the Power CAT team that adds batch testing capabilities to Copilot Studio via custom Dataverse tables (`cat_copilottestruns`, `cat_copilottestresults`, etc.). The Kit must be installed in the target environment before this skill can be used.
+| Mode | How it works | Requires |
+|------|-------------|----------|
+| **Copilot Studio Kit** | Runs a batch test suite via the Dataverse API using the [Power CAT Copilot Studio Kit](https://github.com/microsoft/Power-CAT-Copilot-Studio-Kit) (open-source, by the Power CAT team). Produces pass/fail results with latencies. | Kit installed in the environment + Azure App Registration with Dataverse permissions |
+| **Analyze evaluations** | User runs evaluations in the Copilot Studio UI, exports results as CSV, and shares the file for analysis. No additional setup required. | Agent published + evaluations run in Copilot Studio UI |
 
-## Prerequisites
+## Phase 0: Choose Mode
+
+If the user's intent is clear, skip straight to the right phase:
+- User says "run tests", "run the test suite" → **Phase 1A** (Kit)
+- User shares a CSV file, says "analyze these results", "here are my eval results" → **Phase 1B** (Analyze evaluations)
+
+If ambiguous (e.g., "test the agent"), **ask the user** which mode they want.
+
+---
+
+## Mode A: Copilot Studio Kit
+
+### Prerequisites
 
 The user must have:
 1. The **[Copilot Studio Kit](https://github.com/microsoft/Power-CAT-Copilot-Studio-Kit)** installed in their Power Platform environment
-2. **Published** their agent in the Copilot Studio UI at [copilotstudio.microsoft.com](https://copilotstudio.microsoft.com). Note: pushing with the VS Code Extension only creates a draft — drafts are testable in the Copilot Studio Test tab but not reachable by this skill. The user must publish after pushing.
+2. **Published** their agent in the Copilot Studio UI
 3. **Created a test set** in the Copilot Studio Kit
 4. An **Azure App Registration** with Dataverse permissions
 
-## Phase 1: Configure Settings
+### Phase 1A: Configure Settings
 
 1. **Read `tests/settings.json`** (relative to the user's project CWD) and check for missing or placeholder values (containing `YOUR_`).
 
@@ -53,11 +68,9 @@ The user must have:
    }
    ```
 
-5. If all values are already configured and valid, proceed to Phase 2.
+5. If all values are already configured and valid, proceed to Phase 2A.
 
----
-
-### Phase 2: Run Tests
+### Phase 2A: Run Tests
 
 1. **Ensure `tests/package.json` exists** in the user's project. If not, copy it:
    ```bash
@@ -98,11 +111,9 @@ The user must have:
 
 7. **Read the final output** to get the success rate and CSV filename.
 
-8. Proceed to **Phase 3**.
+8. Proceed to **Phase 3A**.
 
----
-
-### Phase 3: Analyze Results
+### Phase 3A: Analyze Kit Results
 
 1. **Get the results**: `Glob: tests/test-results-*.csv` — read the most recent CSV file (newest by modification time).
 
@@ -118,15 +129,55 @@ The user must have:
    | Result Reason | Why the test passed or failed |
 
 3. **Focus on failed tests** (Result = `Failed` or `Error`). For each failure, analyze:
-   - **Test Type = Topic Match**: The wrong topic was triggered, or no topic matched. Check trigger phrases and model descriptions in the relevant topics.
-   - **Test Type = Response Match**: The response didn't match the expected response. Check the topic's `SendActivity` messages, instructions, or generative answer configuration.
-   - **Test Type = Generative Answers**: The generative answer was incorrect or missing. Check knowledge sources, `SearchAndSummarizeContent` configuration, and agent instructions.
-   - **Test Type = Plan Validation**: The orchestrator's plan was wrong. Check topic descriptions, model descriptions, and agent-level instructions.
-   - **Test Type = Multi-turn**: A multi-turn conversation failed at some step. Check topic flow, variable handling, and conditions.
+   - **Test Type = Topic Match**: The wrong topic was triggered, or no topic matched. Check trigger phrases and model descriptions.
+   - **Test Type = Response Match**: The response didn't match expected. Check `SendActivity` messages, instructions, or generative answer config.
+   - **Test Type = Generative Answers**: The generative answer was incorrect or missing. Check knowledge sources, `SearchAndSummarizeContent`, and agent instructions.
+   - **Test Type = Plan Validation**: The orchestrator's plan was wrong. Check topic descriptions and agent-level instructions.
+   - **Test Type = Multi-turn**: A multi-turn conversation failed. Check topic flow, variable handling, and conditions.
+
+4. Proceed to **Phase 4** (Propose Fixes).
 
 ---
 
-### Phase 4: Propose Fixes
+## Mode B: Analyze Copilot Studio Evaluations
+
+### Phase 1B: Get Results
+
+1. **Ask the user for the CSV file path** if not already provided. The file is typically exported from Copilot Studio's Evaluate tab and named `Evaluate <agent name> <date>.csv` in their Downloads folder.
+
+2. **Read the CSV file**. The in-product evaluation CSV has these columns:
+
+   | Column | Meaning |
+   |--------|---------|
+   | `question` | The test utterance |
+   | `expectedResponse` | Expected response (may be empty) |
+   | `actualResponse` | What the agent responded |
+   | `testMethodType_1` | Eval method (e.g., `GeneralQuality`) |
+   | `result_1` | `Pass` or `Fail` |
+   | `passingScore_1` | Score threshold (may be empty) |
+   | `explanation_1` | Why it passed/failed (e.g., "Seems relevant; Seems incomplete; Knowledge sources not cited") |
+
+   The `_1` suffix indicates the first eval method. There may be additional methods (`_2`, `_3`, etc.) with the same column pattern.
+
+3. Proceed to **Phase 3B**.
+
+### Phase 3B: Analyze Evaluation Results
+
+1. **Focus on failed evaluations** (`result_1` = `Fail`, or any `result_N` = `Fail`).
+
+2. For each failure, use the `explanation` column to understand the issue:
+   - **"Question not answered"** — The agent couldn't handle the question. Check if there's a matching topic or knowledge source.
+   - **"Knowledge sources not cited"** — The agent responded but didn't cite sources. Check knowledge source configuration and `SearchAndSummarizeContent` nodes.
+   - **"Seems incomplete"** — The response was partial. Check topic flow for early exits, missing branches, or incomplete `SendActivity` messages.
+   - **Error messages in `actualResponse`** (e.g., `GenAIToolPlannerRateLimitReached`) — These are runtime errors, not authoring issues. Flag them to the user as transient failures to retry.
+
+3. Proceed to **Phase 4** (Propose Fixes).
+
+---
+
+## Phase 4: Propose Fixes
+
+Shared by both modes.
 
 1. **For each failure, identify the relevant YAML file(s)**:
    - Auto-discover the agent: `Glob: **/agent.mcs.yml`
@@ -145,7 +196,7 @@ The user must have:
 
 4. **Apply accepted changes** using the Edit tool. After applying, remind the user to push and publish again before re-running tests.
 
-## Test Result Codes Reference
+## Test Result Codes Reference (Kit mode only)
 
 ```
 Result: 1=Success, 2=Failed, 3=Unknown, 4=Error, 5=Pending

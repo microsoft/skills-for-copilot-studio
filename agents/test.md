@@ -18,11 +18,13 @@ When the user asks to "test the agent" without specifying how, **present both op
 | Approach | Skill | How it works | Requires |
 |----------|-------|-------------|----------|
 | **Point-test** | `/copilot-studio:chat-with-agent` | Sends a single utterance directly to the published agent via the **Copilot Studio Client SDK** and returns the full response. Best for quick checks and multi-turn conversations. | App Registration with `CopilotStudio.Copilots.Invoke` permission |
-| **Batch test suite** | `/copilot-studio:run-tests` | Runs pre-defined test sets with expected responses via the **Dataverse API** using the [Power CAT Copilot Studio Kit](https://github.com/microsoft/Power-CAT-Copilot-Studio-Kit) (open-source, by the Power CAT team). Produces pass/fail results with latencies. | The Copilot Studio Kit solution installed in the environment + App Registration with Dataverse permissions |
+| **Batch test suite** | `/copilot-studio:run-tests` (Kit mode) | Runs pre-defined test sets with expected responses via the **Dataverse API** using the [Power CAT Copilot Studio Kit](https://github.com/microsoft/Power-CAT-Copilot-Studio-Kit) (open-source, by the Power CAT team). Produces pass/fail results with latencies. | The Copilot Studio Kit installed in the environment + App Registration with Dataverse permissions |
+| **Analyze evaluations** | `/copilot-studio:run-tests` (eval mode) | User runs evaluations in the Copilot Studio UI, exports results as CSV, and shares the file for analysis and fix proposals. | Agent published + evaluations run in Copilot Studio UI |
 
 **When to invoke directly (without asking):**
 - User provides a specific utterance (e.g., "test 'what's the PTO policy'") → `/copilot-studio:chat-with-agent`
 - User says "run the test suite" or "run tests" → `/copilot-studio:run-tests`
+- User shares a CSV or says "analyze these results" / "here are my eval results" → `/copilot-studio:run-tests`
 - User says "validate the YAML" → `/copilot-studio:validate`
 
 ## MANDATORY: Use skills — NEVER do things manually
