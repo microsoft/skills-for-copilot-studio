@@ -4,6 +4,8 @@ A plugin for [Claude Code](https://docs.anthropic.com/en/docs/claude-code) and [
 
 ## Installation
 
+### Option A: Install from marketplace (recommended)
+
 ```bash
 # Add the marketplace
 /plugin marketplace add microsoft/skills-for-copilot-studio
@@ -13,6 +15,15 @@ A plugin for [Claude Code](https://docs.anthropic.com/en/docs/claude-code) and [
 ```
 
 Once installed, the plugin is available globally — no need to `cd` into this repo.
+
+### Option B: Run locally from a clone
+
+```bash
+git clone https://github.com/microsoft/skills-for-copilot-studio.git
+
+# Load for a single session
+claude --plugin-dir /path/to/skills-for-copilot-studio
+```
 
 ## Prerequisites
 

@@ -23,22 +23,24 @@ You also need access to a Power Platform environment with Copilot Studio and an 
 
 ## Part 1: Install the Plugin
 
-### Step 1.1: Install from GitHub (recommended)
+### Option A: Install from marketplace (recommended)
 
 ```bash
 /plugin marketplace add microsoft/skills-for-copilot-studio
 /plugin install copilot-studio@microsoft/skills-for-copilot-studio
 ```
 
-### Step 1.2: Or install from a local clone
+Once installed, the plugin is available globally.
+
+### Option B: Run locally from a clone
 
 ```bash
 git clone https://github.com/microsoft/skills-for-copilot-studio.git
 
-# For local development/testing without installing:
+# Load for a single session:
 claude --plugin-dir /path/to/skills-for-copilot-studio
 
-# Or install persistently:
+# Or install persistently from the clone:
 claude plugin install /path/to/skills-for-copilot-studio --scope user
 ```
 
