@@ -2,7 +2,7 @@
 
 ## Complete Step-by-Step Configuration and Testing Guide
 
-This guide walks you through setting up the Copilot Studio plugin for your AI coding agent (Claude Code, GitHub Copilot CLI, or any compatible agent). The plugin enables your agent to generate and update Copilot Studio YAML while using a schema lookup tool to validate syntax.
+This guide walks you through setting up the Copilot Studio plugin for Claude Code, GitHub Copilot CLI, or any compatible tool. The plugin enables authoring and updating Copilot Studio YAML with built-in schema validation.
 
 ---
 
@@ -13,7 +13,7 @@ Before starting, ensure you have the following installed and configured:
 | Requirement | Version | Verification Command |
 |-------------|---------|---------------------|
 | Node.js | 18+ | `node --version` |
-| AI coding agent CLI | Latest | `claude --version` or equivalent |
+| Claude Code or GitHub Copilot CLI | Latest | `claude --version` or equivalent |
 | Copilot Studio VS Code Extension | Latest | Install via VS Code marketplace |
 | Visual Studio Code | Latest | `code --version` |
 
@@ -42,7 +42,7 @@ claude plugin install /path/to/skills-for-copilot-studio --scope user
 
 ### Step 1.3: Verify Installation
 
-Start your AI coding agent and check that the plugin is loaded:
+Start Claude Code (or your preferred tool) and check that the plugin is loaded:
 
 ```
 What copilot-studio skills are available?
@@ -85,14 +85,14 @@ You should see YAML files for your agent's topics, actions, and configuration.
 
 ## Part 4: Test the Plugin
 
-### Step 4.1: Start Your AI Coding Agent
+### Step 4.1: Start Your Tool
 
-Open your AI coding agent CLI in the project directory.
+Open Claude Code (or your preferred tool) in the project directory.
 
 ### Step 4.2: Test Schema Lookup
 
 ```
-/copilot-studio:lookup-schema SendActivity
+/copilot-studio:troubleshoot Look up the SendActivity schema definition
 ```
 
 The agent should run the schema lookup script and explain the `SendActivity` definition.
@@ -100,7 +100,7 @@ The agent should run the schema lookup script and explain the `SendActivity` def
 ### Step 4.3: Test List Topics
 
 ```
-/copilot-studio:list-topics
+/copilot-studio:author List all topics in this agent
 ```
 
 The agent should find and list all topics in your cloned agent.
@@ -108,7 +108,7 @@ The agent should find and list all topics in your cloned agent.
 ### Step 4.4: Test Validation
 
 ```
-/copilot-studio:validate <path-to-a-topic-file>
+/copilot-studio:troubleshoot Validate <path-to-a-topic-file>
 ```
 
 The agent should validate the YAML against the schema.
@@ -124,7 +124,7 @@ The agent should validate the YAML against the schema.
 Ask the author agent to create a new topic:
 
 ```
-@copilot-studio:author Create a new topic called "Product Information" that responds to questions about our products.
+/copilot-studio:author Create a new topic called "Product Information" that responds to questions about our products.
 ```
 
 The agent should:
@@ -135,7 +135,7 @@ The agent should:
 ### Step 5.2: Validate the Generated Topic
 
 ```
-/copilot-studio:validate <path-to-generated-file>
+/copilot-studio:troubleshoot Validate <path-to-generated-file>
 ```
 
 **Checkpoint 4:** The generated YAML should pass validation with no errors.
@@ -157,7 +157,7 @@ After making changes, push them back using the **Copilot Studio VS Code Extensio
 
 ## Part 7: Set Up Testing (Optional)
 
-To use `/copilot-studio:chat-with-agent` or `/copilot-studio:run-tests`, you need:
+To use `/copilot-studio:test` for testing published agents, you need:
 
 1. **Publish** your agent in the Copilot Studio UI (pushing creates a draft; publishing makes it live)
 2. **Create an Azure App Registration** with:
@@ -172,10 +172,10 @@ To use `/copilot-studio:chat-with-agent` or `/copilot-studio:run-tests`, you nee
 
 4. **Test a single utterance**:
    ```
-   /copilot-studio:chat-with-agent Hello
+   /copilot-studio:test Send "Hello" to the published agent
    ```
 
-The skill will guide you through configuring the agent connection on first use.
+The agent will guide you through providing your App Registration Client ID on first use.
 
 ---
 
@@ -205,7 +205,7 @@ Use this checklist to verify your setup is complete:
 - [ ] Plugin installed from GitHub or loaded locally
 - [ ] VS Code Copilot Studio Extension installed
 - [ ] Agent cloned into project directory
-- [ ] AI coding agent started and plugin skills available
+- [ ] Claude Code (or equivalent) started and plugin skills available
 - [ ] Schema lookup tested
 - [ ] YAML generation tested
 - [ ] Changes pushed via VS Code Extension and verified in Copilot Studio
