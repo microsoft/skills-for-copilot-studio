@@ -1,27 +1,23 @@
 # Skills for Copilot Studio — Setup Guide
 
-## Complete Step-by-Step Configuration and Testing Guide
-
-This guide walks you through setting up the Copilot Studio plugin for Claude Code, GitHub Copilot CLI, or any compatible tool. The plugin enables authoring and updating Copilot Studio YAML with built-in schema validation.
+This guide walks you through setting up the plugin and using it end-to-end: install, clone an agent, author changes, push, test, and troubleshoot.
 
 ---
 
 ## Prerequisites
 
-Before starting, ensure you have the following installed and configured:
-
-| Requirement | Version | Verification Command |
-|-------------|---------|---------------------|
+| Requirement | Version | Verification |
+|-------------|---------|-------------|
 | Node.js | 18+ | `node --version` |
 | Claude Code or GitHub Copilot CLI | Latest | `claude --version` or equivalent |
-| Copilot Studio VS Code Extension | Latest | Install via VS Code marketplace |
-| Visual Studio Code | Latest | `code --version` |
+| VS Code | Latest | `code --version` |
+| Copilot Studio VS Code Extension | Latest | [Install from marketplace](https://github.com/microsoft/vscode-copilotstudio) |
 
-You also need access to a Power Platform environment with Copilot Studio and an existing agent to test with.
+You also need access to a Power Platform environment with Copilot Studio and an existing agent.
 
 ---
 
-## Part 1: Install the Plugin
+## 1. Install the Plugin
 
 ### Option A: Install from marketplace (recommended)
 
@@ -44,136 +40,112 @@ claude --plugin-dir /path/to/skills-for-copilot-studio
 claude plugin install /path/to/skills-for-copilot-studio --scope user
 ```
 
-### Step 1.3: Verify Installation
-
-Start Claude Code (or your preferred tool) and type `/` in the input. You should see `copilot-studio:author`, `copilot-studio:test`, and `copilot-studio:troubleshoot` in the autocomplete menu.
-
-**Checkpoint 1:** All skills should be listed and the schema lookup script should be accessible.
+To verify, type `/` in the input — you should see `copilot-studio:author`, `copilot-studio:test`, and `copilot-studio:troubleshoot` in the autocomplete menu.
 
 ---
 
-## Part 2: Install the VS Code Copilot Studio Extension
+## 2. Clone an Agent
 
-Follow these steps: https://github.com/microsoft/vscode-copilotstudio
-
----
-
-## Part 3: Clone an Existing Agent
-
-### Step 3.1: Create Your Project Directory
-
-```bash
-mkdir my-copilot-project
-cd my-copilot-project
-```
-
-### Step 3.2: Clone the Agent
-
-Use the **Copilot Studio VS Code Extension** to clone your agent into your project directory. The cloned agent will have YAML files for topics, actions, knowledge, and settings.
-
-**Checkpoint 2:** After cloning, you should see an `agent.mcs.yml`, `settings.mcs.yml`, and directories like `topics/`, `actions/`, and `knowledge/` in your project.
+Use the **Copilot Studio VS Code Extension** to clone your agent into a project directory. After cloning, you should see `agent.mcs.yml`, `settings.mcs.yml`, and directories like `topics/`, `actions/`, and `knowledge/`.
 
 ---
 
-## Part 4: Test the Plugin
+## 3. Author Changes
 
-### Step 4.1: Start Your Tool
+Open Claude Code (or your preferred tool) in the cloned agent's directory.
 
-Open Claude Code (or your preferred tool) in the project directory.
-
-### Step 4.2: Test Schema Lookup
+### Explore the agent
 
 ```
-/copilot-studio:troubleshoot Look up the SendActivity schema definition
+/copilot-studio:author What topics does this agent have? Give me an overview.
 ```
 
-The agent should run the schema lookup script and explain the `SendActivity` definition.
-
-### Step 4.3: Test List Topics
+### Create a new topic
 
 ```
-/copilot-studio:author List all topics in this agent
+/copilot-studio:author Create a new topic called "Product Information" that responds to questions about our products with a message listing our top 3 products.
 ```
 
-The agent should find and list all topics in your cloned agent.
+The agent generates a valid YAML file with unique IDs and saves it to the `topics/` directory.
 
-### Step 4.4: Test Validation
+### Validate your changes
 
 ```
-/copilot-studio:troubleshoot Validate <path-to-a-topic-file>
+/copilot-studio:troubleshoot Validate all topics in my agent
 ```
-
-The agent should validate the YAML against the schema.
-
-**Checkpoint 3:** All skills should work and the agent should use the schema lookup script from the plugin.
 
 ---
 
-## Part 5: Test YAML Generation
+## 4. Push and Publish
 
-### Step 5.1: Create a New Topic
+1. **Push** changes using the Copilot Studio VS Code Extension:
+   - Open the VS Code Command Palette (`Ctrl+Shift+P` / `Cmd+Shift+P`)
+   - Search for "Copilot Studio: Push"
+   - Select the agent and confirm
 
-Ask the author agent to create a new topic:
+2. **Publish** in the Copilot Studio UI at [copilotstudio.microsoft.com](https://copilotstudio.microsoft.com):
+   - Open your agent and click **Publish**
 
-```
-/copilot-studio:author Create a new topic called "Product Information" that responds to questions about our products.
-```
-
-The agent should:
-1. Use the schema lookup to verify the correct structure
-2. Generate a valid YAML file with unique IDs
-3. Save it to the appropriate location in your agent's `topics/` directory
-
-### Step 5.2: Validate the Generated Topic
-
-```
-/copilot-studio:troubleshoot Validate <path-to-generated-file>
-```
-
-**Checkpoint 4:** The generated YAML should pass validation with no errors.
+> **Important**: Pushing creates a **draft**. You must also **publish** to make changes live and testable via the plugin.
 
 ---
 
-## Part 6: Push Changes to Environment
+## 5. Test the Published Agent
 
-After making changes, push them back using the **Copilot Studio VS Code Extension**:
+The test agent (`/copilot-studio:test`) supports three ways to test:
 
-1. Open the VS Code Command Palette (`Ctrl+Shift+P` / `Cmd+Shift+P`)
-2. Search for "Copilot Studio: Push" or use the extension's push functionality
-3. Select the agent and confirm the push
-4. Open Copilot Studio in your browser to verify the changes
+### Option A: Send a test message (point-test)
 
-**Checkpoint 5:** The agent should load correctly in Copilot Studio with all your changes visible.
+Send a single utterance directly to the published agent and see its full response. Requires an **Azure App Registration**:
+- **Platform**: Public client / Native (Mobile and desktop applications)
+- **Redirect URI**: `http://localhost` (HTTP, not HTTPS)
+- **API permissions**: `CopilotStudio.Copilots.Invoke` (granted by admin)
+
+```
+/copilot-studio:test Send "What products do you offer?" to the published agent
+```
+
+The test agent will ask for your App Registration Client ID on first use, authenticate via device code flow, and return the agent's full response. Multi-turn is supported — the agent reuses the conversation automatically.
+
+### Option B: Run a batch test suite (Copilot Studio Kit)
+
+If you have the [Power CAT Copilot Studio Kit](https://github.com/microsoft/Power-CAT-Copilot-Studio-Kit) installed in your environment, you can run pre-defined test sets with expected responses and pass/fail scoring. Requires an Azure App Registration with Dataverse permissions.
+
+```
+/copilot-studio:test Run my test suite
+```
+
+The agent walks you through configuring the Dataverse connection on first use.
+
+### Option C: Analyze evaluation results
+
+Run evaluations in the Copilot Studio UI, export the results as CSV, and have the agent analyze failures and propose fixes:
+
+```
+/copilot-studio:test Analyze my evaluation results from ~/Downloads/Evaluate MyAgent.csv
+```
 
 ---
 
-## Part 7: Set Up Testing (Optional)
+## 6. Troubleshoot and Fix
 
-To use `/copilot-studio:test` for testing published agents, you need:
+If the agent responds with incorrect or outdated information:
 
-1. **Publish** your agent in the Copilot Studio UI (pushing creates a draft; publishing makes it live)
-2. **Create an Azure App Registration** with:
-   - Platform: Public client / Native
-   - Redirect URI: `http://localhost`
-   - API permissions: `CopilotStudio.Copilots.Invoke`
+```
+/copilot-studio:troubleshoot The agent is making up product details that aren't accurate. It seems to be hallucinating instead of using real data.
+```
 
-3. **Create a `tests/` directory** in your project for configuration files:
-   ```bash
-   mkdir tests
-   ```
+The troubleshoot agent will diagnose the issue — in this case, the agent is generating ungrounded responses because it has no knowledge source to draw from. Fix it by adding one:
 
-4. **Test a single utterance**:
-   ```
-   /copilot-studio:test Send "Hello" to the published agent
-   ```
+```
+/copilot-studio:author Add a knowledge source pointing to our product catalog at https://contoso.com/products
+```
 
-The agent will guide you through providing your App Registration Client ID on first use.
+Then push, publish, and test again to verify the agent now responds with grounded information.
 
 ---
 
 ## Troubleshooting
-
-### Common Issues and Solutions
 
 | Issue | Possible Cause | Solution |
 |-------|---------------|----------|
@@ -184,20 +156,17 @@ The agent will guide you through providing your App Registration Client ID on fi
 | Power Fx error | Missing `=` prefix | Ensure expressions start with `=` |
 | Plugin not found | Not installed or wrong path | Run `/plugin list` to verify |
 
-### Reverting Changes
-
-If something goes wrong, you can re-clone the original agent using the VS Code Extension.
+If something goes wrong, you can always re-clone the original agent using the VS Code Extension.
 
 ---
 
 ## Summary Checklist
 
-Use this checklist to verify your setup is complete:
-
-- [ ] Plugin installed from GitHub or loaded locally
+- [ ] Plugin installed from marketplace or loaded locally
 - [ ] VS Code Copilot Studio Extension installed
 - [ ] Agent cloned into project directory
-- [ ] Claude Code (or equivalent) started and plugin skills available
-- [ ] Schema lookup tested
-- [ ] YAML generation tested
-- [ ] Changes pushed via VS Code Extension and verified in Copilot Studio
+- [ ] `/copilot-studio:author`, `:test`, `:troubleshoot` visible in `/` autocomplete
+- [ ] Created a topic with `/copilot-studio:author`
+- [ ] Validated with `/copilot-studio:troubleshoot`
+- [ ] Pushed and published in Copilot Studio
+- [ ] Tested published agent with `/copilot-studio:test`
