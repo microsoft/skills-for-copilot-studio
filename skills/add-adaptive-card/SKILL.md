@@ -2,7 +2,7 @@
 user-invocable: false
 description: Generate and insert an Adaptive Card into a Copilot Studio topic using AdaptiveCardPrompt. Use when the user asks to add an adaptive card, rich card, form card, info card, confirmation card, or interactive card to a topic.
 argument-hint: <card-type> in <topic-name>
-allowed-tools: Bash(python scripts/schema-lookup.py *), Read, Write, Edit, Glob
+allowed-tools: Bash(node *schema-lookup.bundle.js *), Read, Write, Edit, Glob
 context: fork
 agent: author
 ---
@@ -29,7 +29,7 @@ Add an `AdaptiveCardPrompt` node to an existing Copilot Studio topic. Use this f
 
 4. **Verify the schema** if needed:
    ```bash
-   python scripts/schema-lookup.py summary AdaptiveCardPrompt
+   node ${CLAUDE_SKILL_DIR}/../../scripts/schema-lookup.bundle.js summary AdaptiveCardPrompt
    ```
 
 5. **Select and adapt the template** from [card-templates.md](card-templates.md) matching the requested type.
@@ -40,7 +40,7 @@ Add an `AdaptiveCardPrompt` node to an existing Copilot Studio topic. Use this f
 
 8. **Validate** the updated topic file:
    ```bash
-   python scripts/schema-lookup.py validate <topic-file.yml>
+   node ${CLAUDE_SKILL_DIR}/../../scripts/schema-lookup.bundle.js validate <topic-file.yml>
    ```
 
 9. **Inform the user** that they must push (VS Code Extension) and publish (Copilot Studio UI) before testing with `/chat-with-agent` or `/run-tests`.
