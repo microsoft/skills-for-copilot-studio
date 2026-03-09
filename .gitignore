@@ -1,4 +1,4 @@
-# Copilot Studio Claude Code Plugin - Git Ignore
+# Copilot Studio Plugin - Git Ignore
 
 *.zip
 
@@ -13,14 +13,14 @@ tests/package-lock.json
 scripts/node_modules/
 scripts/package-lock.json
 
-# Claude Code local settings (not part of the plugin)
+# AI agent local settings (not part of the plugin)
 .claude/
 
 # VS Code settings (optional - remove if you want to share settings)
 .vscode/
 .github/copilot-instructions.md
 
-# Claude tmp files (in any subfolder)
+# Agent tmp files (in any subfolder)
 tmpclaude-*
 
 # Environment files (if used in the future)

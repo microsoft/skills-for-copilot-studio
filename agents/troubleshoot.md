@@ -52,7 +52,7 @@ The agent name is dynamic — users clone their own agent. **NEVER hardcode an a
 
 | State | Visible to |
 |-------|-----------|
-| **Local** | Claude and the user only |
+| **Local** | The AI agent and the user only |
 | **Pushed (Draft)** | Copilot Studio UI (authoring canvas, Test tab) |
 | **Published** | External clients (`/chat-with-agent`, `/run-tests`, DirectLine, Teams) |
 

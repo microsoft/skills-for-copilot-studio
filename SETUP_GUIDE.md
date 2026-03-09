@@ -1,8 +1,8 @@
-# Claude Code Plugin Setup for Copilot Studio YAML Development
+# Skills for Copilot Studio — Setup Guide
 
 ## Complete Step-by-Step Configuration and Testing Guide
 
-This guide walks you through setting up the Copilot Studio plugin for Claude Code CLI. The plugin enables Claude Code to generate and update agent YAML while using a schema lookup tool to validate syntax.
+This guide walks you through setting up the Copilot Studio plugin for your AI coding agent (Claude Code, GitHub Copilot CLI, or any compatible agent). The plugin enables your agent to generate and update Copilot Studio YAML while using a schema lookup tool to validate syntax.
 
 ---
 
@@ -13,8 +13,7 @@ Before starting, ensure you have the following installed and configured:
 | Requirement | Version | Verification Command |
 |-------------|---------|---------------------|
 | Node.js | 18+ | `node --version` |
-| Python | 3.8+ | `python --version` |
-| Claude Code CLI | Latest | `claude --version` |
+| AI coding agent CLI | Latest | `claude --version` or equivalent |
 | Copilot Studio VS Code Extension | Latest | Install via VS Code marketplace |
 | Visual Studio Code | Latest | `code --version` |
 
@@ -24,42 +23,32 @@ You also need access to a Power Platform environment with Copilot Studio and an 
 
 ## Part 1: Install the Plugin
 
-### Step 1.1: Install the Plugin
+### Step 1.1: Install from GitHub (recommended)
 
 ```bash
-claude plugin install /path/to/copilot-studio --scope user
+/plugin marketplace add microsoft/skills-for-copilot-studio
+/plugin install copilot-studio@microsoft/skills-for-copilot-studio
 ```
 
-For **local development/testing** without installing:
-```bash
-claude --plugin-dir /path/to/copilot-studio
-```
-
-Or, if published to a marketplace:
-```bash
-claude plugin install copilot-studio
-```
-
-### Step 1.2: Install Python Dependencies
+### Step 1.2: Or install from a local clone
 
 ```bash
-pip install pyyaml
+# For local development/testing without installing:
+claude --plugin-dir /path/to/skills-for-copilot-studio
+
+# Or install persistently:
+claude plugin install /path/to/skills-for-copilot-studio --scope user
 ```
 
 ### Step 1.3: Verify Installation
 
-Start Claude Code and check that the plugin is loaded:
+Start your AI coding agent and check that the plugin is loaded:
 
-```bash
-claude
-```
-
-In Claude Code, type:
 ```
 What copilot-studio skills are available?
 ```
 
-Claude should list the available skills prefixed with `copilot-studio:`.
+The agent should list the available skills prefixed with `copilot-studio:`.
 
 **Checkpoint 1:** All skills should be listed and the schema lookup script should be accessible.
 
@@ -96,11 +85,9 @@ You should see YAML files for your agent's topics, actions, and configuration.
 
 ## Part 4: Test the Plugin
 
-### Step 4.1: Start Claude Code
+### Step 4.1: Start Your AI Coding Agent
 
-```bash
-claude
-```
+Open your AI coding agent CLI in the project directory.
 
 ### Step 4.2: Test Schema Lookup
 
@@ -108,7 +95,7 @@ claude
 /copilot-studio:lookup-schema SendActivity
 ```
 
-Claude should run the schema lookup script and explain the `SendActivity` definition.
+The agent should run the schema lookup script and explain the `SendActivity` definition.
 
 ### Step 4.3: Test List Topics
 
@@ -116,7 +103,7 @@ Claude should run the schema lookup script and explain the `SendActivity` defini
 /copilot-studio:list-topics
 ```
 
-Claude should find and list all topics in your cloned agent.
+The agent should find and list all topics in your cloned agent.
 
 ### Step 4.4: Test Validation
 
@@ -124,9 +111,9 @@ Claude should find and list all topics in your cloned agent.
 /copilot-studio:validate <path-to-a-topic-file>
 ```
 
-Claude should validate the YAML against the schema.
+The agent should validate the YAML against the schema.
 
-**Checkpoint 3:** All skills should work and Claude should use the schema lookup script from the plugin.
+**Checkpoint 3:** All skills should work and the agent should use the schema lookup script from the plugin.
 
 ---
 
@@ -134,13 +121,13 @@ Claude should validate the YAML against the schema.
 
 ### Step 5.1: Create a New Topic
 
-Ask Claude to create a new topic:
+Ask the author agent to create a new topic:
 
 ```
 @copilot-studio:author Create a new topic called "Product Information" that responds to questions about our products.
 ```
 
-Claude should:
+The agent should:
 1. Use the schema lookup to verify the correct structure
 2. Generate a valid YAML file with unique IDs
 3. Save it to the appropriate location in your agent's `topics/` directory
@@ -203,7 +190,7 @@ The skill will guide you through configuring the agent connection on first use.
 | Topic doesn't render in canvas | Complex YAML not supported | Simplify the structure, use portal for complex edits |
 | Duplicate ID error | Non-unique node IDs | Regenerate IDs for copied nodes |
 | Power Fx error | Missing `=` prefix | Ensure expressions start with `=` |
-| Plugin not found | Not installed or wrong path | Run `claude plugin list` to verify |
+| Plugin not found | Not installed or wrong path | Run `/plugin list` to verify |
 
 ### Reverting Changes
 
@@ -215,11 +202,10 @@ If something goes wrong, you can re-clone the original agent using the VS Code E
 
 Use this checklist to verify your setup is complete:
 
-- [ ] Plugin installed (`claude plugin install`) or loaded (`claude --plugin-dir`)
-- [ ] Python dependencies installed (`pip install pyyaml`)
+- [ ] Plugin installed from GitHub or loaded locally
 - [ ] VS Code Copilot Studio Extension installed
 - [ ] Agent cloned into project directory
-- [ ] Claude Code started and plugin skills available
+- [ ] AI coding agent started and plugin skills available
 - [ ] Schema lookup tested
 - [ ] YAML generation tested
 - [ ] Changes pushed via VS Code Extension and verified in Copilot Studio
