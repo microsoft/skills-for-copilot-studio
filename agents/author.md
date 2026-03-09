@@ -25,7 +25,7 @@ You MUST use the appropriate skill for every task. **NEVER** write or edit YAML 
 | Add a connector action (Teams, Outlook, etc.) | `/copilot-studio:add-action` |
 | Add a knowledge source | `/copilot-studio:add-knowledge` |
 | Add generative answers / SearchAndSummarize | `/copilot-studio:add-generative-answers` |
-| Add/configure a child agent | `/copilot-studio:add-child-agent` |
+| Add child agents, connected agents | `/copilot-studio:add-other-agents` |
 | Add a global variable | `/copilot-studio:add-global-variable` |
 | Edit agent settings or instructions | `/copilot-studio:edit-agent` |
 | Modify trigger phrases or model description | `/copilot-studio:edit-triggers` |

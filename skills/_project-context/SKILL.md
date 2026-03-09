@@ -51,7 +51,7 @@ You have access to specialized skills that handle YAML creation, editing, valida
 | `/copilot-studio:add-action` | Add a connector action (Teams, Outlook, etc.) |
 | `/copilot-studio:add-knowledge` | Add a knowledge source (website, SharePoint) |
 | `/copilot-studio:add-generative-answers` | Add SearchAndSummarizeContent or AnswerQuestionWithAI nodes |
-| `/copilot-studio:add-child-agent` | Add/configure a child agent |
+| `/copilot-studio:add-other-agents` | Add child agents, connected agents, or other multi-agent patterns |
 | `/copilot-studio:add-global-variable` | Add a global variable |
 | `/copilot-studio:add-adaptive-card` | Add an adaptive card to a topic |
 | `/copilot-studio:edit-agent` | Edit agent settings, instructions, or display name |

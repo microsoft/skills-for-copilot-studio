@@ -1,17 +1,30 @@
 ---
 user-invocable: false
-description: Add or configure a child agent (AgentDialog) for Copilot Studio. Use when the user asks to create a sub-agent, child agent, or specialist agent.
-argument-hint: <child agent description>
+description: Add child agents, connected agents, or other multi-agent patterns to a Copilot Studio agent. Use when the user asks to create a sub-agent, child agent, connected agent, or call another agent.
+argument-hint: <agent description>
 allowed-tools: Bash(node *schema-lookup.bundle.js *), Read, Write, Glob
 context: fork
 agent: author
 ---
 
-# Add Child Agent
+# Add Other Agents
+
+Add multi-agent capabilities to a Copilot Studio agent. Two patterns are supported:
+
+| Pattern | Use when | What it creates |
+|---------|----------|----------------|
+| **Child agent** | The agent needs a specialist sub-agent owned by the same parent | `AgentDialog` in `agents/` subdirectory |
+| **Connected agent** | The agent needs to call an external, independently-managed agent | `InvokeConnectedAgentTaskAction` in a topic (TaskDialog) |
+
+Ask the user which pattern they need if unclear.
+
+---
+
+## Pattern 1: Child Agent
 
 Create a new child agent (AgentDialog) that the parent agent's orchestrator can delegate to.
 
-## Instructions
+### Instructions
 
 1. **Auto-discover the parent agent directory**:
    ```
@@ -53,7 +66,7 @@ Create a new child agent (AgentDialog) that the parent agent's orchestrator can 
    - `settings.instructions` — The child agent's system prompt. Define its personality, scope, and behavior guidelines.
    - `inputType` — for context the orchestrator should pass. The parent fills these automatically.
 
-## Two-Phase Workflow (Important)
+### Two-Phase Workflow (Important)
 
 Child agents MUST be created in two phases:
 
@@ -68,10 +81,9 @@ Child agents MUST be created in two phases:
 
 This constraint exists because knowledge sources reference the agent they belong to — the child agent must exist in the environment first.
 
-## Example: Customer Support Child Agent
+### Example: Customer Support Child Agent
 
 ```yaml
-# Name: Billing Support Agent
 kind: AgentDialog
 
 beginDialog:
@@ -90,6 +102,11 @@ settings:
     Always verify the customer's account before making changes.
     Escalate to a human agent for refunds over $500.
 
+inputs:
+  - kind: AutomaticTaskInput
+    propertyName: CustomerQuery
+    description: The customer's billing-related question or issue
+
 inputType:
   properties:
     CustomerQuery:
@@ -99,3 +116,89 @@ inputType:
 
 outputType: {}
 ```
+
+---
+
+## Pattern 2: Connected Agent
+
+Call an external, independently-managed agent from your agent. This creates a `TaskDialog` with an `InvokeConnectedAgentTaskAction` that the orchestrator can invoke.
+
+### What you can do (calling side)
+
+The plugin creates the **calling side** YAML — a TaskDialog in your agent that invokes the connected agent with inputs/outputs.
+
+### What the user must do (called side)
+
+The connected agent must be configured separately (in Copilot Studio UI or in its own project). Tell the user they need to set up the following on the connected agent:
+
+1. **Create an `OnRedirect` topic** — this is the entry point when the agent is called by another agent
+2. **Create global variables** for each input the caller passes, with **"external source"** permissions enabled
+3. **Declare `inputType: {}` and `outputType: {}`** on the OnRedirect topic to signal it participates in multi-agent scenarios
+
+> **Important**: The connected agent must be published and accessible from the same environment or tenant. The `botSchemaName` (the connected agent's schema name) must be known — the user can find it in the connected agent's `settings.mcs.yml` or in Copilot Studio under Agent Details.
+
+### Instructions
+
+1. **Auto-discover the agent directory**:
+   ```
+   Glob: **/agent.mcs.yml
+   ```
+
+2. **Determine from the user**:
+   - The connected agent's schema name (`botSchemaName`) — e.g., `cr123_expenseAgent`
+   - What inputs to pass to the connected agent
+   - A description of what the connected agent does (for the orchestrator)
+
+3. **Create a TaskDialog** in the agent's `actions/` directory (or `topics/` if the user prefers):
+
+### Example: Calling Side (your agent)
+
+```yaml
+kind: TaskDialog
+
+modelDisplayName: Expense Report Processor
+modelDescription: Use this agent to process expense reports by sending them to the expense processing agent
+
+inputs:
+  - kind: AutomaticTaskInput
+    propertyName: expenseReportFileFullPath
+    description: Full file path, including SharePoint site URL, of an expense report file.
+
+action:
+  kind: InvokeConnectedAgentTaskAction
+  inputType:
+    properties:
+      expenseReportFileFullPath:
+        displayName: expenseReportFileFullPath
+        isRequired: true
+        type: String
+  botSchemaName: cr123_expenseAgent
+  historyType:
+    kind: ConversationHistory
+```
+
+### Example: Called Side (what the user must configure on the connected agent)
+
+Share this with the user as guidance for what they need to set up on the connected agent:
+
+```yaml
+# OnRedirect topic on the connected agent
+kind: AdaptiveDialog
+modelDescription: Initializes the agent when called by another agent
+
+beginDialog:
+  kind: OnRedirect
+  id: main
+  actions:
+    - kind: SetVariable
+      id: setVariable_abc123
+      variable: Global.expenseReportFileFullPath
+      value: "=System.Activity.Value.expenseReportFileFullPath"
+
+inputType: {}
+outputType: {}
+```
+
+The connected agent also needs:
+- A **global variable** `Global.expenseReportFileFullPath` (type: String)
+- The variable must have **"Receive values from other agents"** enabled in Copilot Studio (this is the "external source" permission)
