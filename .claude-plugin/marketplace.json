@@ -1,0 +1,15 @@
+{
+  "name": "copilot-studio-marketplace",
+  "description": "Microsoft Copilot Studio plugins for Claude Code",
+  "plugins": [
+    {
+      "name": "copilot-studio",
+      "description": "Microsoft Copilot Studio YAML authoring toolkit. Create, edit, validate, and test Copilot Studio agents using YAML files.",
+      "version": "1.0.0",
+      "source": {
+        "source": "git",
+        "path": "."
+      }
+    }
+  ]
+}
