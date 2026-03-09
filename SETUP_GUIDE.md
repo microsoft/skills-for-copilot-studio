@@ -33,6 +33,8 @@ You also need access to a Power Platform environment with Copilot Studio and an 
 ### Step 1.2: Or install from a local clone
 
 ```bash
+git clone https://github.com/microsoft/skills-for-copilot-studio.git
+
 # For local development/testing without installing:
 claude --plugin-dir /path/to/skills-for-copilot-studio
 
