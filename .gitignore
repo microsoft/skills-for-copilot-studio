@@ -30,3 +30,4 @@ tmpclaude-*
 .env
 .env.local
 nul
+.github/copilot-instructions.md
