@@ -1,13 +1,18 @@
 {
-  "name": "copilot-studio-schema-lookup",
+  "name": "copilot-studio-scripts",
   "version": "1.0.0",
   "private": true,
-  "description": "Schema lookup and YAML validation tool for Copilot Studio plugin",
+  "description": "Bundled scripts for Copilot Studio plugin",
   "scripts": {
-    "build": "esbuild src/schema-lookup.js --bundle --platform=node --target=node18 --outfile=schema-lookup.bundle.js --format=cjs",
+    "build": "npm run build:schema-lookup && npm run build:chat-with-agent",
+    "build:schema-lookup": "esbuild src/schema-lookup.js --bundle --platform=node --target=node18 --outfile=schema-lookup.bundle.js --format=cjs",
+    "build:chat-with-agent": "esbuild src/chat-with-agent.js --bundle --platform=node --target=node18 --outfile=chat-with-agent.bundle.js --format=cjs",
     "prebuild": "npm install"
   },
   "dependencies": {
+    "@azure/msal-node": "^5.0.5",
+    "@microsoft/agents-activity": "^1.1.0",
+    "@microsoft/agents-copilotstudio-client": "^1.1.0",
     "js-yaml": "^4.1.0"
   },
   "devDependencies": {

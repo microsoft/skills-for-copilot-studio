@@ -5,17 +5,11 @@
 # Agent tests (user-specific)
 tests/test-results*
 tests/settings.json
-tests/agents.json
 tests/.token_cache.json
 tests/node_modules/
 tests/package-lock.json
 
-# Python cache (legacy)
-__pycache__/
-*.pyc
-*.pyo
-
-# Schema lookup build artifacts (only the bundled schema-lookup.js ships)
+# Scripts build artifacts (only bundled .js files ship)
 scripts/node_modules/
 scripts/package-lock.json
 

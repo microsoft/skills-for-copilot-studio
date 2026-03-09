@@ -1,7 +1,7 @@
 ---
 description: Send a message to a published Copilot Studio agent and get its full response. Use when the user asks to test a specific utterance, check how the agent responds, verify a topic was fixed, or do a quick point-test after making YAML changes. Also useful for multi-turn conversation testing.
 argument-hint: <utterance to send>
-allowed-tools: Bash(python *chat-with-agent.py *), Bash(pip install *), Read, Write, Edit, Glob, Grep
+allowed-tools: Bash(node *chat-with-agent.bundle.js *), Read, Glob, Grep
 context: fork
 agent: test
 ---
@@ -20,68 +20,27 @@ Send a single utterance to a published Copilot Studio agent and display its full
    - **API permissions**: `CopilotStudio.Copilots.Invoke` (granted by admin)
    - This uses MSAL device-code flow, which requires a public client
 
-## Phase 0: Resolve Agent Connection
+## Phase 0: Resolve Client ID
 
-Follow the **Agent Registry** convention from the _project-context skill:
+The script auto-discovers agent connection details (environmentId, tenantId, agentIdentifier) from the VS Code extension's `.mcs/conn.json` and `settings.mcs.yml`. The only value it cannot discover is the **App Registration Client ID**.
 
-1. **Read `tests/agents.json`** (relative to the user's project CWD). If the target agent is already registered with complete values, skip to Phase 1.
-
-2. **Auto-discover from VS Code extension clones.** Glob for `**/.mcs/conn.json`. For each match:
-   - Read the `.mcs/conn.json` file for `EnvironmentId`, `AccountInfo.TenantId`, and `DataverseEndpoint`
-   - Read the sibling `settings.mcs.yml` (one directory up from `.mcs/`) for the `schemaName` field — this is the `agentIdentifier`
-   - Read the sibling `agent.mcs.yml` for the display name
-   - `localPath` is the agent directory relative to the project root
-
-3. **If no cloned agents found**, ask the user for `environmentId`, `agentIdentifier`, and `tenantId` manually. Explain where to find each:
-   - **Environment ID**: "Power Platform admin center > Environments > your environment > GUID in URL, or Copilot Studio > Settings > Session Details."
-   - **Agent identifier**: "Copilot Studio > your agent > Settings > Agent details > schema name. Looks like `cr123_myAgentName`."
-   - **Tenant ID**: "Azure Portal > Microsoft Entra ID > Overview."
-
-4. **`clientId` is always user-provided** — it's never in the extension metadata. If missing from the registry entry, ask:
+1. **Ask the user** for their app registration client ID:
    - "What is your app registration client ID? The app must have `CopilotStudio.Copilots.Invoke` API permission and redirect URI `http://localhost` (HTTP, not HTTPS)."
 
-5. **If multiple agents found**, ask the user which one to use.
+2. Remember the client ID for the rest of the conversation (pass it as `--client-id` on each invocation).
 
-6. **Persist to `tests/agents.json`**, preserving all existing entries:
-   ```json
-   {
-     "Agent Name": {
-       "environmentId": "<from conn.json or user>",
-       "tenantId": "<from conn.json or user>",
-       "agentIdentifier": "<from settings.mcs.yml or user>",
-       "clientId": "<from user>",
-       "dataverseEndpoint": "<from conn.json or user>",
-       "localPath": "<relative path to agent folder, if cloned>"
-     }
-   }
-   ```
+## Phase 1: Send Utterance
 
-## Phase 1: Install Dependencies
-
-Check whether the Python package is available:
+Run the bundled script with the utterance from `$ARGUMENTS` (or ask the user if not provided):
 
 ```bash
-python -c "from microsoft_agents.copilotstudio.client import CopilotClient" 2>/dev/null && echo "ok" || echo "missing"
+node ${CLAUDE_SKILL_DIR}/../../scripts/chat-with-agent.bundle.js --client-id <id> "<utterance>"
 ```
 
-If output is `missing`, install dependencies:
+If the agent is not at the project root (or multiple agents exist), pass `--agent-dir`:
 
 ```bash
-pip install -r ${CLAUDE_SKILL_DIR}/../../tests/requirements.txt
-```
-
-## Phase 2: Send Utterance
-
-Run the script with the utterance from `$ARGUMENTS` (or ask the user if not provided):
-
-```bash
-python ${CLAUDE_SKILL_DIR}/../../tests/chat-with-agent.py --config-dir ./tests "<utterance>"
-```
-
-If multiple agents are registered, pass the `--agent` flag:
-
-```bash
-python ${CLAUDE_SKILL_DIR}/../../tests/chat-with-agent.py --config-dir ./tests "<utterance>" --agent "<Agent Name>"
+node ${CLAUDE_SKILL_DIR}/../../scripts/chat-with-agent.bundle.js --client-id <id> "<utterance>" --agent-dir <path-to-agent>
 ```
 
 The script outputs:
@@ -116,8 +75,8 @@ The output JSON has this structure:
 }
 ```
 
-- `start_activities`: full activity payloads from `start_conversation` (greeting, welcome messages). Only present on new conversations.
-- `activities`: full activity payloads from `ask_question` — these are the agent's response to the utterance.
+- `start_activities`: full activity payloads from `startConversation` (greeting, welcome messages). Only present on new conversations.
+- `activities`: full activity payloads from `askQuestion` — these are the agent's response to the utterance.
 
 Each activity in the arrays is a complete Activity Protocol object with fields like `type`, `text`, `attachments`, `suggestedActions`, `entities`, `conversation`, `from`, etc. Inspect all fields to understand the agent's full response.
 
@@ -141,12 +100,12 @@ Show a summary like:
 
 If the user needs the raw JSON for debugging, show it when asked.
 
-## Phase 3: Multi-Turn Sequences
+## Phase 2: Multi-Turn Sequences
 
 To test a multi-turn conversation, pass the `conversation_id` from the previous response:
 
 ```bash
-python ${CLAUDE_SKILL_DIR}/../../tests/chat-with-agent.py --config-dir ./tests "<follow-up>" --conversation-id <id-from-previous>
+node ${CLAUDE_SKILL_DIR}/../../scripts/chat-with-agent.bundle.js --client-id <id> "<follow-up>" --conversation-id <id-from-previous>
 ```
 
 When the user asks to "continue the conversation" or "send a follow-up", reuse the `conversation_id` from the last successful response automatically without asking.
@@ -155,9 +114,9 @@ When the user asks to "continue the conversation" or "send a follow-up", reuse t
 
 | Error message | Likely cause | What to tell the user |
 |---|---|---|
-| `agents.json not found` | Registry not populated yet | Run Phase 0 to discover or configure agents |
-| `Agent 'X' not found in registry` | Wrong agent name | Check available agents in `tests/agents.json` |
-| `Multiple agents in registry` | Need to specify which | Re-run with `--agent "Agent Name"` |
+| `No agent.mcs.yml found` | Not in a Copilot Studio project, or agent not cloned | Ask user to clone the agent with the VS Code extension first |
+| `Multiple agents found` | Multiple agents in project tree | Re-run with `--agent-dir <path>` |
+| `No .mcs/conn.json found` | Agent not cloned via VS Code extension | The extension stores connection info in `.mcs/conn.json` — clone the agent first |
+| `schemaName not found` | Malformed settings.mcs.yml | Check the agent's settings.mcs.yml has a schemaName field |
 | `Authentication failed` | Wrong client ID or tenant ID | Verify app registration and permissions |
 | `Could not obtain conversation_id` | Agent not published, wrong environment ID, or wrong agent identifier | Ask user to verify the agent is published and settings are correct |
-| `Error sending request: 4xx` | Auth or permission issue | Check that app has `CopilotStudio.Copilots.Invoke` permission |
