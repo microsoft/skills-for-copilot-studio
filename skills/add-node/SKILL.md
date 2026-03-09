@@ -1,4 +1,5 @@
 ---
+user-invocable: false
 description: Add or modify a node in an existing Copilot Studio topic. Use when the user asks to add a question, message, condition, variable, or other node to a topic. Do NOT use this for generative answers or knowledge search — use /add-generative-answers instead.
 argument-hint: <node-type> to <topic-name>
 allowed-tools: Bash(node *schema-lookup.bundle.js *), Read, Write, Edit, Glob

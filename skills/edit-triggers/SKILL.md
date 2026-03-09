@@ -1,4 +1,5 @@
 ---
+user-invocable: false
 description: Modify topic triggers — trigger phrases and model description. Use when the user asks to add, remove, or change trigger phrases, or edit a topic's model description.
 argument-hint: <topic-name>
 allowed-tools: Read, Edit, Glob

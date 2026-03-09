@@ -1,4 +1,5 @@
 ---
+user-invocable: false
 description: Send a message to a published Copilot Studio agent and get its full response. Use when the user asks to test a specific utterance, check how the agent responds, verify a topic was fixed, or do a quick point-test after making YAML changes. Also useful for multi-turn conversation testing.
 argument-hint: <utterance to send>
 allowed-tools: Bash(node *chat-with-agent.bundle.js *), Read, Glob, Grep

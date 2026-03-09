@@ -1,4 +1,5 @@
 ---
+user-invocable: false
 description: Validate a Copilot Studio YAML file against the schema and best practices. Use when the user asks to check, validate, or verify a YAML file.
 argument-hint: <path-to-yaml-file>
 allowed-tools: Bash(node *schema-lookup.bundle.js *), Read, Glob

@@ -1,4 +1,5 @@
 ---
+user-invocable: false
 description: Add generative answer nodes (SearchAndSummarizeContent or AnswerQuestionWithAI) to a Copilot Studio topic. Use this instead of /add-node when the user asks to add grounded answers, knowledge search, generative answers, or AI-powered responses — these nodes require specific patterns (ConditionGroup follow-up, knowledge source references, autoSend, responseCaptureType) that /add-node does not cover.
 argument-hint: <topic-name or "new">
 allowed-tools: Bash(node *schema-lookup.bundle.js *), Read, Write, Edit, Glob

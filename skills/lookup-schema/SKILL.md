@@ -1,4 +1,5 @@
 ---
+user-invocable: false
 description: Look up Copilot Studio YAML schema definitions. Use when the user asks about schema structure, element properties, or how to use a specific YAML kind.
 argument-hint: <definition-name>
 allowed-tools: Bash(node *schema-lookup.bundle.js *)

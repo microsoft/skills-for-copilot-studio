@@ -1,4 +1,5 @@
 ---
+user-invocable: false
 description: Add a connector-based action (TaskDialog) to a Copilot Studio agent. Use when the user asks to add a connector action like sending a Teams message, creating an Outlook event, or other connector operations.
 argument-hint: <action description, e.g. "post a Teams message">
 allowed-tools: Bash(node *schema-lookup.bundle.js *), Read, Write, Edit, Glob

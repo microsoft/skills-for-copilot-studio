@@ -1,4 +1,5 @@
 ---
+user-invocable: false
 description: List all topics in the Copilot Studio agent with their trigger types, phrases, and action counts. Use when the user wants to see what topics exist.
 allowed-tools: Read, Glob, Grep
 ---
