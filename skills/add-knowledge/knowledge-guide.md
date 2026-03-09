@@ -144,7 +144,7 @@ Every knowledge source supports an optional `triggerCondition` field (a Power Fx
 
 2. **Startup topic initialization** — a greeting or `OnConversationStart` topic sets a global variable (e.g. `Global.UserDepartment`), then other sources use that variable in their `triggerCondition` to activate conditionally.
 
-3. **`OnKnowledgeRequested` topic** — a topic with this trigger fires every time the orchestrator calls the `UniversalSearchTool`. Combined with `triggerCondition: =false`, you can intercept all knowledge requests and route them through custom logic before the search runs.
+3. **`OnKnowledgeRequested` topic** — a topic with this trigger fires every time the orchestrator calls the `UniversalSearchTool`. Combined with `triggerCondition: =false`, you can intercept all knowledge requests and route them through custom logic before the search runs. It extends the knowledge retrieval with a more controled approach but it adds latency as it adds and extra search in the knowledge retrieval pipeline. Try to use it only when you need to run custom logic on every search request, and it is good to put a condition on the trigger to only run it when is really needed (e.g. only for users in the HR department, or only for certain types of queries).
 
 ```yaml
 # Example: source only searched for HR department users
@@ -171,6 +171,33 @@ This trigger fires on a topic every time the orchestrator calls the `UniversalSe
 - Load context, set variables, or pre-process the query
 - Route the search to specific knowledge sources based on user context
 
+#### Special System Variables (only available in `OnKnowledgeRequested` topics)
+
+These variables are **exclusively available** inside topics with an `OnKnowledgeRequested` trigger — they do not exist in regular topics.
+
+| Variable | Type | Description |
+|---|---|---|
+| `System.SearchQuery` | String | A rewritten version of the user's query optimized for **semantic/vector search**. Produced by the orchestrator using intent recognition and the agent's `instructions`. You can read it, inspect it, and override it if the rewrite is insufficient for your use case. |
+| `System.KeywordSearchQuery` | String | A rewritten query optimized for **lexical/keyword-based search**. Use this when calling a search API that relies on keyword matching (e.g. Azure AI Search with keyword mode). |
+| `System.SearchResults` | Object | The output variable where you write your custom search results. It starts empty — you must populate it with results in the required format for the orchestrator to use them in its response. |
+
+**Query rewriting includes conversation history.** The orchestrator automatically incorporates context from previous messages when rewriting the query — so `System.SearchQuery` is already context-aware. For example, if the user previously asked "What is the WFH policy?" and then says "And for contractors?", the rewritten query will include the understood subject, not just the word "contractors".
+
+**`System.SearchResults` format:** The results you write must conform to the expected schema so the orchestrator can cite them correctly. Each result is a record with the following fields:
+
+```yaml
+- kind: SetVariable
+  id: setResults_abc123
+  variable: System.SearchResults
+  value: =Table(
+    {
+      snippet: "The retrieved text content of the result",
+      title: "Document or page title",
+      url: "https://link-to-the-source-document"
+    }
+  )
+```
+
 ```yaml
 kind: AdaptiveDialog
 beginDialog:
@@ -193,3 +220,13 @@ beginDialog:
 - Use the `knowledgeSourceIds` filter in a `SearchAndSummarizeContent` node to restrict search to specific sources for a given topic
 - Use `OnKnowledgeRequested` to intercept all knowledge searches and apply custom routing or pre-processing
 - If a topic must never use knowledge (e.g. pure transactional flows), explicitly avoid `SearchAndSummarizeContent` nodes in it
+
+### Routing Searches by Category or Country
+
+When the `UniversalSearchTool` returns too many results from unrelated sources (causing hallucinations or answer blending), use **orchestrator-generated variables** to classify the query and route to a specific source inside an `OnKnowledgeRequested` topic.
+
+Common scenarios:
+- **By department/topic** (HR vs IT vs Finance) — classify query category, route to matching source
+- **By country** — extract or infer the target country from the conversation, route to the country-specific SharePoint site, fall back to a global source for unmatched countries
+
+See [best-practices/orchestrator-variables.md](../../best-practices/orchestrator-variables.md) for full YAML examples of both patterns, including how to combine country routing with the JIT user context pattern (`Global.UserCountry` as default).

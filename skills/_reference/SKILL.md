@@ -120,7 +120,7 @@ Connector actions (`kind: TaskDialog`) invoke external connector operations. The
 | `Global.<name>` | Global variable | Entire conversation (defined in `variables/` folder) |
 | `System.<name>` | System variable | Built-in, read-only |
 
-Global variables are defined as YAML files in `variables/<Name>.mcs.yml` (kind: `GlobalVariableComponent`). Set `aIVisibility: UseInAIContext` to make them visible to the AI orchestrator.
+Global variables are defined as YAML files in `variables/<Name>.mcs.yml` (kind: `GlobalVariableComponent`). `aIVisibility` accepts `UseInAIContext` (orchestrator can read and reason about the value) or `Hidden` (orchestrator unaware — use for flags and internal bookkeeping).
 
 ## Prebuilt Entities
 

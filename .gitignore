@@ -24,6 +24,7 @@ scripts/package-lock.json
 
 # VS Code settings (optional - remove if you want to share settings)
 .vscode/
+.github/copilot-instructions.md
 
 # Claude tmp files (in any subfolder)
 tmpclaude-*
