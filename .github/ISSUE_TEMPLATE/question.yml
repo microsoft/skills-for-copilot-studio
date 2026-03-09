@@ -1,0 +1,32 @@
+name: Question
+description: Ask a question about using the plugin
+labels: ["question"]
+body:
+  - type: textarea
+    id: question
+    attributes:
+      label: Question
+      description: What would you like to know?
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Context
+      description: What are you trying to accomplish? Any relevant background.
+    validations:
+      required: false
+
+  - type: dropdown
+    id: agent
+    attributes:
+      label: Related Agent
+      description: Which agent does this relate to?
+      options:
+        - author
+        - test
+        - troubleshoot
+        - General
+    validations:
+      required: true
