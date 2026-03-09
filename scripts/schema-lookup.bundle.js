@@ -3025,6 +3025,44 @@ function validateYamlFile(filepath, definitions) {
       console.log("[FAIL] Missing required 'source' property");
       failures++;
     }
+  } else if (kind === "AgentDialog") {
+    if (data.beginDialog) {
+      console.log("[PASS] Required 'beginDialog' property present");
+      passes++;
+      const bd = data.beginDialog;
+      if (bd.kind === "OnToolSelected") {
+        console.log("[PASS] beginDialog.kind: OnToolSelected");
+        passes++;
+      } else {
+        console.log(`[WARN] beginDialog.kind is '${bd.kind}' \u2014 expected 'OnToolSelected' for child agents`);
+        warnings++;
+      }
+      if (bd.description) {
+        console.log("[PASS] beginDialog.description present (used by parent orchestrator for routing)");
+        passes++;
+      } else {
+        console.log("[WARN] beginDialog.description missing \u2014 the parent orchestrator needs this to know when to route to this child agent");
+        warnings++;
+      }
+      if (bd.actions && Array.isArray(bd.actions) && bd.actions.length > 0) {
+        const actionKinds = bd.actions.filter((a) => a && a.kind).map((a) => a.kind);
+        console.log(`[FAIL] AgentDialog must NOT have beginDialog.actions (found ${bd.actions.length}: ${actionKinds.join(", ")}). Child agents use generative orchestration via settings.instructions \u2014 they cannot contain hardcoded action nodes like Question, SendActivity, BeginDialog, etc. Remove the actions array and define the agent's behavior in settings.instructions instead.`);
+        failures++;
+      } else {
+        console.log("[PASS] No hardcoded actions in beginDialog (correct for AgentDialog)");
+        passes++;
+      }
+    } else {
+      console.log("[FAIL] AgentDialog missing required 'beginDialog' property");
+      failures++;
+    }
+    if (data.settings && data.settings.instructions) {
+      console.log("[PASS] settings.instructions present");
+      passes++;
+    } else {
+      console.log("[WARN] Missing settings.instructions \u2014 child agents need instructions for generative orchestration");
+      warnings++;
+    }
   }
   const idsFound = [];
   function collectIds(obj) {

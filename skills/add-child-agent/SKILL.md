@@ -45,6 +45,8 @@ Create a new child agent (AgentDialog) that the parent agent's orchestrator can 
    - `inputType` — context the orchestrator passes in
    - `outputType` — what the child agent returns (use `outputType: {}` if no structured output is needed)
 
+   **CRITICAL: AgentDialog must NOT have `beginDialog.actions`.** Child agents use generative orchestration — all behavior is driven by `settings.instructions`. Do NOT add action nodes (Question, SendActivity, BeginDialog, ConditionGroup, etc.) to the actions array. If the user's scenario requires hardcoded action flows, it should be an AdaptiveDialog topic in the parent agent, not a child agent.
+
 6. **Key fields explained**:
    - `beginDialog.description` — This is what the parent orchestrator reads to decide when to route. Be specific and action-oriented (e.g., "This agent handles billing inquiries, refund requests, and payment issues").
    - `settings.instructions` — The child agent's system prompt. Define its personality, scope, and behavior guidelines.
