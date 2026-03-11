@@ -94,6 +94,7 @@ Use the template at `templates/knowledge/graph-connector.knowledge.mcs.yml`.
 - The site must be publicly crawlable — no login required
 - Avoid URLs that return dynamic content or require JavaScript rendering
 - Subdomains are treated as separate sources; add them individually if needed
+- **Crawl depth:** limit the crawl to a maximum of 2 levels deep. This prevents the error message "The website can't be more than two levels deep". (e.g. `https://docs.example.com/en-us/products/` not `https://example.com/en-us/products/categories/one`)
 
 **SharePoint:**
 - Use the deepest folder path that covers the needed documents (avoid sharing the root site)

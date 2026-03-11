@@ -58,6 +58,8 @@ Add a knowledge source to the agent. Supports **Public Website**, **SharePoint**
      site: https://www.example.com
    ```
 
+   > **Crawl depth:** The URL must be at most 2 levels deep — Copilot Studio will reject URLs with more than 2 path segments (e.g. `https://docs.example.com/en-us/products/` is valid, `https://example.com/en-us/products/categories/one` is not). If the user provides a URL that is too deep, ask them to use a shallower root URL.
+
    **SharePoint:**
    ```yaml
    # Name: <Name>

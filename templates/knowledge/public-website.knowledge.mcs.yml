@@ -3,4 +3,5 @@
 kind: KnowledgeSourceConfiguration
 source:
   kind: PublicSiteSearchSource
+  # Replace with your public website URL. The crawl limit is set to a maximum of 2 levels deep
   site: https://example.com/docs
