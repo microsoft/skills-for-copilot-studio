@@ -1,0 +1,221 @@
+/**
+ * Skills for Copilot Studio -- Global Theme
+ * Design: GitHub.com dark + Microsoft Copilot Studio purple
+ * Palette: #0d1117 bg, #161b22 surface, #a78bfa / #7c3aed accent
+ */
+
+:root {
+  --ifm-color-primary: #7c3aed;
+  --ifm-color-primary-dark: #6d28d9;
+  --ifm-color-primary-darker: #5b21b6;
+  --ifm-color-primary-darkest: #4c1d95;
+  --ifm-color-primary-light: #8b5cf6;
+  --ifm-color-primary-lighter: #a78bfa;
+  --ifm-color-primary-lightest: #c4b5fd;
+  --ifm-code-font-size: 95%;
+  --ifm-font-family-base: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+  --ifm-font-family-monospace: 'Cascadia Code', 'Fira Code', 'JetBrains Mono', ui-monospace, monospace;
+  --docusaurus-highlighted-code-line-bg: rgba(124, 58, 237, 0.1);
+  --ifm-navbar-height: 3.75rem;
+  --ifm-footer-background-color: #010409;
+}
+
+[data-theme='dark'] {
+  --ifm-color-primary: #a78bfa;
+  --ifm-color-primary-dark: #8b5cf6;
+  --ifm-color-primary-darker: #7c3aed;
+  --ifm-color-primary-darkest: #6d28d9;
+  --ifm-color-primary-light: #c4b5fd;
+  --ifm-color-primary-lighter: #ddd6fe;
+  --ifm-color-primary-lightest: #ede9fe;
+  --ifm-background-color: #0d1117;
+  --ifm-background-surface-color: #161b22;
+  --docusaurus-highlighted-code-line-bg: rgba(167, 139, 250, 0.12);
+  --ifm-footer-background-color: #010409;
+  --ifm-toc-border-color: rgba(139, 92, 246, 0.12);
+}
+
+/* -- Navbar --------------------------------------------------------------- */
+.navbar {
+  box-shadow: none;
+  border-bottom: 1px solid transparent;
+}
+[data-theme='dark'] .navbar {
+  background: rgba(13, 17, 23, 0.80);
+  backdrop-filter: saturate(180%) blur(12px);
+  -webkit-backdrop-filter: saturate(180%) blur(12px);
+  border-bottom: 1px solid rgba(139, 92, 246, 0.08);
+}
+.navbar__title {
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+[data-theme='dark'] .navbar__link {
+  color: #e6edf3;
+  font-size: 0.88rem;
+  font-weight: 500;
+}
+[data-theme='dark'] .navbar__link:hover,
+[data-theme='dark'] .navbar__link--active {
+  color: #a78bfa;
+}
+
+/* -- Footer --------------------------------------------------------------- */
+.footer--dark {
+  background: #010409;
+  border-top: 1px solid rgba(139, 92, 246, 0.08);
+}
+.footer--dark .footer__title {
+  color: #a78bfa;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.footer--dark .footer__link-item {
+  color: #8b949e;
+  font-size: 0.88rem;
+}
+.footer--dark .footer__link-item:hover {
+  color: #a78bfa;
+}
+.footer--dark .footer__copyright {
+  color: #484f58;
+  font-size: 0.8rem;
+  border-top: 1px solid rgba(139, 92, 246, 0.06);
+  padding-top: 1.5rem;
+  margin-top: 2rem;
+}
+
+/* -- Sidebar -------------------------------------------------------------- */
+[data-theme='dark'] .menu {
+  background-color: #0d1117;
+}
+[data-theme='dark'] .menu__link {
+  font-size: 0.88rem;
+  color: #8b949e;
+}
+[data-theme='dark'] .menu__link:hover {
+  color: #e6edf3;
+  background: rgba(139, 92, 246, 0.04);
+}
+[data-theme='dark'] .menu__link--active {
+  color: #a78bfa;
+  background: rgba(139, 92, 246, 0.08);
+  font-weight: 600;
+}
+[data-theme='dark'] .menu__list-item-collapsible:hover {
+  background: rgba(139, 92, 246, 0.04);
+}
+
+/* -- Code blocks ---------------------------------------------------------- */
+[data-theme='dark'] pre {
+  background-color: #161b22 !important;
+  border: 1px solid rgba(139, 92, 246, 0.08);
+  border-radius: 8px;
+}
+code {
+  border-radius: 4px;
+}
+[data-theme='dark'] code {
+  background-color: rgba(139, 92, 246, 0.08);
+  border: 1px solid rgba(139, 92, 246, 0.06);
+}
+
+/* -- Docs markdown -------------------------------------------------------- */
+.markdown a {
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+}
+.table-of-contents__link--active {
+  font-weight: 600;
+  color: #a78bfa !important;
+}
+.table-of-contents {
+  max-width: 260px;
+  font-size: 0.75rem;
+}
+.table-of-contents__link {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+.markdown pre,
+.markdown code[class*='language-'] {
+  max-width: 100%;
+}
+.markdown pre {
+  overflow-x: auto;
+}
+div[class^='codeBlockContainer'],
+div[class*=' codeBlockContainer'] {
+  max-width: 100%;
+  overflow: hidden;
+}
+.markdown h2 {
+  font-size: 1.4rem;
+  border-top: 1px solid rgba(139, 92, 246, 0.10);
+  margin-top: 2.5rem;
+  padding-top: 1.5rem;
+}
+.markdown h3 {
+  font-size: 1.15rem;
+}
+
+/* -- Tables in docs ------------------------------------------------------- */
+[data-theme='dark'] .markdown table {
+  border-collapse: collapse;
+}
+[data-theme='dark'] .markdown table th {
+  background: rgba(139, 92, 246, 0.06);
+  border-bottom: 2px solid rgba(139, 92, 246, 0.15);
+  font-weight: 600;
+}
+[data-theme='dark'] .markdown table td {
+  border-bottom: 1px solid rgba(139, 92, 246, 0.06);
+}
+[data-theme='dark'] .markdown table tr:hover td {
+  background: rgba(139, 92, 246, 0.03);
+}
+
+/* -- Doc page background -------------------------------------------------- */
+[data-theme='dark'] .docPage_node_modules-\@docusaurus-theme-classic-lib-theme-DocPage-Layout-styles-module,
+[data-theme='dark'] main[class*='docMainContainer'] {
+  background-color: #0d1117;
+}
+
+/* -- Breadcrumbs ---------------------------------------------------------- */
+[data-theme='dark'] .breadcrumbs__link {
+  color: #8b949e;
+}
+[data-theme='dark'] .breadcrumbs__link:hover {
+  color: #a78bfa;
+}
+
+/* -- Pagination ----------------------------------------------------------- */
+[data-theme='dark'] .pagination-nav__link {
+  border: 1px solid rgba(139, 92, 246, 0.10);
+  border-radius: 8px;
+  transition: border-color 0.15s;
+}
+[data-theme='dark'] .pagination-nav__link:hover {
+  border-color: rgba(139, 92, 246, 0.30);
+}
+
+/* -- Scrollbar ------------------------------------------------------------ */
+[data-theme='dark'] ::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+[data-theme='dark'] ::-webkit-scrollbar-track {
+  background: transparent;
+}
+[data-theme='dark'] ::-webkit-scrollbar-thumb {
+  background: rgba(139, 92, 246, 0.15);
+  border-radius: 4px;
+}
+[data-theme='dark'] ::-webkit-scrollbar-thumb:hover {
+  background: rgba(139, 92, 246, 0.30);
+}
