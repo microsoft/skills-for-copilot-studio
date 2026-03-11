@@ -49,13 +49,16 @@ Add a knowledge source to the agent. Supports **Public Website**, **SharePoint**
 6. **Generate the knowledge source YAML**.
 
    **Public Website:**
+
+   > `PublicSiteSearchSource` uses Bing search to find relevant snippets within the scoped URL. It does **not** crawl or summarize full pages. The URL defines a search scope (not a specific page), and supports a **maximum depth of 2 levels** beyond the domain (e.g. `https://example.com/docs/api` works, `https://example.com/docs/api/v2` is too deep and will be ignored).
+
    ```yaml
    # Name: <Name>
    # <Description of what this knowledge source provides>
    kind: KnowledgeSourceConfiguration
    source:
      kind: PublicSiteSearchSource
-     site: https://www.example.com
+     site: https://www.example.com/docs
    ```
 
    **SharePoint:**

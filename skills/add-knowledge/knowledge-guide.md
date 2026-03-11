@@ -45,7 +45,7 @@ Copilot Studio has exactly **one built-in tool** for knowledge retrieval: the **
 ## Knowledge Best Practices
 
 ### Source Selection
-- Use **PublicSiteSearchSource** for publicly accessible websites (docs, marketing sites, FAQs)
+- Use **PublicSiteSearchSource** for publicly accessible websites (docs, marketing sites, FAQs). This source uses **Bing search** under the hood to find relevant snippets within the scoped URL — it does not crawl or summarize full web pages. See URL Guidelines below for depth limits.
 - Use **SharePointSearchSource** for internal company content
 - Use **GraphConnectorSearchSource** for enterprise systems indexed via Microsoft Graph connectors (ServiceNow, Salesforce, Jira, custom connectors, etc.) — see below
 - All other types (Dataverse, AI Search, uploaded files, SQL) must be configured via the Copilot Studio UI
@@ -89,9 +89,17 @@ Use the template at `templates/knowledge/graph-connector.knowledge.mcs.yml`.
 - Use descriptive, lowercase, hyphenated filenames: `hr-policies.knowledge.mcs.yml` not `ks1.knowledge.mcs.yml`
 
 ### URL Guidelines
-**Public websites:**
-- Provide the most specific URL that covers the needed content (e.g. `https://docs.example.com/products/` not `https://example.com/`)
-- The site must be publicly crawlable — no login required
+**Public websites (`PublicSiteSearchSource`):**
+
+> **How it works:** `PublicSiteSearchSource` uses **Bing search** to find relevant snippets from the web scope you provide. It is **not** a web crawler or page summarizer — it cannot return or summarize a full web page. It finds and returns relevant information based on the user's intent, scoped to the URL you specify.
+
+- The URL defines a **search scope**, not a pointer to a specific page. Think of it as telling Bing: "only return results from under this URL path"
+- **Maximum URL depth: 2 levels** beyond the domain. For example:
+  - `https://microsoft.com/products/surface` — works (2 levels: `products/surface`)
+  - `https://docs.example.com/en-us/azure` — works (2 levels: `en-us/azure`)
+  - `https://microsoft.com/en-us/microsoft-365/business` — **ignored** (3 levels: too deep)
+  - This is a current platform limitation and may be relaxed in the future
+- The site must be publicly accessible — no login required
 - Avoid URLs that return dynamic content or require JavaScript rendering
 - Subdomains are treated as separate sources; add them individually if needed
 

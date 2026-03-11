@@ -1,5 +1,9 @@
 # Name: <Knowledge Source Name>
 # <What this knowledge source provides>
+# NOTE: PublicSiteSearchSource uses Bing to find relevant snippets within this URL scope.
+# It does NOT crawl or summarize full pages. Max URL depth: 2 levels beyond domain.
+# Good:  https://example.com/docs/api
+# Bad:   https://example.com/docs/api/v2  (3 levels — too deep, will be ignored)
 kind: KnowledgeSourceConfiguration
 source:
   kind: PublicSiteSearchSource
