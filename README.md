@@ -16,6 +16,8 @@ A plugin for [Claude Code](https://docs.anthropic.com/en/docs/claude-code) and [
 /plugin install copilot-studio@microsoft/skills-for-copilot-studio
 ```
 
+> **Important: Enable automatic updates.** After installing, open your plugin/marketplace settings and turn on auto-updates for this plugin. The skills and schema references are updated frequently with new Copilot Studio features, best practices, and bug fixes. With auto-updates enabled, you always get the latest improvements without reinstalling. In Claude Code, type `/plugin`, navigate to "Skills for Copilot Studio", and enable the auto-update toggle.
+
 ### From a local clone
 
 ```bash

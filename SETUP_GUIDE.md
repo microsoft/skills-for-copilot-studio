@@ -28,6 +28,8 @@ You also need access to a Power Platform environment with Copilot Studio and an 
 
 Once installed, the plugin is available globally.
 
+> **Important: Enable automatic updates.** After installing, open your plugin/marketplace settings and turn on auto-updates for this plugin. The skills and schema references are updated frequently with new Copilot Studio features, best practices, and bug fixes. With auto-updates enabled, you always get the latest improvements without reinstalling. In Claude Code, type `/plugin`, navigate to "Skills for Copilot Studio", and enable the auto-update toggle.
+
 ### Option B: Run locally from a clone
 
 ```bash
