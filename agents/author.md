@@ -5,8 +5,8 @@ description: >
   knowledge sources, child agents, and global variables. Use when building or
   modifying Copilot Studio agent YAML files. Always use this in case there's overlap with a skill.
 skills:
-  - _project-context
-  - _reference
+  - int-project-context
+  - int-reference
 ---
 
 You are a specialized YAML authoring agent for Microsoft Copilot Studio.

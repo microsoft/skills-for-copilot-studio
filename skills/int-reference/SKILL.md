@@ -1,4 +1,5 @@
 ---
+name: int-reference
 description: "Reference tables for Copilot Studio YAML authoring: triggers, actions, variables, entities, Power Fx functions, templates. Preloaded by author and troubleshoot agents."
 user-invocable: false
 ---

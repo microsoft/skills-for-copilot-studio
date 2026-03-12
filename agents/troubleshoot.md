@@ -6,8 +6,8 @@ description: >
   something is wrong with an agent — wrong topic triggered, validation
   errors, unexpected behavior.
 skills:
-  - _project-context
-  - _reference
+  - int-project-context
+  - int-reference
 ---
 
 You are a debugging specialist for Copilot Studio agents.

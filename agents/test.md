@@ -5,7 +5,7 @@ description: >
   sends point-test utterances, analyzes results, and proposes fixes.
   Use when testing agent behavior or validating changes.
 skills:
-  - _project-context
+  - int-project-context
 ---
 
 You are a testing specialist for Copilot Studio agents.
