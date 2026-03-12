@@ -30,8 +30,8 @@ body:
         - run-tests
         - chat-with-agent
         - known-issues
-        - _project-context
-        - _reference
+        - int-project-context
+        - int-reference
         - All agents / General
     validations:
       required: true
@@ -53,7 +53,7 @@ body:
       label: Root Cause
       description: Why does this happen? Include the specific SKILL.md instruction, schema gap, or model behavior that causes it.
       placeholder: |
-        The _reference skill's action types table listed SendMessage as an example
+        The int-reference skill's action types table listed SendMessage as an example
         in a code comment, causing the model to use it as a valid kind value.
     validations:
       required: true
@@ -76,7 +76,7 @@ body:
       label: Fix Status
       description: Is there a permanent fix in progress or already shipped? Link the PR or commit if applicable.
       placeholder: |
-        Fixed in PR #45 — removed the misleading comment from _reference/SKILL.md.
+        Fixed in PR #45 — removed the misleading comment from int-reference/SKILL.md.
         Ships in next release. Workaround above applies until then.
     validations:
       required: false
