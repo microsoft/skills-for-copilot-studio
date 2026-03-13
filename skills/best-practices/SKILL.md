@@ -1,7 +1,7 @@
 ---
 user-invocable: false
 name: best-practices
-description: "Best practices for Copilot Studio agents. Covers JIT glossary loading (customer acronyms, terminology), JIT user context provisioning (M365 profile, country, department), and the shared OnActivity initialization pattern. USE FOR: glossary, acronyms, user context, user profile, country-aware answers, JIT initialization, OnActivity provisioning, conversation-init, personalized knowledge. DO NOT USE FOR: general knowledge sources (use add-knowledge), topic creation (use new-topic)."
+description: "Best practices for Copilot Studio agents. Covers JIT glossary loading (customer acronyms, terminology), JIT user context provisioning (M365 profile, country, department), the shared OnActivity initialization pattern, dynamic topic redirects with Switch expressions, and preventing child agents from responding directly to users. USE FOR: glossary, acronyms, user context, user profile, country-aware answers, JIT initialization, OnActivity provisioning, conversation-init, personalized knowledge, dynamic redirect, Switch, BeginDialog, if/then/else replacement, child agent responses, completion setting, SendMessageTool, output variables, connected agents. DO NOT USE FOR: general knowledge sources (use add-knowledge), topic creation (use new-topic)."
 context: fork
 agent: author
 ---
@@ -28,6 +28,23 @@ Loads the current user's Microsoft 365 profile (country, department, display nam
 - The agent needs to call the M365 Users connector (`GetMyProfile` / `UserGet_V2`)
 - The user asks about personalizing responses based on who is chatting
 
+## Dynamic Topic Redirect with Variable → [Topic-redirect-withvariable.md](Topic-redirect-withvariable.md)
+
+Uses a `Switch()` Power Fx expression inside a `BeginDialog` node to dynamically redirect to different topics based on a variable value. Replaces complex if/then/else condition chains with a single, maintainable YAML pattern.
+
+**Read this best-practice when:**
+- The user needs to route to one of several topics based on a variable
+- The user wants to replace nested ConditionGroup nodes with a cleaner approach
+- The user asks about dynamic topic redirects or Switch expressions in BeginDialog
+
+## Prevent Child Agent Responses → [prevent-child-agent-responses.md](prevent-child-agent-responses.md)
+
+Prevents child agents (connected agents) from sending messages directly to the user. Clarifies the common misconception about the completion setting and provides the instruction block to force child agents to use output variables instead of `SendMessageTool`.
+
+**Read this best-practice when:**
+- The user wants a child agent to return data without messaging the user
+- The user is confused about the completion setting on a child agent
+- The parent agent needs to control all user-facing responses
 ## Date Context → [date-context.md](date-context.md)
 
 Provides the current date to the orchestrator through agent instructions using Power FX (`{Text(Today(),DateTimeFormat.LongDate)}`). Enables accurate responses to date-related questions by giving the orchestrator explicit awareness of "today" for interpreting relative timeframes.
