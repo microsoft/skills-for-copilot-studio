@@ -33,12 +33,13 @@ claude plugin install /path/to/skills-for-copilot-studio --scope project
 
 ## Usage
 
-The plugin provides three commands, each backed by a specialized agent:
+The plugin provides four commands, each backed by a specialized agent:
 
 ```
-/copilot-studio:author      Create and edit YAML (topics, actions, knowledge, triggers, variables)
+/copilot-studio:author       Create and edit YAML (topics, actions, knowledge, triggers, variables)
 /copilot-studio:test         Test published agents — point-tests, batch suites, or evaluation analysis
 /copilot-studio:troubleshoot Debug issues — wrong topic routing, validation errors, unexpected behavior
+/copilot-studio:manage       Push, pull, and sync agent content between local files and the cloud
 ```
 
 ## Quick Start

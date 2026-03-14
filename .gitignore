@@ -23,6 +23,9 @@ scripts/package-lock.json
 # Agent tmp files (in any subfolder)
 tmpclaude-*
 
+# Token cache (shared by lsp-sync, directline-chat, tests, etc.)
+.token_cache.json
+
 # Environment files (if used in the future)
 .env
 .env.local
