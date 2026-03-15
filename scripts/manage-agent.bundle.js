@@ -14010,7 +14010,7 @@ Error Description: '${typedError.message}'`, this.correlationId);
   }
 });
 
-// src/lsp-sync.js
+// src/manage-agent.js
 var { spawn } = require("child_process");
 var { randomUUID } = require("crypto");
 var path = require("path");
@@ -14036,7 +14036,8 @@ function parseArgs() {
     agentMgmtUrl: process.env.CPS_AGENT_MGMT_URL || null,
     environmentName: process.env.CPS_ENVIRONMENT_NAME || null,
     accountId: null,
-    accountEmail: null
+    accountEmail: null,
+    agentId: null
   };
   for (let i = 0; i < args.length; i++) {
     switch (args[i]) {
@@ -14067,6 +14068,9 @@ function parseArgs() {
       case "--account-email":
         parsed.accountEmail = args[++i];
         break;
+      case "--agent-id":
+        parsed.agentId = args[++i];
+        break;
       default:
         if (!args[i].startsWith("--") && !parsed.command) {
           parsed.command = args[i];
@@ -14076,19 +14080,33 @@ function parseArgs() {
   }
   if (!parsed.command) {
     die(
-      "Usage: lsp-sync <command> [options]\nCommands: auth, push, pull, clone, changes, list-agents, list-envs"
+      "Usage: manage-agent <command> [options]\nCommands: auth, push, pull, clone, changes, list-agents, list-envs"
     );
   }
   return parsed;
 }
 var CREDENTIAL_SERVICE = "copilot-studio-cli";
-var CREDENTIAL_ACCOUNT = "lsp-sync";
+var CREDENTIAL_ACCOUNT = "manage-agent";
+var LEGACY_CREDENTIAL_ACCOUNT = "lsp-sync";
 var LEGACY_CACHE_PATH = path.join(__dirname, "..", ".token_cache.json");
 var _cache = null;
 async function ensureCacheLoaded() {
   if (_cache !== null) return;
   await migrateLegacyCache(LEGACY_CACHE_PATH, CREDENTIAL_SERVICE, CREDENTIAL_ACCOUNT);
+  await migrateAccountName();
   _cache = await loadCache(CREDENTIAL_SERVICE, CREDENTIAL_ACCOUNT);
+}
+async function migrateAccountName() {
+  try {
+    const oldData = await loadCache(CREDENTIAL_SERVICE, LEGACY_CREDENTIAL_ACCOUNT);
+    if (oldData && Object.keys(oldData).length > 0) {
+      await saveCache(CREDENTIAL_SERVICE, CREDENTIAL_ACCOUNT, oldData);
+      await clearCache(CREDENTIAL_SERVICE, LEGACY_CREDENTIAL_ACCOUNT);
+      log(`Migrated credentials from "${LEGACY_CREDENTIAL_ACCOUNT}" to "${CREDENTIAL_ACCOUNT}"`);
+    }
+  } catch (e) {
+    log(`Account migration skipped: ${e.message}`);
+  }
 }
 async function persistCache() {
   await saveCache(CREDENTIAL_SERVICE, CREDENTIAL_ACCOUNT, _cache);
@@ -14369,7 +14387,7 @@ var LspClient = class {
     if (this.running) return;
     const net = require("net");
     const sessionId = randomUUID();
-    const pipePath = os.platform() === "win32" ? `\\\\.\\pipe\\lsp-sync-${sessionId}` : path.join(os.tmpdir(), `lsp-sync-${sessionId}.sock`);
+    const pipePath = os.platform() === "win32" ? `\\\\.\\pipe\\manage-agent-${sessionId}` : path.join(os.tmpdir(), `manage-agent-${sessionId}.sock`);
     const server = net.createServer();
     server.listen(pipePath);
     await new Promise((resolve, reject) => {
@@ -14686,7 +14704,6 @@ async function cmdAuth(args) {
 async function cmdWithLsp(args, method) {
   if (!args.workspace) die("--workspace is required");
   if (!args.tenantId) die("--tenant-id (or CPS_TENANT_ID) is required");
-  if (!args.clientId) die("--client-id (or CPS_CLIENT_ID) is required");
   if (!args.environmentUrl) die("--environment-url (or CPS_ENVIRONMENT_URL) is required");
   if (!args.environmentId) die("--environment-id (or CPS_ENVIRONMENT_ID) is required");
   if (!args.agentMgmtUrl) die("--agent-mgmt-url (or CPS_AGENT_MGMT_URL) is required");
@@ -14694,6 +14711,8 @@ async function cmdWithLsp(args, method) {
   const conn = loadConnJson(agentDir);
   const clusterCategory = conn?.AccountInfo?.clusterCategory;
   const tenantId = conn?.AccountInfo?.TenantId || args.tenantId;
+  const clientId = args.clientId || VSCODE_CLIENT_ID;
+  const useInteractive = !args.clientId;
   const envUrl = args.environmentUrl.replace(/\/+$/, "");
   let cpsToken, dvToken;
   if (clusterCategory != null) {
@@ -14704,17 +14723,30 @@ async function cmdWithLsp(args, method) {
       [`${envUrl}/.default`],
       "Dataverse API"
     );
+  } else if (useInteractive) {
+    cpsToken = await getOrAcquireTokenInteractive(
+      tenantId,
+      VSCODE_CLIENT_ID,
+      ["https://api.powerplatform.com/.default"],
+      "Copilot Studio API"
+    );
+    dvToken = await getOrAcquireTokenInteractive(
+      tenantId,
+      VSCODE_CLIENT_ID,
+      [`${envUrl}/.default`],
+      "Dataverse API"
+    );
   } else {
-    log("Warning: no cluster category in conn.json, falling back to generic tokens");
+    log("Warning: no cluster category in conn.json, falling back to device code flow");
     cpsToken = await getOrAcquireToken(
       tenantId,
-      args.clientId,
+      clientId,
       ["https://api.powerplatform.com/.default", "offline_access"],
       "Copilot Studio API"
     );
     dvToken = await getOrAcquireToken(
       tenantId,
-      args.clientId,
+      clientId,
       [`${envUrl}/.default`, "offline_access"],
       "Dataverse API"
     );
@@ -14734,94 +14766,105 @@ async function cmdWithLsp(args, method) {
     await client.stop();
   }
 }
+var BAP_HOST = "api.bap.microsoft.com";
+var BAP_TOKEN_SCOPE = "https://service.powerapps.com/.default";
+async function httpGetJson(url, accessToken) {
+  const https = require("https");
+  return new Promise((resolve, reject) => {
+    const req = https.get(url, {
+      headers: { Authorization: `Bearer ${accessToken}` }
+    }, (res) => {
+      let data = "";
+      res.on("data", (chunk) => data += chunk);
+      res.on("end", () => {
+        if (res.statusCode >= 400) {
+          reject(new Error(`HTTP ${res.statusCode}: ${data.substring(0, 500)}`));
+        } else {
+          try {
+            resolve(JSON.parse(data));
+          } catch (e) {
+            reject(new Error(`Invalid JSON: ${e.message}`));
+          }
+        }
+      });
+    });
+    req.on("error", reject);
+    req.setTimeout(3e4, () => {
+      req.destroy();
+      reject(new Error("HTTP request timed out"));
+    });
+  });
+}
 async function cmdListAgents(args) {
   if (!args.tenantId) die("--tenant-id (or CPS_TENANT_ID) is required");
-  if (!args.clientId) die("--client-id (or CPS_CLIENT_ID) is required");
   if (!args.environmentUrl) die("--environment-url (or CPS_ENVIRONMENT_URL) is required");
-  if (!args.environmentId) die("--environment-id (or CPS_ENVIRONMENT_ID) is required");
-  if (!args.agentMgmtUrl) die("--agent-mgmt-url (or CPS_AGENT_MGMT_URL) is required");
-  const cpsToken = await getOrAcquireToken(
-    args.tenantId,
-    args.clientId,
-    ["https://api.powerplatform.com/.default", "offline_access"],
-    "Copilot Studio API"
-  );
+  const clientId = args.clientId || VSCODE_CLIENT_ID;
+  const useInteractive = !args.clientId;
+  const acquireToken = useInteractive ? getOrAcquireTokenInteractive : getOrAcquireToken;
   const envUrl = args.environmentUrl.replace(/\/+$/, "");
-  const dvToken = await getOrAcquireToken(
+  const dvScopes = useInteractive ? [`${envUrl}/.default`] : [`${envUrl}/.default`, "offline_access"];
+  const dvToken = await acquireToken(
     args.tenantId,
-    args.clientId,
-    [`${envUrl}/.default`, "offline_access"],
+    clientId,
+    dvScopes,
     "Dataverse API"
   );
-  const tokens = { copilotStudio: cpsToken, dataverse: dvToken };
-  const binaryInfo = findBinary();
-  const client = new LspClient(binaryInfo, process.cwd());
-  try {
-    await client.start();
-    const request = {
-      accountInfo: {
-        accountId: args.accountId || tokens.copilotStudio.account?.homeAccountId || "unknown",
-        accountEmail: args.accountEmail || tokens.copilotStudio.account?.username || void 0,
-        tenantId: args.tenantId
-      },
-      copilotStudioAccessToken: tokens.copilotStudio.accessToken,
-      dataverseAccessToken: tokens.dataverse.accessToken,
-      environmentInfo: {
-        agentManagementUrl: args.agentMgmtUrl,
-        dataverseUrl: args.environmentUrl,
-        displayName: args.environmentName || "Environment",
-        environmentId: args.environmentId
-      }
-    };
-    log("Calling powerplatformls/listAgents...");
-    const result = await client.sendCustomRequest(
-      "powerplatformls/listAgents",
-      request
-    );
-    process.stdout.write(
-      JSON.stringify({ status: "ok", agents: result }, null, 2) + "\n"
-    );
-  } finally {
-    await client.stop();
-  }
+  log("Calling WhoAmI...");
+  const whoAmI = await httpGetJson(
+    `${envUrl}/api/data/v9.2/WhoAmI`,
+    dvToken.accessToken
+  );
+  const systemUserId = whoAmI.UserId;
+  log(`Signed in as user: ${systemUserId}`);
+  const filter = encodeURIComponent(`ismanaged eq false and _ownerid_value eq ${systemUserId}`);
+  const select = encodeURIComponent("botid,name");
+  log("Listing agents...");
+  const botsResponse = await httpGetJson(
+    `${envUrl}/api/data/v9.2/bots?$select=${select}&$filter=${filter}`,
+    dvToken.accessToken
+  );
+  const agents = (botsResponse.value || []).map((bot) => ({
+    agentId: bot.botid,
+    displayName: bot.name
+  }));
+  process.stdout.write(
+    JSON.stringify({ status: "ok", agents }, null, 2) + "\n"
+  );
 }
 async function cmdListEnvs(args) {
   if (!args.tenantId) die("--tenant-id (or CPS_TENANT_ID) is required");
-  if (!args.clientId) die("--client-id (or CPS_CLIENT_ID) is required");
-  const cpsToken = await getOrAcquireToken(
+  const clientId = args.clientId || VSCODE_CLIENT_ID;
+  const useInteractive = !args.clientId;
+  const acquireToken = useInteractive ? getOrAcquireTokenInteractive : getOrAcquireToken;
+  const scopes = useInteractive ? [BAP_TOKEN_SCOPE] : [BAP_TOKEN_SCOPE, "offline_access"];
+  const bapToken = await acquireToken(
     args.tenantId,
-    args.clientId,
-    ["https://api.powerplatform.com/.default", "offline_access"],
-    "Copilot Studio API"
+    clientId,
+    scopes,
+    "Power Platform API"
   );
-  const binaryInfo = findBinary();
-  const client = new LspClient(binaryInfo, process.cwd());
-  try {
-    await client.start();
-    const request = {
-      accountInfo: {
-        accountId: args.accountId || cpsToken.account?.homeAccountId || "unknown",
-        accountEmail: args.accountEmail || cpsToken.account?.username || void 0,
-        tenantId: args.tenantId
-      },
-      copilotStudioAccessToken: cpsToken.accessToken
-    };
-    log("Calling powerplatformls/listEnvironments...");
-    const result = await client.sendCustomRequest(
-      "powerplatformls/listEnvironments",
-      request
-    );
-    process.stdout.write(
-      JSON.stringify({ status: "ok", environments: result }, null, 2) + "\n"
-    );
-  } finally {
-    await client.stop();
-  }
+  const filter = encodeURIComponent("properties/environmentSku ne 'Platform'");
+  const url = `https://${BAP_HOST}/providers/Microsoft.BusinessAppPlatform/environments?api-version=2024-05-01&$filter=${filter}&$expand=properties.permissions`;
+  log("Fetching environments from BAP API...");
+  const response = await httpGetJson(url, bapToken.accessToken);
+  const environments = (response.value || []).filter((env) => {
+    const meta = env.properties?.linkedEnvironmentMetadata;
+    const perms = env.properties?.permissions;
+    return meta?.instanceUrl && (perms?.UpdateEnvironment || perms?.CreatePowerApp);
+  }).map((env) => ({
+    environmentId: env.name,
+    displayName: env.properties.displayName,
+    dataverseUrl: env.properties.linkedEnvironmentMetadata.instanceUrl,
+    agentManagementUrl: env.properties.runtimeEndpoints?.["microsoft.PowerVirtualAgents"] || null,
+    environmentSku: env.properties.environmentSku
+  }));
+  process.stdout.write(
+    JSON.stringify({ status: "ok", environments }, null, 2) + "\n"
+  );
 }
 async function cmdChanges(args) {
   if (!args.workspace) die("--workspace is required");
   if (!args.tenantId) die("--tenant-id (or CPS_TENANT_ID) is required");
-  if (!args.clientId) die("--client-id (or CPS_CLIENT_ID) is required");
   if (!args.environmentUrl) die("--environment-url (or CPS_ENVIRONMENT_URL) is required");
   if (!args.environmentId) die("--environment-id (or CPS_ENVIRONMENT_ID) is required");
   if (!args.agentMgmtUrl) die("--agent-mgmt-url (or CPS_AGENT_MGMT_URL) is required");
@@ -14829,6 +14872,8 @@ async function cmdChanges(args) {
   const conn = loadConnJson(agentDir);
   const clusterCategory = conn?.AccountInfo?.clusterCategory;
   const tenantId = conn?.AccountInfo?.TenantId || args.tenantId;
+  const clientId = args.clientId || VSCODE_CLIENT_ID;
+  const useInteractive = !args.clientId;
   const envUrl = args.environmentUrl.replace(/\/+$/, "");
   let cpsToken, dvToken;
   if (clusterCategory != null) {
@@ -14839,16 +14884,29 @@ async function cmdChanges(args) {
       [`${envUrl}/.default`],
       "Dataverse API"
     );
+  } else if (useInteractive) {
+    cpsToken = await getOrAcquireTokenInteractive(
+      tenantId,
+      VSCODE_CLIENT_ID,
+      ["https://api.powerplatform.com/.default"],
+      "Copilot Studio API"
+    );
+    dvToken = await getOrAcquireTokenInteractive(
+      tenantId,
+      VSCODE_CLIENT_ID,
+      [`${envUrl}/.default`],
+      "Dataverse API"
+    );
   } else {
     cpsToken = await getOrAcquireToken(
       tenantId,
-      args.clientId,
+      clientId,
       ["https://api.powerplatform.com/.default", "offline_access"],
       "Copilot Studio API"
     );
     dvToken = await getOrAcquireToken(
       tenantId,
-      args.clientId,
+      clientId,
       [`${envUrl}/.default`, "offline_access"],
       "Dataverse API"
     );
@@ -14880,6 +14938,102 @@ async function cmdChanges(args) {
     await client.stop();
   }
 }
+var SOLUTION_NAMES = [
+  "msft_AIPlatformExtensionsComponents",
+  "msdyn_RelevanceSearch",
+  "PowerVirtualAgents"
+];
+async function fetchSolutionVersions(envUrl, accessToken) {
+  const filter = SOLUTION_NAMES.map((s) => `uniquename eq '${s}'`).join(" or ");
+  const query = `$select=uniquename,version&$filter=${encodeURIComponent(filter)}`;
+  const url = `${envUrl}/api/data/v9.2/solutions?${query}`;
+  log("Fetching solution versions...");
+  const response = await httpGetJson(url, accessToken);
+  const solutionVersions = {};
+  let copilotStudioSolutionVersion = "1.0.0";
+  for (const sol of response.value || []) {
+    if (sol.uniquename === "PowerVirtualAgents") {
+      copilotStudioSolutionVersion = sol.version;
+    } else {
+      solutionVersions[sol.uniquename] = sol.version;
+    }
+  }
+  return { solutionVersions, copilotStudioSolutionVersion };
+}
+async function fetchAgentInfo(envUrl, agentId, accessToken) {
+  const query = `$select=botid,name,iconbase64&$expand=bot_botcomponentcollection($select=schemaname,botcomponentcollectionid,name)`;
+  const url = `${envUrl}/api/data/v9.2/bots(${agentId})?${query}`;
+  log(`Fetching agent info for ${agentId}...`);
+  const bot = await httpGetJson(url, accessToken);
+  return {
+    agentId: bot.botid,
+    displayName: bot.name,
+    displayComplement: "",
+    iconBase64: bot.iconbase64 || "",
+    componentCollections: (bot.bot_botcomponentcollection || []).map((cc) => ({
+      id: cc.botcomponentcollectionid,
+      schemaName: cc.schemaname,
+      displayName: cc.name
+    }))
+  };
+}
+async function cmdClone(args) {
+  if (!args.workspace) die("--workspace is required");
+  if (!args.tenantId) die("--tenant-id (or CPS_TENANT_ID) is required");
+  if (!args.environmentUrl) die("--environment-url (or CPS_ENVIRONMENT_URL) is required");
+  if (!args.environmentId) die("--environment-id (or CPS_ENVIRONMENT_ID) is required");
+  if (!args.agentMgmtUrl) die("--agent-mgmt-url (or CPS_AGENT_MGMT_URL) is required");
+  if (!args.agentId) die("--agent-id is required for clone");
+  const clientId = args.clientId || VSCODE_CLIENT_ID;
+  const useInteractive = !args.clientId;
+  const acquireToken = useInteractive ? getOrAcquireTokenInteractive : getOrAcquireToken;
+  const envUrl = args.environmentUrl.replace(/\/+$/, "");
+  const DEFAULT_CLUSTER_CATEGORY = 5;
+  const cpsToken = await getOrAcquireIslandToken(args.tenantId, DEFAULT_CLUSTER_CATEGORY, "Island API");
+  const dvScopes = useInteractive ? [`${envUrl}/.default`] : [`${envUrl}/.default`, "offline_access"];
+  const dvToken = await acquireToken(args.tenantId, clientId, dvScopes, "Dataverse API");
+  const [agentInfo, solVersions] = await Promise.all([
+    fetchAgentInfo(envUrl, args.agentId, dvToken.accessToken),
+    fetchSolutionVersions(envUrl, dvToken.accessToken)
+  ]);
+  log(`Cloning agent: ${agentInfo.displayName}`);
+  const rootFolder = path.resolve(args.workspace);
+  const binaryInfo = findBinary();
+  const client = new LspClient(binaryInfo, rootFolder);
+  try {
+    await client.start();
+    const request = {
+      accountInfo: {
+        accountId: args.accountId || dvToken.account?.homeAccountId || "unknown",
+        accountEmail: args.accountEmail || dvToken.account?.username || void 0,
+        tenantId: args.tenantId,
+        clusterCategory: DEFAULT_CLUSTER_CATEGORY
+      },
+      copilotStudioAccessToken: cpsToken.accessToken,
+      dataverseAccessToken: dvToken.accessToken,
+      environmentInfo: {
+        agentManagementUrl: args.agentMgmtUrl,
+        dataverseUrl: envUrl,
+        displayName: args.environmentName || "Environment",
+        environmentId: args.environmentId
+      },
+      solutionVersions: solVersions,
+      agentInfo,
+      assets: { cloneAgent: true, componentcollectionIds: [] },
+      rootFolder
+    };
+    log("Calling powerplatformls/cloneAgent...");
+    const result = await client.sendCustomRequest(
+      "powerplatformls/cloneAgent",
+      request
+    );
+    process.stdout.write(
+      JSON.stringify({ status: "ok", method: "powerplatformls/cloneAgent", result }, null, 2) + "\n"
+    );
+  } finally {
+    await client.stop();
+  }
+}
 async function main() {
   const args = parseArgs();
   try {
@@ -14894,7 +15048,7 @@ async function main() {
         await cmdWithLsp(args, "powerplatformls/syncPull");
         break;
       case "clone":
-        await cmdWithLsp(args, "powerplatformls/cloneAgent");
+        await cmdClone(args);
         break;
       case "changes":
         await cmdChanges(args);

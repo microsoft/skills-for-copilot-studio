@@ -46,7 +46,19 @@ To verify, type `/` in the input — you should see `copilot-studio:author`, `co
 
 ## 2. Clone an Agent
 
-Use the **Copilot Studio VS Code Extension** to clone your agent into a project directory. After cloning, you should see `agent.mcs.yml`, `settings.mcs.yml`, and directories like `topics/`, `actions/`, and `knowledge/`.
+### Option A: Clone via the plugin (recommended)
+
+```
+/copilot-studio:manage clone
+```
+
+This walks you through environment selection, agent selection, and downloads the agent files — all with interactive browser auth (no app registration needed).
+
+### Option B: Clone via VS Code
+
+Use the **Copilot Studio VS Code Extension** to clone your agent into a project directory.
+
+After cloning, you should see `agent.mcs.yml`, `settings.mcs.yml`, and directories like `topics/`, `actions/`, and `knowledge/`.
 
 ---
 

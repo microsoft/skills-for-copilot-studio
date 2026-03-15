@@ -180,7 +180,7 @@ const platform = os.platform();
 /**
  * Load cached data from the credential store.
  * @param {string} serviceName — logical service (default: "copilot-studio-cli")
- * @param {string} accountName — cache partition key (e.g. "lsp-sync", "chat")
+ * @param {string} accountName — cache partition key (e.g. "manage-agent", "chat")
  * @returns {object} parsed cache object, or {} if not found
  */
 async function loadCache(serviceName = SERVICE_NAME, accountName = "default") {

@@ -2,24 +2,24 @@
 user-invocable: false
 description: Push/pull Copilot Studio agent content via the VS Code extension's LanguageServerHost LSP binary. Handles authentication (interactive browser login for push/pull, device code flow for chat token), sync push, sync pull, clone, and diff operations.
 argument-hint: <push|pull|clone|changes|auth>
-allowed-tools: Bash(node *lsp-sync.bundle.js *), Read, Glob, Grep
+allowed-tools: Bash(node *manage-agent.bundle.js *), Read, Glob, Grep
 context: fork
 agent: manage
 ---
 
-# LSP Sync
+# Manage Agent
 
 Push and pull Copilot Studio agent content by calling the VS Code extension's LanguageServerHost binary directly, using the same custom LSP protocol the extension uses internally.
 
 ## Prerequisites
 
 1. **Copilot Studio VS Code extension** must be installed (`ms-copilotstudio.vscode-copilotstudio`).
-2. **Azure AD app registration** — a public client app with device code flow enabled, with API permissions for `https://api.powerplatform.com` and Dynamics CRM.
-3. **Environment details** — tenant ID, environment ID, environment URL, and agent management URL. These can come from `~/.claude/docs/local-agents.json` or from the `.mcs/conn.json` inside a cloned agent workspace.
+2. **Azure AD app registration** (optional) — only needed for device code flow (`auth` command). If `--client-id` is omitted, the script uses VS Code's first-party client ID with interactive browser login instead.
+3. **Environment details** — tenant ID, environment ID, environment URL, and agent management URL. These come from the `.mcs/conn.json` inside a cloned agent workspace (created automatically during clone).
 
 ## Phase 0: Resolve Configuration
 
-If `$ARGUMENTS` specifies a known agent from `~/.claude/docs/local-agents.json`, extract the relevant `tenantId`, `environmentId`, `environmentUrl`, and `appClientId` from that config. If the workspace has `.mcs/conn.json`, the script auto-reads environment details from it. Otherwise, ask the user.
+Search for `.mcs/conn.json` in the workspace and nearby directories to find existing connection details. The script auto-reads environment details from `conn.json`. If no `conn.json` is found, ask the user for the required parameters.
 
 ## Phase 1: Authenticate
 
@@ -42,7 +42,7 @@ The `auth` command acquires a generic `api.powerplatform.com` token using **devi
 Run with a **5-minute timeout**:
 
 ```bash
-node ${CLAUDE_SKILL_DIR}/../../scripts/lsp-sync.bundle.js auth \
+node ${CLAUDE_SKILL_DIR}/../../scripts/manage-agent.bundle.js auth \
   --tenant-id "<tenantId>" \
   --client-id "<clientId>" \
   --environment-url "<environmentUrl>"
@@ -92,11 +92,12 @@ All commands auto-detect the agent directory (finds the subfolder with `.mcs/con
 
 ### Pull (download remote changes)
 
+`--client-id` is optional. When omitted, uses VS Code's 1p client with interactive browser login.
+
 ```bash
-node ${CLAUDE_SKILL_DIR}/../../scripts/lsp-sync.bundle.js pull \
+node ${CLAUDE_SKILL_DIR}/../../scripts/manage-agent.bundle.js pull \
   --workspace "<path-to-agent-folder>" \
   --tenant-id "<tenantId>" \
-  --client-id "<clientId>" \
   --environment-id "<envId>" \
   --environment-url "<envUrl>" \
   --agent-mgmt-url "<mgmtUrl>"
@@ -106,11 +107,12 @@ node ${CLAUDE_SKILL_DIR}/../../scripts/lsp-sync.bundle.js pull \
 
 **Important:** Always `pull` before `push` to get fresh row versions. If you push without pulling first, you'll get a `ConcurrencyVersionMismatch` error.
 
+`--client-id` is optional. When omitted, uses VS Code's 1p client with interactive browser login.
+
 ```bash
-node ${CLAUDE_SKILL_DIR}/../../scripts/lsp-sync.bundle.js push \
+node ${CLAUDE_SKILL_DIR}/../../scripts/manage-agent.bundle.js push \
   --workspace "<path-to-agent-folder>" \
   --tenant-id "<tenantId>" \
-  --client-id "<clientId>" \
   --environment-id "<envId>" \
   --environment-url "<envUrl>" \
   --agent-mgmt-url "<mgmtUrl>"
@@ -118,23 +120,26 @@ node ${CLAUDE_SKILL_DIR}/../../scripts/lsp-sync.bundle.js push \
 
 ### Clone (download agent to new local folder)
 
+Requires `--agent-id` (the bot GUID from `list-agents`). Uses Island API token automatically.
+
 ```bash
-node ${CLAUDE_SKILL_DIR}/../../scripts/lsp-sync.bundle.js clone \
+node ${CLAUDE_SKILL_DIR}/../../scripts/manage-agent.bundle.js clone \
   --workspace "<target-folder>" \
   --tenant-id "<tenantId>" \
-  --client-id "<clientId>" \
   --environment-id "<envId>" \
   --environment-url "<envUrl>" \
-  --agent-mgmt-url "<mgmtUrl>"
+  --agent-mgmt-url "<mgmtUrl>" \
+  --agent-id "<agentId>"
 ```
 
 ### View Changes (diff local vs remote)
 
+`--client-id` is optional. When omitted, uses VS Code's 1p client with interactive browser login.
+
 ```bash
-node ${CLAUDE_SKILL_DIR}/../../scripts/lsp-sync.bundle.js changes \
+node ${CLAUDE_SKILL_DIR}/../../scripts/manage-agent.bundle.js changes \
   --workspace "<path-to-agent-folder>" \
   --tenant-id "<tenantId>" \
-  --client-id "<clientId>" \
   --environment-id "<envId>" \
   --environment-url "<envUrl>" \
   --agent-mgmt-url "<mgmtUrl>"
@@ -142,21 +147,21 @@ node ${CLAUDE_SKILL_DIR}/../../scripts/lsp-sync.bundle.js changes \
 
 ### List Agents
 
+Uses Dataverse REST API directly (no LSP binary needed). `--client-id` is optional.
+
 ```bash
-node ${CLAUDE_SKILL_DIR}/../../scripts/lsp-sync.bundle.js list-agents \
+node ${CLAUDE_SKILL_DIR}/../../scripts/manage-agent.bundle.js list-agents \
   --tenant-id "<tenantId>" \
-  --client-id "<clientId>" \
-  --environment-id "<envId>" \
-  --environment-url "<envUrl>" \
-  --agent-mgmt-url "<mgmtUrl>"
+  --environment-url "<envUrl>"
 ```
 
 ### List Environments
 
+Uses BAP REST API directly (no LSP binary needed). `--client-id` is optional.
+
 ```bash
-node ${CLAUDE_SKILL_DIR}/../../scripts/lsp-sync.bundle.js list-envs \
-  --tenant-id "<tenantId>" \
-  --client-id "<clientId>"
+node ${CLAUDE_SKILL_DIR}/../../scripts/manage-agent.bundle.js list-envs \
+  --tenant-id "<tenantId>"
 ```
 
 ## Output Format
