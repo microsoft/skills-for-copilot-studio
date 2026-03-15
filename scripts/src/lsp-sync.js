@@ -470,7 +470,9 @@ class LspClient {
 
     const net = require("net");
     const sessionId = randomUUID();
-    const pipePath = path.join(os.tmpdir(), `lsp-sync-${sessionId}.sock`);
+    const pipePath = os.platform() === "win32"
+      ? `\\\\.\\pipe\\lsp-sync-${sessionId}`
+      : path.join(os.tmpdir(), `lsp-sync-${sessionId}.sock`);
 
     // Create socket server FIRST — the binary connects to us as a client
     const server = net.createServer();
@@ -543,8 +545,7 @@ class LspClient {
     });
 
     // Send initialize
-    const resolved = path.resolve(this.workspaceRoot);
-    const rootUri = `file://${resolved.split("/").map(s => encodeURIComponent(s)).join("/")}`;
+    const rootUri = toFileUri(this.workspaceRoot);
     const initResult = await this._sendRequest("initialize", {
       processId: process.pid,
       rootUri,
@@ -746,9 +747,17 @@ class LspClient {
 
 function toFileUri(absPath) {
   // Proper file URI encoding: encode spaces and special chars
+  // Windows: C:\foo\bar → file:///C:/foo/bar
+  // Unix:    /foo/bar   → file:///foo/bar
   const resolved = path.resolve(absPath);
-  const encoded = resolved.split("/").map(s => encodeURIComponent(s)).join("/");
-  return `file://${encoded}`;
+  const segments = resolved.split(path.sep);
+  const encoded = segments.map((s, i) => {
+    // Preserve Windows drive letter (e.g. "C:") unencoded
+    if (i === 0 && /^[A-Za-z]:$/.test(s)) return s;
+    return encodeURIComponent(s);
+  }).join("/");
+  const prefix = encoded.startsWith("/") ? "file://" : "file:///";
+  return `${prefix}${encoded}`;
 }
 
 function findAgentDir(workspace) {

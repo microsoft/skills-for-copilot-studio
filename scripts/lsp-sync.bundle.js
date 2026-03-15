@@ -14369,7 +14369,7 @@ var LspClient = class {
     if (this.running) return;
     const net = require("net");
     const sessionId = randomUUID();
-    const pipePath = path.join(os.tmpdir(), `lsp-sync-${sessionId}.sock`);
+    const pipePath = os.platform() === "win32" ? `\\\\.\\pipe\\lsp-sync-${sessionId}` : path.join(os.tmpdir(), `lsp-sync-${sessionId}.sock`);
     const server = net.createServer();
     server.listen(pipePath);
     await new Promise((resolve, reject) => {
@@ -14423,8 +14423,7 @@ var LspClient = class {
       this._responseBuffer += chunk.toString("utf-8");
       this._processBuffer();
     });
-    const resolved = path.resolve(this.workspaceRoot);
-    const rootUri = `file://${resolved.split("/").map((s) => encodeURIComponent(s)).join("/")}`;
+    const rootUri = toFileUri(this.workspaceRoot);
     const initResult = await this._sendRequest("initialize", {
       processId: process.pid,
       rootUri,
@@ -14584,8 +14583,13 @@ var LspClient = class {
 };
 function toFileUri(absPath) {
   const resolved = path.resolve(absPath);
-  const encoded = resolved.split("/").map((s) => encodeURIComponent(s)).join("/");
-  return `file://${encoded}`;
+  const segments = resolved.split(path.sep);
+  const encoded = segments.map((s, i) => {
+    if (i === 0 && /^[A-Za-z]:$/.test(s)) return s;
+    return encodeURIComponent(s);
+  }).join("/");
+  const prefix = encoded.startsWith("/") ? "file://" : "file:///";
+  return `${prefix}${encoded}`;
 }
 function findAgentDir(workspace) {
   const resolvedWs = path.resolve(workspace);
