@@ -5,7 +5,8 @@ A plugin for [Claude Code](https://docs.anthropic.com/en/docs/claude-code) and [
 ## Prerequisites
 
 - [Claude Code](https://docs.anthropic.com/en/docs/claude-code) or [GitHub Copilot CLI](https://docs.github.com/en/copilot)
-- [VS Code](https://code.visualstudio.com/) with the [Copilot Studio Extension](https://github.com/microsoft/vscode-copilotstudio)
+- [Node.js](https://nodejs.org/) 18+
+- [VS Code](https://code.visualstudio.com/) with the [Copilot Studio Extension](https://github.com/microsoft/vscode-copilotstudio) (required for push/pull/clone operations)
 
 ## Installation
 
@@ -36,24 +37,26 @@ claude plugin install /path/to/skills-for-copilot-studio --scope project
 The plugin provides four commands, each backed by a specialized agent:
 
 ```
+/copilot-studio:manage       Clone, push, pull, and sync agent content between local files and the cloud
 /copilot-studio:author       Create and edit YAML (topics, actions, knowledge, triggers, variables)
 /copilot-studio:test         Test published agents — point-tests, batch suites, or evaluation analysis
 /copilot-studio:troubleshoot Debug issues — wrong topic routing, validation errors, unexpected behavior
-/copilot-studio:manage       Push, pull, and sync agent content between local files and the cloud
 ```
 
 ## Quick Start
 
-After cloning a Copilot Studio agent with the VS Code extension:
-
 ```bash
-# Open your agent's directory
-cd ~/CopilotStudio/MyAgent
+# Clone an agent from the cloud (guided flow — opens browser for sign-in)
+/copilot-studio:manage clone
 
 # Design and build topics
 /copilot-studio:author Create a topic that handles IT service requests
 
-# Push & publish in Copilot Studio, then test
+# Pull latest, push your changes
+/copilot-studio:manage pull
+/copilot-studio:manage push
+
+# Publish in Copilot Studio UI, then test
 /copilot-studio:test Send "How do I request a new laptop?" to the published agent
 
 # Troubleshoot and fix issues
