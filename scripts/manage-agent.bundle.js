@@ -115,10 +115,15 @@ var require_credential_store = __commonJS({
     function linuxSave(service, account, jsonString) {
       if (hasSecretTool()) {
         try {
-          execSync(
-            `echo -n "${jsonString.replace(/"/g, '\\"')}" | secret-tool store --label="${service}" service "${service}" account "${account}"`,
-            { stdio: "ignore" }
-          );
+          execFileSync("secret-tool", [
+            "store",
+            "--label",
+            service,
+            "service",
+            service,
+            "account",
+            account
+          ], { input: jsonString, stdio: ["pipe", "ignore", "ignore"] });
           return;
         } catch {
           warn("secret-tool store failed, falling back to file");
@@ -14775,6 +14780,7 @@ async function httpGetJson(url, accessToken) {
       headers: { Authorization: `Bearer ${accessToken}` }
     }, (res) => {
       let data = "";
+      res.on("error", reject);
       res.on("data", (chunk) => data += chunk);
       res.on("end", () => {
         if (res.statusCode >= 400) {
@@ -15017,7 +15023,7 @@ async function cmdClone(args) {
         displayName: args.environmentName || "Environment",
         environmentId: args.environmentId
       },
-      solutionVersions: solVersions,
+      ...solVersions,
       agentInfo,
       assets: { cloneAgent: true, componentcollectionIds: [] },
       rootFolder

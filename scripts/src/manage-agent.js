@@ -982,6 +982,7 @@ async function httpGetJson(url, accessToken) {
       headers: { Authorization: `Bearer ${accessToken}` },
     }, (res) => {
       let data = "";
+      res.on("error", reject);
       res.on("data", (chunk) => (data += chunk));
       res.on("end", () => {
         if (res.statusCode >= 400) {
@@ -1275,7 +1276,7 @@ async function cmdClone(args) {
         displayName: args.environmentName || "Environment",
         environmentId: args.environmentId,
       },
-      solutionVersions: solVersions,
+      ...solVersions,
       agentInfo,
       assets: { cloneAgent: true, componentcollectionIds: [] },
       rootFolder,

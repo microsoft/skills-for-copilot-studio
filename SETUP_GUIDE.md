@@ -90,13 +90,25 @@ The agent generates a valid YAML file with unique IDs and saves it to the `topic
 
 ## 4. Push and Publish
 
-1. **Push** changes using the Copilot Studio VS Code Extension:
-   - Open the VS Code Command Palette (`Ctrl+Shift+P` / `Cmd+Shift+P`)
-   - Search for "Copilot Studio: Push"
-   - Select the agent and confirm
+### Push via the plugin (recommended)
 
-2. **Publish** in the Copilot Studio UI at [copilotstudio.microsoft.com](https://copilotstudio.microsoft.com):
-   - Open your agent and click **Publish**
+```
+/copilot-studio:manage push
+```
+
+A browser window may open for sign-in on first use. Tokens are cached after that.
+
+### Push via VS Code
+
+Alternatively, use the Copilot Studio VS Code Extension:
+- Open the VS Code Command Palette (`Ctrl+Shift+P` / `Cmd+Shift+P`)
+- Search for "Copilot Studio: Push"
+- Select the agent and confirm
+
+### Publish
+
+After pushing, **publish** in the Copilot Studio UI at [copilotstudio.microsoft.com](https://copilotstudio.microsoft.com):
+- Open your agent and click **Publish**
 
 > **Important**: Pushing creates a **draft**. You must also **publish** to make changes live and testable via the plugin.
 

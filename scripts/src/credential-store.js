@@ -109,10 +109,11 @@ function hasSecretTool() {
 function linuxSave(service, account, jsonString) {
   if (hasSecretTool()) {
     try {
-      execSync(
-        `echo -n "${jsonString.replace(/"/g, '\\"')}" | secret-tool store --label="${service}" service "${service}" account "${account}"`,
-        { stdio: "ignore" }
-      );
+      execFileSync("secret-tool", [
+        "store", "--label", service,
+        "service", service,
+        "account", account,
+      ], { input: jsonString, stdio: ["pipe", "ignore", "ignore"] });
       return;
     } catch {
       warn("secret-tool store failed, falling back to file");

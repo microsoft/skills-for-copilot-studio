@@ -1,7 +1,7 @@
 ---
 user-invocable: false
 description: Push/pull Copilot Studio agent content via the VS Code extension's LanguageServerHost LSP binary. Handles authentication (interactive browser login for push/pull, device code flow for chat token), sync push, sync pull, clone, and diff operations.
-argument-hint: <push|pull|clone|changes|auth>
+argument-hint: <push|pull|clone|changes|auth|list-agents|list-envs>
 allowed-tools: Bash(node *manage-agent.bundle.js *), Read, Glob, Grep
 context: fork
 agent: manage
@@ -30,7 +30,7 @@ There are **two different auth flows** depending on the operation:
 These commands use VS Code's first-party client ID with the **Island API gateway**. Authentication is **interactive** — a browser window opens automatically for sign-in. No manual code entry is needed.
 
 - On first use, a browser window opens for Microsoft sign-in
-- Tokens are cached in `.token_cache.json` and silently refreshed for ~90 days
+- Tokens are cached in the OS credential store and silently refreshed for ~90 days
 - After ~90 days, the browser will open again for re-authentication
 
 **No separate auth step is needed before push/pull.** The commands handle token acquisition automatically. Just run the command directly (Phase 2).
@@ -52,7 +52,7 @@ node ${CLAUDE_SKILL_DIR}/../../scripts/manage-agent.bundle.js auth \
 
 ### Token caching and silent refresh
 
-Tokens and MSAL refresh tokens are persisted in `.token_cache.json`. After initial authentication:
+Tokens and MSAL refresh tokens are persisted in the OS credential store (macOS Keychain, Windows DPAPI, Linux secret-tool). After initial authentication:
 - Access tokens are valid for ~1 hour
 - Refresh tokens are valid for ~90 days
 - The script automatically refreshes expired access tokens silently using the cached refresh token
