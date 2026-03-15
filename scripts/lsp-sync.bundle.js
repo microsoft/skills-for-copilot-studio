@@ -32,6 +32,217 @@ var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__ge
 ));
 var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
+// src/credential-store.js
+var require_credential_store = __commonJS({
+  "src/credential-store.js"(exports2, module2) {
+    var { execFileSync, execSync } = require("child_process");
+    var fs2 = require("fs");
+    var path2 = require("path");
+    var os2 = require("os");
+    var SERVICE_NAME = "copilot-studio-cli";
+    var STORE_DIR = path2.join(__dirname, "..");
+    function warn(msg) {
+      process.stderr.write(`[credential-store] ${msg}
+`);
+    }
+    function macSave(service, account, jsonString) {
+      execFileSync("security", [
+        "add-generic-password",
+        "-s",
+        service,
+        "-a",
+        account,
+        "-w",
+        jsonString,
+        "-U"
+        // update if exists
+      ], { stdio: "ignore" });
+    }
+    function macLoad(service, account) {
+      const result = execFileSync("security", [
+        "find-generic-password",
+        "-s",
+        service,
+        "-a",
+        account,
+        "-w"
+      ], { stdio: ["ignore", "pipe", "ignore"] });
+      return JSON.parse(result.toString().trim());
+    }
+    function macClear(service, account) {
+      execFileSync("security", [
+        "delete-generic-password",
+        "-s",
+        service,
+        "-a",
+        account
+      ], { stdio: "ignore" });
+    }
+    function dpapiPath(account) {
+      return path2.join(STORE_DIR, `.token_cache_${account}.dpapi`);
+    }
+    function winSave(service, account, jsonString) {
+      const encPath = dpapiPath(account);
+      execSync(
+        `powershell -NoProfile -NonInteractive -Command "$s = [System.Management.Automation.PSCredential]::new('x',(ConvertTo-SecureString -String $input -AsPlainText -Force)).Password; ConvertFrom-SecureString -SecureString $s | Set-Content -Path '${encPath}'"`,
+        { input: jsonString, stdio: ["pipe", "ignore", "ignore"] }
+      );
+    }
+    function winLoad(service, account) {
+      const encPath = dpapiPath(account);
+      if (!fs2.existsSync(encPath)) return null;
+      const result = execSync(
+        `powershell -NoProfile -NonInteractive -Command "$enc = Get-Content -Path '${encPath}' | ConvertTo-SecureString; $bstr = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($enc); [Runtime.InteropServices.Marshal]::PtrToStringAuto($bstr)"`,
+        { stdio: ["ignore", "pipe", "ignore"] }
+      );
+      return JSON.parse(result.toString().trim());
+    }
+    function winClear(service, account) {
+      const encPath = dpapiPath(account);
+      try {
+        fs2.unlinkSync(encPath);
+      } catch {
+      }
+    }
+    function hasSecretTool() {
+      try {
+        execFileSync("which", ["secret-tool"], { stdio: "ignore" });
+        return true;
+      } catch {
+        return false;
+      }
+    }
+    function linuxSave(service, account, jsonString) {
+      if (hasSecretTool()) {
+        try {
+          execSync(
+            `echo -n "${jsonString.replace(/"/g, '\\"')}" | secret-tool store --label="${service}" service "${service}" account "${account}"`,
+            { stdio: "ignore" }
+          );
+          return;
+        } catch {
+          warn("secret-tool store failed, falling back to file");
+        }
+      }
+      fileSave(account, jsonString);
+    }
+    function linuxLoad(service, account) {
+      if (hasSecretTool()) {
+        try {
+          const result = execFileSync("secret-tool", [
+            "lookup",
+            "service",
+            service,
+            "account",
+            account
+          ], { stdio: ["ignore", "pipe", "ignore"] });
+          const text = result.toString().trim();
+          if (text) return JSON.parse(text);
+        } catch {
+        }
+      }
+      return fileLoad(account);
+    }
+    function linuxClear(service, account) {
+      if (hasSecretTool()) {
+        try {
+          execFileSync("secret-tool", [
+            "clear",
+            "service",
+            service,
+            "account",
+            account
+          ], { stdio: "ignore" });
+        } catch {
+        }
+      }
+      fileClear(account);
+    }
+    function filePath(account) {
+      return path2.join(STORE_DIR, `.token_cache_${account}.json`);
+    }
+    function fileSave(account, jsonString) {
+      fs2.writeFileSync(filePath(account), jsonString, { mode: 384 });
+    }
+    function fileLoad(account) {
+      try {
+        return JSON.parse(fs2.readFileSync(filePath(account), "utf8"));
+      } catch {
+        return null;
+      }
+    }
+    function fileClear(account) {
+      try {
+        fs2.unlinkSync(filePath(account));
+      } catch {
+      }
+    }
+    var platform = os2.platform();
+    async function loadCache2(serviceName = SERVICE_NAME, accountName = "default") {
+      try {
+        let data;
+        if (platform === "darwin") {
+          data = macLoad(serviceName, accountName);
+        } else if (platform === "win32") {
+          data = winLoad(serviceName, accountName);
+        } else {
+          data = linuxLoad(serviceName, accountName);
+        }
+        return data || {};
+      } catch {
+        try {
+          const fallback = fileLoad(accountName);
+          return fallback || {};
+        } catch {
+          return {};
+        }
+      }
+    }
+    async function saveCache2(serviceName = SERVICE_NAME, accountName = "default", data = {}) {
+      const jsonString = JSON.stringify(data);
+      try {
+        if (platform === "darwin") {
+          macSave(serviceName, accountName, jsonString);
+        } else if (platform === "win32") {
+          winSave(serviceName, accountName, jsonString);
+        } else {
+          linuxSave(serviceName, accountName, jsonString);
+        }
+      } catch (e) {
+        warn(`OS credential store failed (${e.message}), using file fallback`);
+        fileSave(accountName, jsonString);
+      }
+    }
+    async function clearCache2(serviceName = SERVICE_NAME, accountName = "default") {
+      try {
+        if (platform === "darwin") {
+          macClear(serviceName, accountName);
+        } else if (platform === "win32") {
+          winClear(serviceName, accountName);
+        } else {
+          linuxClear(serviceName, accountName);
+        }
+      } catch {
+      }
+      fileClear(accountName);
+    }
+    async function migrateLegacyCache2(legacyPath, serviceName = SERVICE_NAME, accountName = "default") {
+      try {
+        if (!fs2.existsSync(legacyPath)) return false;
+        const data = JSON.parse(fs2.readFileSync(legacyPath, "utf8"));
+        await saveCache2(serviceName, accountName, data);
+        fs2.unlinkSync(legacyPath);
+        warn(`Migrated ${legacyPath} to secure credential store`);
+        return true;
+      } catch (e) {
+        warn(`Migration failed: ${e.message}`);
+        return false;
+      }
+    }
+    module2.exports = { loadCache: loadCache2, saveCache: saveCache2, clearCache: clearCache2, migrateLegacyCache: migrateLegacyCache2 };
+  }
+});
+
 // node_modules/uuid/dist/esm-node/rng.js
 function rng() {
   if (poolPtr > rnds8Pool.length - 16) {
@@ -13805,6 +14016,7 @@ var { randomUUID } = require("crypto");
 var path = require("path");
 var fs = require("fs");
 var os = require("os");
+var { loadCache, saveCache, clearCache, migrateLegacyCache } = require_credential_store();
 function log(msg) {
   process.stderr.write(msg + "\n");
 }
@@ -13869,59 +14081,46 @@ function parseArgs() {
   }
   return parsed;
 }
-var TOKEN_CACHE_PATH = path.join(__dirname, "..", ".token_cache.json");
+var CREDENTIAL_SERVICE = "copilot-studio-cli";
+var CREDENTIAL_ACCOUNT = "lsp-sync";
+var LEGACY_CACHE_PATH = path.join(__dirname, "..", ".token_cache.json");
+var _cache = null;
+async function ensureCacheLoaded() {
+  if (_cache !== null) return;
+  await migrateLegacyCache(LEGACY_CACHE_PATH, CREDENTIAL_SERVICE, CREDENTIAL_ACCOUNT);
+  _cache = await loadCache(CREDENTIAL_SERVICE, CREDENTIAL_ACCOUNT);
+}
+async function persistCache() {
+  await saveCache(CREDENTIAL_SERVICE, CREDENTIAL_ACCOUNT, _cache);
+}
 function createMsalCachePlugin() {
-  let cacheData = "";
-  try {
-    const full = JSON.parse(fs.readFileSync(TOKEN_CACHE_PATH, "utf8"));
-    cacheData = full._msalCache || "";
-  } catch {
-  }
   return {
     beforeCacheAccess: async (context) => {
-      context.tokenCache.deserialize(cacheData);
+      await ensureCacheLoaded();
+      context.tokenCache.deserialize(_cache._msalCache || "");
     },
     afterCacheAccess: async (context) => {
       if (context.cacheHasChanged) {
-        cacheData = context.tokenCache.serialize();
-        let full = {};
-        try {
-          full = JSON.parse(fs.readFileSync(TOKEN_CACHE_PATH, "utf8"));
-        } catch {
-        }
-        full._msalCache = cacheData;
-        fs.writeFileSync(TOKEN_CACHE_PATH, JSON.stringify(full, null, 2), {
-          mode: 384
-        });
+        await ensureCacheLoaded();
+        _cache._msalCache = context.tokenCache.serialize();
+        await persistCache();
       }
     }
   };
 }
-function loadTokenCache() {
-  try {
-    return JSON.parse(fs.readFileSync(TOKEN_CACHE_PATH, "utf8"));
-  } catch {
-    return {};
-  }
-}
-function saveTokenCache(cache) {
-  fs.writeFileSync(TOKEN_CACHE_PATH, JSON.stringify(cache, null, 2), {
-    mode: 384
-  });
-}
-function getCachedToken(scope) {
-  const cache = loadTokenCache();
-  const entry = cache[scope];
+async function getCachedToken(scope) {
+  await ensureCacheLoaded();
+  const entry = _cache[scope];
   if (!entry) return null;
   const expiresOn = new Date(entry.expiresOn);
   const bufferMs = 5 * 60 * 1e3;
   if (expiresOn.getTime() - bufferMs < Date.now()) return null;
   return entry;
 }
-function setCachedToken(scope, tokenInfo) {
-  const cache = loadTokenCache();
-  cache[scope] = tokenInfo;
-  saveTokenCache(cache);
+async function setCachedToken(scope, tokenInfo) {
+  await ensureCacheLoaded();
+  _cache[scope] = tokenInfo;
+  await persistCache();
 }
 var VSCODE_CLIENT_ID = "51f81489-12ee-4a9e-aaae-a2591f45987d";
 var ISLAND_RESOURCE_IDS = {
@@ -13985,7 +14184,7 @@ async function acquireTokenDeviceCode(tenantId, clientId, scopes) {
   });
   if (!result) throw new Error("Device code flow returned no result");
   const tokenInfo = buildTokenInfo(result);
-  setCachedToken(scopeKey, tokenInfo);
+  await setCachedToken(scopeKey, tokenInfo);
   return tokenInfo;
 }
 async function acquireTokenInteractive(tenantId, clientId, scopes) {
@@ -14007,12 +14206,12 @@ async function acquireTokenInteractive(tenantId, clientId, scopes) {
   });
   if (!result) throw new Error("Interactive flow returned no result");
   const tokenInfo = buildTokenInfo(result);
-  setCachedToken(scopeKey, tokenInfo);
+  await setCachedToken(scopeKey, tokenInfo);
   return tokenInfo;
 }
 async function acquireTokenSilent(tenantId, clientId, scopes) {
   const scopeKey = scopes[0];
-  const cached = getCachedToken(scopeKey);
+  const cached = await getCachedToken(scopeKey);
   if (cached) return cached;
   const app = createMsalApp(tenantId, clientId);
   const accounts = await app.getTokenCache().getAllAccounts();
@@ -14024,7 +14223,7 @@ async function acquireTokenSilent(tenantId, clientId, scopes) {
       });
       if (result) {
         const tokenInfo = buildTokenInfo(result);
-        setCachedToken(scopeKey, tokenInfo);
+        await setCachedToken(scopeKey, tokenInfo);
         log(`${scopeKey}: silently refreshed (expires ${tokenInfo.expiresOn})`);
         return tokenInfo;
       }

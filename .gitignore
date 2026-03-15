@@ -25,6 +25,8 @@ tmpclaude-*
 
 # Token cache (shared by lsp-sync, directline-chat, tests, etc.)
 .token_cache.json
+.token_cache_*.json
+.token_cache_*.dpapi
 
 # Environment files (if used in the future)
 .env

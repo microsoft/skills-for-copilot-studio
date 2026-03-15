@@ -28,6 +28,7 @@ const { randomUUID } = require("crypto");
 const path = require("path");
 const fs = require("fs");
 const os = require("os");
+const { loadCache, saveCache, clearCache, migrateLegacyCache } = require("./credential-store");
 
 // ---------------------------------------------------------------------------
 // Logging helpers
@@ -112,55 +113,45 @@ function parseArgs() {
 // Token cache — MSAL persistence plugin + access token cache
 // ---------------------------------------------------------------------------
 
-const TOKEN_CACHE_PATH = path.join(__dirname, "..", ".token_cache.json");
+const CREDENTIAL_SERVICE = "copilot-studio-cli";
+const CREDENTIAL_ACCOUNT = "lsp-sync";
+const LEGACY_CACHE_PATH = path.join(__dirname, "..", ".token_cache.json");
+
+// In-memory copy of the cache — loaded once at startup, written back on change.
+let _cache = null;
+
+async function ensureCacheLoaded() {
+  if (_cache !== null) return;
+  // Migrate legacy plaintext file on first run
+  await migrateLegacyCache(LEGACY_CACHE_PATH, CREDENTIAL_SERVICE, CREDENTIAL_ACCOUNT);
+  _cache = await loadCache(CREDENTIAL_SERVICE, CREDENTIAL_ACCOUNT);
+}
+
+async function persistCache() {
+  await saveCache(CREDENTIAL_SERVICE, CREDENTIAL_ACCOUNT, _cache);
+}
 
 // MSAL cache plugin — persists MSAL's internal cache (incl. refresh tokens)
-// to disk so acquireTokenSilent works across process invocations.
+// via the OS credential store so acquireTokenSilent works across invocations.
 function createMsalCachePlugin() {
-  let cacheData = "";
-  try {
-    const full = JSON.parse(fs.readFileSync(TOKEN_CACHE_PATH, "utf8"));
-    cacheData = full._msalCache || "";
-  } catch {}
-
   return {
     beforeCacheAccess: async (context) => {
-      context.tokenCache.deserialize(cacheData);
+      await ensureCacheLoaded();
+      context.tokenCache.deserialize(_cache._msalCache || "");
     },
     afterCacheAccess: async (context) => {
       if (context.cacheHasChanged) {
-        cacheData = context.tokenCache.serialize();
-        // Merge into our token cache file
-        let full = {};
-        try {
-          full = JSON.parse(fs.readFileSync(TOKEN_CACHE_PATH, "utf8"));
-        } catch {}
-        full._msalCache = cacheData;
-        fs.writeFileSync(TOKEN_CACHE_PATH, JSON.stringify(full, null, 2), {
-          mode: 0o600,
-        });
+        await ensureCacheLoaded();
+        _cache._msalCache = context.tokenCache.serialize();
+        await persistCache();
       }
     },
   };
 }
 
-function loadTokenCache() {
-  try {
-    return JSON.parse(fs.readFileSync(TOKEN_CACHE_PATH, "utf8"));
-  } catch {
-    return {};
-  }
-}
-
-function saveTokenCache(cache) {
-  fs.writeFileSync(TOKEN_CACHE_PATH, JSON.stringify(cache, null, 2), {
-    mode: 0o600,
-  });
-}
-
-function getCachedToken(scope) {
-  const cache = loadTokenCache();
-  const entry = cache[scope];
+async function getCachedToken(scope) {
+  await ensureCacheLoaded();
+  const entry = _cache[scope];
   if (!entry) return null;
   const expiresOn = new Date(entry.expiresOn);
   const bufferMs = 5 * 60 * 1000;
@@ -168,10 +159,10 @@ function getCachedToken(scope) {
   return entry;
 }
 
-function setCachedToken(scope, tokenInfo) {
-  const cache = loadTokenCache();
-  cache[scope] = tokenInfo;
-  saveTokenCache(cache);
+async function setCachedToken(scope, tokenInfo) {
+  await ensureCacheLoaded();
+  _cache[scope] = tokenInfo;
+  await persistCache();
 }
 
 // ---------------------------------------------------------------------------
@@ -254,7 +245,7 @@ async function acquireTokenDeviceCode(tenantId, clientId, scopes) {
 
   if (!result) throw new Error("Device code flow returned no result");
   const tokenInfo = buildTokenInfo(result);
-  setCachedToken(scopeKey, tokenInfo);
+  await setCachedToken(scopeKey, tokenInfo);
   return tokenInfo;
 }
 
@@ -280,13 +271,13 @@ async function acquireTokenInteractive(tenantId, clientId, scopes) {
 
   if (!result) throw new Error("Interactive flow returned no result");
   const tokenInfo = buildTokenInfo(result);
-  setCachedToken(scopeKey, tokenInfo);
+  await setCachedToken(scopeKey, tokenInfo);
   return tokenInfo;
 }
 
 async function acquireTokenSilent(tenantId, clientId, scopes) {
   const scopeKey = scopes[0];
-  const cached = getCachedToken(scopeKey);
+  const cached = await getCachedToken(scopeKey);
   if (cached) return cached;
 
   // Access token expired — try silent refresh using MSAL's persisted cache
@@ -301,7 +292,7 @@ async function acquireTokenSilent(tenantId, clientId, scopes) {
       });
       if (result) {
         const tokenInfo = buildTokenInfo(result);
-        setCachedToken(scopeKey, tokenInfo);
+        await setCachedToken(scopeKey, tokenInfo);
         log(`${scopeKey}: silently refreshed (expires ${tokenInfo.expiresOn})`);
         return tokenInfo;
       }

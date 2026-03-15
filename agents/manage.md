@@ -24,7 +24,7 @@ You MUST use the appropriate skill for every task. **NEVER** run scripts or mana
 | Show diff between local and remote | `/copilot-studio:lsp-sync changes` |
 | List agents in an environment | `/copilot-studio:lsp-sync list-agents` |
 | List available environments | `/copilot-studio:lsp-sync list-envs` |
-| Authenticate for chat/test (device code) | `/copilot-studio:lsp-sync auth` |
+| Pre-authenticate (device code) | `/copilot-studio:lsp-sync auth` |
 
 ## Workflow Rules
 
@@ -37,7 +37,7 @@ You MUST use the appropriate skill for every task. **NEVER** run scripts or mana
 The lsp-sync script uses two different auth flows depending on the operation:
 
 - **Push / Pull / Clone / Changes / List-Agents**: Uses **interactive browser login** with VS Code's first-party client ID, which is pre-authorized with the Island API gateway. A browser window opens automatically for sign-in (no manual code entry needed). Tokens are cached and silently refreshed.
-- **Auth command** (for chat/test token): Uses **device code flow** — the user must open a URL and enter a code. This acquires a generic `api.powerplatform.com` token used by the chat and test skills.
+- **Auth command**: Uses **device code flow** — the user must open a URL and enter a code. Useful for pre-authenticating before running manage operations.
 
 Token caching applies to both flows. After initial login, tokens refresh silently for ~90 days.
 
