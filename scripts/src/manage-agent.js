@@ -279,11 +279,8 @@ async function acquireTokenInteractive(tenantId, clientId, scopes) {
       log("");
       log(`  Open this URL to sign in: ${url}`);
       log("");
-      const { execFile, exec } = require("child_process");
-      const p = os.platform();
-      if (p === "win32") exec(`start "" "${url}"`);
-      else if (p === "darwin") execFile("open", [url]);
-      else execFile("xdg-open", [url]);
+      const open = (await import("open")).default;
+      await open(url);
     },
     successTemplate:
       "<html><body><h1>Login successful. You can close this tab.</h1></body></html>",

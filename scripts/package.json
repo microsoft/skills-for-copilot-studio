@@ -16,7 +16,8 @@
     "@azure/msal-node": "^5.0.5",
     "@microsoft/agents-activity": "^1.1.0",
     "@microsoft/agents-copilotstudio-client": "^1.1.0",
-    "js-yaml": "^4.1.0"
+    "js-yaml": "^4.1.0",
+    "open": "^11.0.0"
   },
   "devDependencies": {
     "esbuild": "^0.24.0"
