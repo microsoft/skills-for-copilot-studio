@@ -281,7 +281,7 @@ async function acquireTokenInteractive(tenantId, clientId, scopes) {
       log("");
       const { execFile } = require("child_process");
       const p = os.platform();
-      if (p === "win32") execFile("cmd", ["/c", "start", "", url]);
+      if (p === "win32") execFile("cmd", ["/c", `start "" "${url}"`]);
       else if (p === "darwin") execFile("open", [url]);
       else execFile("xdg-open", [url]);
     },
