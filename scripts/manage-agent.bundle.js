@@ -14998,7 +14998,7 @@ function getPlatformSuffix() {
   const p = os2.platform();
   const a = os2.arch();
   if (p === "darwin") return a === "arm64" ? "darwin-arm64" : "darwin-x64";
-  if (p === "win32") return "win32-x64";
+  if (p === "win32") return a === "arm64" ? "win32-arm64" : "win32-x64";
   return "linux-x64";
 }
 function parseSemver(v) {
