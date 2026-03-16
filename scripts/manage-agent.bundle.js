@@ -15531,20 +15531,35 @@ async function cmdListAgents(args) {
   );
   const systemUserId = whoAmI.UserId;
   log(`Signed in as user: ${systemUserId}`);
-  const filter = encodeURIComponent(`ismanaged eq false and _ownerid_value eq ${systemUserId}`);
-  const select = encodeURIComponent("botid,name");
-  log("Listing agents...");
-  const botsResponse = await httpGetJson(
-    `${envUrl}/api/data/v9.2/bots?$select=${select}&$filter=${filter}`,
+  const select = encodeURIComponent("botid,name,_ownerid_value");
+  const ownedFilter = encodeURIComponent(`ismanaged eq false and _ownerid_value eq ${systemUserId}`);
+  log("Listing agents owned by current user...");
+  let botsResponse = await httpGetJson(
+    `${envUrl}/api/data/v9.2/bots?$select=${select}&$filter=${ownedFilter}`,
     dvToken.accessToken
   );
+  let ownership = "owned";
+  if ((botsResponse.value || []).length === 0) {
+    log("No owned agents found, listing all unmanaged agents in environment...");
+    const allFilter = encodeURIComponent("ismanaged eq false");
+    botsResponse = await httpGetJson(
+      `${envUrl}/api/data/v9.2/bots?$select=${select}&$filter=${allFilter}`,
+      dvToken.accessToken
+    );
+    ownership = "all";
+  }
   const agents = (botsResponse.value || []).map((bot) => ({
     agentId: bot.botid,
-    displayName: bot.name
+    displayName: bot.name,
+    ownedByCurrentUser: bot._ownerid_value === systemUserId
   }));
-  process.stdout.write(
-    JSON.stringify({ status: "ok", agents }, null, 2) + "\n"
-  );
+  const result = { status: "ok", agents, ownership };
+  if (agents.length === 0) {
+    result.message = "No unmanaged agents found in this environment. Verify the environment URL is correct and your account has access.";
+  } else if (ownership === "all") {
+    result.message = `No agents owned by current user. Showing all ${agents.length} unmanaged agent(s) in the environment.`;
+  }
+  process.stdout.write(JSON.stringify(result, null, 2) + "\n");
 }
 async function cmdListEnvs(args) {
   if (!args.tenantId) die("--tenant-id (or CPS_TENANT_ID) is required");
