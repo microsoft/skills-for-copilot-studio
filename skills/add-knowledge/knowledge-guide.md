@@ -147,7 +147,9 @@ Use the template at `templates/knowledge/graph-connector.knowledge.mcs.yml`.
 
 Every knowledge source supports an optional `triggerCondition` field (a Power Fx `BoolExpression`). The `UniversalSearchTool` only includes the source in a search when this condition evaluates to `true`.
 
-**`triggerCondition: =false`** — the most important pattern. It permanently disables automatic search for this source. The orchestrator will never include it in the `UniversalSearchTool` automatically. This is useful for:
+The Copilot Studio UI exposes `triggerCondition` as an on/off toggle — excluding a source from `UniversalSearchTool` sets `triggerCondition: =false`. Via YAML, `triggerCondition` can be set to any Power Fx expression, which is fully functional at runtime but not visible or editable in the UI.
+
+**`triggerCondition: =false`** — the most common pattern. It permanently disables automatic search for this source. The orchestrator will never include it in the `UniversalSearchTool` automatically. This is useful for:
 
 1. **Explicit topic-controlled search** — the source is only used when a topic explicitly references it in a `SearchAndSummarizeContent` node. Gives you full control over when and how the source is queried.
 
@@ -156,12 +158,13 @@ Every knowledge source supports an optional `triggerCondition` field (a Power Fx
 3. **`OnKnowledgeRequested` topic** — a topic with this trigger fires every time the orchestrator calls the `UniversalSearchTool`. Combined with `triggerCondition: =false`, you can intercept all knowledge requests and route them through custom logic before the search runs. It extends the knowledge retrieval with a more controled approach but it adds latency as it adds and extra search in the knowledge retrieval pipeline. Try to use it only when you need to run custom logic on every search request, and it is good to put a condition on the trigger to only run it when is really needed (e.g. only for users in the HR department, or only for certain types of queries).
 
 ```yaml
-# Example: source only searched for HR department users
+# Name: Armstrong County Knowledge Base
+# UPMC employee information specific to Armstrong county, only searched when the user is located in Armstrong.
 kind: KnowledgeSourceConfiguration
 source:
   kind: SharePointSearchSource
-  triggerCondition: =Global.UserDepartment = "HR"
-  site: https://contoso.sharepoint.com/sites/HR/Shared%20Documents
+  triggerCondition: =Global.UserCounty = "Armstrong"
+  site: https://pplatform.sharepoint.com/sites/KnowledgeBase/Shared%20Documents/UPMC_By_County/Armstrong
 ```
 
 ```yaml

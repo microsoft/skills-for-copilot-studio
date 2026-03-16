@@ -41,6 +41,15 @@ System triggers (`OnConversationStart`, `OnUnknownIntent`, `OnError`, etc.) fire
 | `OnToolSelected` | Child agent invocation |
 | `OnKnowledgeRequested` | Custom knowledge source search triggered (YAML-only, no UI) |
 | `OnGeneratedResponse` | Intercept AI-generated response before sending |
+| `OnOutgoingMessage` | **Non-functional (2026-03-15)** — exists in schema but does not fire at runtime. Do not use. |
+
+### YAML-Only Features
+
+These features work at runtime but are **not visible in the Copilot Studio UI**. Warn users that UI edits may silently remove them.
+
+| Feature | Notes |
+|---------|-------|
+| `triggerCondition` on knowledge sources | The UI only exposes this as an on/off toggle (`=false` to exclude from `UniversalSearchTool`). Arbitrary Power Fx expressions (e.g., `=Global.UserDepartment = "HR"`) work at runtime but can only be set via YAML. Use with caution. (2026-03-16) |
 
 ## Action Types
 
