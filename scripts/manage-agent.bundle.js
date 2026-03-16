@@ -14754,7 +14754,9 @@ function parseArgs() {
     environmentName: process.env.CPS_ENVIRONMENT_NAME || null,
     accountId: null,
     accountEmail: null,
-    agentId: null
+    agentId: null,
+    owner: true
+    // default: filter by owner
   };
   for (let i = 0; i < args.length; i++) {
     switch (args[i]) {
@@ -14787,6 +14789,9 @@ function parseArgs() {
         break;
       case "--agent-id":
         parsed.agentId = args[++i];
+        break;
+      case "--no-owner":
+        parsed.owner = false;
         break;
       default:
         if (!args[i].startsWith("--") && !parsed.command) {
@@ -15524,6 +15529,7 @@ async function cmdListAgents(args) {
     dvScopes,
     "Dataverse API"
   );
+  const ownerOnly = args.owner !== false;
   log("Calling WhoAmI...");
   const whoAmI = await httpGetJson(
     `${envUrl}/api/data/v9.2/WhoAmI`,
@@ -15532,32 +15538,22 @@ async function cmdListAgents(args) {
   const systemUserId = whoAmI.UserId;
   log(`Signed in as user: ${systemUserId}`);
   const select = encodeURIComponent("botid,name,_ownerid_value");
-  const ownedFilter = encodeURIComponent(`ismanaged eq false and _ownerid_value eq ${systemUserId}`);
-  log("Listing agents owned by current user...");
-  let botsResponse = await httpGetJson(
-    `${envUrl}/api/data/v9.2/bots?$select=${select}&$filter=${ownedFilter}`,
+  const filterParts = ["ismanaged eq false"];
+  if (ownerOnly) filterParts.push(`_ownerid_value eq ${systemUserId}`);
+  const filter = encodeURIComponent(filterParts.join(" and "));
+  log(ownerOnly ? "Listing agents owned by current user..." : "Listing all unmanaged agents...");
+  const botsResponse = await httpGetJson(
+    `${envUrl}/api/data/v9.2/bots?$select=${select}&$filter=${filter}`,
     dvToken.accessToken
   );
-  let ownership = "owned";
-  if ((botsResponse.value || []).length === 0) {
-    log("No owned agents found, listing all unmanaged agents in environment...");
-    const allFilter = encodeURIComponent("ismanaged eq false");
-    botsResponse = await httpGetJson(
-      `${envUrl}/api/data/v9.2/bots?$select=${select}&$filter=${allFilter}`,
-      dvToken.accessToken
-    );
-    ownership = "all";
-  }
   const agents = (botsResponse.value || []).map((bot) => ({
     agentId: bot.botid,
     displayName: bot.name,
     ownedByCurrentUser: bot._ownerid_value === systemUserId
   }));
-  const result = { status: "ok", agents, ownership };
+  const result = { status: "ok", agents };
   if (agents.length === 0) {
-    result.message = "No unmanaged agents found in this environment. Verify the environment URL is correct and your account has access.";
-  } else if (ownership === "all") {
-    result.message = `No agents owned by current user. Showing all ${agents.length} unmanaged agent(s) in the environment.`;
+    result.message = ownerOnly ? "No unmanaged agents owned by you in this environment. Retry with --no-owner to list all agents." : "No unmanaged agents found in this environment. Verify the environment URL is correct and your account has access.";
   }
   process.stdout.write(JSON.stringify(result, null, 2) + "\n");
 }

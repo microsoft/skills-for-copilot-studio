@@ -152,8 +152,11 @@ Uses Dataverse REST API directly (no LSP binary needed). `--client-id` is option
 ```bash
 node ${CLAUDE_SKILL_DIR}/../../scripts/manage-agent.bundle.js list-agents \
   --tenant-id "<tenantId>" \
-  --environment-url "<envUrl>"
+  --environment-url "<envUrl>" \
+  [--no-owner]
 ```
+
+By default lists only agents owned by the current user. Add `--no-owner` to list all unmanaged agents.
 
 ### List Environments
 

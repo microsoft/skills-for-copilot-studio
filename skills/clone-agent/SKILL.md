@@ -72,22 +72,26 @@ Ask the user to pick an environment. Extract:
 
 ## Phase 2: Select Agent
 
-Run the list-agents command with the selected environment details:
+First, ask the user: **"Do you want to list only agents you own, or all agents in the environment?"**
+
+- If **only mine** → run without `--no-owner` (default, filters by current user)
+- If **all agents** → add `--no-owner` flag
 
 ```bash
 node ${CLAUDE_SKILL_DIR}/../../scripts/manage-agent.bundle.js list-agents \
   --tenant-id "<tenantId>" \
-  --environment-url "<environmentUrl>"
+  --environment-url "<environmentUrl>" \
+  [--no-owner]
 ```
 
 **Timeout: 300000ms (5 minutes)**
 
-Parse the JSON output. Each agent has `agentId` and `displayName`. Present agents as a numbered list:
+Parse the JSON output. Each agent has `agentId`, `displayName`, and `ownedByCurrentUser`. Present agents as a numbered list:
 
 ```
-1. My Support Bot
+1. My Support Bot (yours)
 2. HR Assistant
-3. IT Helpdesk
+3. IT Helpdesk (yours)
 ```
 
 Ask the user to pick an agent. Extract the `agentId`.
