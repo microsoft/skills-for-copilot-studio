@@ -16,7 +16,7 @@ Guided flow to clone a Copilot Studio agent from the cloud to a local workspace.
 This is a new capability under active development. If the manage-agent script fails, **do not attempt to fix, patch, or work around it**. Instead:
 1. Show the user the full error output
 2. Direct them to https://github.com/microsoft/skills-for-copilot-studio/issues
-3. Suggest updating the Copilot Studio VS Code extension (`ms-copilotstudio.vscode-copilotstudio`)
+3. Suggest using the Copilot Studio VS Code extension directly as a fallback for push/pull/clone
 
 ## Phase 0: Resolve Configuration
 

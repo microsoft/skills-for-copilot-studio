@@ -18,7 +18,7 @@ This is a new capability under active development. The manage-agent scripts (`ma
 1. **Report the error as-is** — show the user the full error output
 2. **Do not attempt to fix, patch, or work around script errors** — the scripts interact with the LSP binary using a specific protocol and any modifications will break things
 3. **Direct the user to raise an issue** at https://github.com/microsoft/skills-for-copilot-studio/issues with the error output
-4. **Suggest updating the VS Code extension** — the scripts depend on the Copilot Studio VS Code extension (`ms-copilotstudio.vscode-copilotstudio`) and errors may be caused by version mismatches
+4. **Suggest using the VS Code extension directly** — the user can perform the same push/pull/clone operations from the Copilot Studio VS Code extension UI as a fallback
 
 ## Prerequisites
 
