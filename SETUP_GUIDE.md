@@ -10,8 +10,9 @@ This guide walks you through setting up the plugin and using it end-to-end: inst
 |-------------|---------|-------------|
 | Node.js | 18+ | `node --version` |
 | Claude Code or GitHub Copilot CLI | Latest | `claude --version` or equivalent |
-| VS Code | Latest | `code --version` |
 | Copilot Studio VS Code Extension | Latest | [Install from marketplace](https://github.com/microsoft/vscode-copilotstudio) |
+
+The VS Code extension provides the LanguageServerHost binary used for clone, push, and pull operations. VS Code itself does not need to be running.
 
 You also need access to a Power Platform environment with Copilot Studio and an existing agent.
 
@@ -40,13 +41,25 @@ claude --plugin-dir /path/to/skills-for-copilot-studio
 claude plugin install /path/to/skills-for-copilot-studio --scope user
 ```
 
-To verify, type `/` in the input — you should see `copilot-studio:author`, `copilot-studio:test`, and `copilot-studio:troubleshoot` in the autocomplete menu.
+To verify, type `/` in the input — you should see `copilot-studio:manage`, `copilot-studio:author`, `copilot-studio:test`, and `copilot-studio:troubleshoot` in the autocomplete menu.
 
 ---
 
 ## 2. Clone an Agent
 
-Use the **Copilot Studio VS Code Extension** to clone your agent into a project directory. After cloning, you should see `agent.mcs.yml`, `settings.mcs.yml`, and directories like `topics/`, `actions/`, and `knowledge/`.
+### Option A: Clone via the plugin (recommended)
+
+```
+/copilot-studio:manage clone
+```
+
+This walks you through environment selection, agent selection, and downloads the agent files — all with interactive browser auth (no app registration needed).
+
+### Option B: Clone via VS Code
+
+Use the **Copilot Studio VS Code Extension** to clone your agent into a project directory.
+
+After cloning, you should see `agent.mcs.yml`, `settings.mcs.yml`, and directories like `topics/`, `actions/`, and `knowledge/`.
 
 ---
 
@@ -78,13 +91,25 @@ The agent generates a valid YAML file with unique IDs and saves it to the `topic
 
 ## 4. Push and Publish
 
-1. **Push** changes using the Copilot Studio VS Code Extension:
-   - Open the VS Code Command Palette (`Ctrl+Shift+P` / `Cmd+Shift+P`)
-   - Search for "Copilot Studio: Push"
-   - Select the agent and confirm
+### Push via the plugin (recommended)
 
-2. **Publish** in the Copilot Studio UI at [copilotstudio.microsoft.com](https://copilotstudio.microsoft.com):
-   - Open your agent and click **Publish**
+```
+/copilot-studio:manage push
+```
+
+A browser window may open for sign-in on first use. Tokens are cached after that.
+
+### Push via VS Code
+
+Alternatively, use the Copilot Studio VS Code Extension:
+- Open the VS Code Command Palette (`Ctrl+Shift+P` / `Cmd+Shift+P`)
+- Search for "Copilot Studio: Push"
+- Select the agent and confirm
+
+### Publish
+
+After pushing, **publish** in the Copilot Studio UI at [copilotstudio.microsoft.com](https://copilotstudio.microsoft.com):
+- Open your agent and click **Publish**
 
 > **Important**: Pushing creates a **draft**. You must also **publish** to make changes live and testable via the plugin.
 
@@ -155,18 +180,20 @@ Then push, publish, and test again to verify the agent now responds with grounde
 | Duplicate ID error | Non-unique node IDs | Regenerate IDs for copied nodes |
 | Power Fx error | Missing `=` prefix | Ensure expressions start with `=` |
 | Plugin not found | Not installed or wrong path | Run `/plugin list` to verify |
+| Extension not found (clone/push/pull) | Copilot Studio VS Code Extension not installed | [Install from marketplace](https://github.com/microsoft/vscode-copilotstudio) |
+| ConcurrencyVersionMismatch on push | Stale row versions | Pull first, then push |
 
-If something goes wrong, you can always re-clone the original agent using the VS Code Extension.
+If something goes wrong, you can always re-clone the original agent with `/copilot-studio:manage clone` or the VS Code Extension.
 
 ---
 
 ## Summary Checklist
 
 - [ ] Plugin installed from marketplace or loaded locally
-- [ ] VS Code Copilot Studio Extension installed
-- [ ] Agent cloned into project directory
-- [ ] `/copilot-studio:author`, `:test`, `:troubleshoot` visible in `/` autocomplete
+- [ ] Copilot Studio VS Code Extension installed (provides the LSP binary)
+- [ ] Agent cloned with `/copilot-studio:manage clone` or VS Code Extension
+- [ ] `/copilot-studio:manage`, `:author`, `:test`, `:troubleshoot` visible in `/` autocomplete
 - [ ] Created a topic with `/copilot-studio:author`
 - [ ] Validated with `/copilot-studio:troubleshoot`
-- [ ] Pushed and published in Copilot Studio
+- [ ] Pulled, pushed, and published (`/copilot-studio:manage pull`, then `push`)
 - [ ] Tested published agent with `/copilot-studio:test`
