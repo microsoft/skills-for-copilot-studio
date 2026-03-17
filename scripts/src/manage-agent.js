@@ -360,6 +360,7 @@ async function getOrAcquireIslandToken(tenantId, clusterCategory, label) {
 
 const EXTENSION_ID = "ms-copilotstudio.vscode-copilotstudio";
 const BINARY_NAME = "LanguageServerHost";
+const MIN_EXTENSION_VERSION = "1.2.90";
 
 function getPlatformSuffix() {
   const p = os.platform();
@@ -457,6 +458,9 @@ function findBinary() {
       log(
         `Found Copilot Studio extension v${result.version} at ${result.lspOutDir}`
       );
+      if (compareSemver(result.version, MIN_EXTENSION_VERSION) < 0) {
+        warn(`Extension v${result.version} is older than tested v${MIN_EXTENSION_VERSION}. Some features may not work. Update: https://marketplace.visualstudio.com/items?itemName=ms-copilotstudio.vscode-copilotstudio`);
+      }
       return result;
     }
   }

@@ -41,7 +41,7 @@ var require_credential_store = __commonJS({
     var os3 = require("os");
     var SERVICE_NAME = "copilot-studio-cli";
     var STORE_DIR = path3.join(__dirname, "..");
-    function warn(msg) {
+    function warn2(msg) {
       process.stderr.write(`[credential-store] ${msg}
 `);
     }
@@ -126,7 +126,7 @@ var require_credential_store = __commonJS({
           ], { input: jsonString, stdio: ["pipe", "ignore", "ignore"] });
           return;
         } catch {
-          warn("secret-tool store failed, falling back to file");
+          warn2("secret-tool store failed, falling back to file");
         }
       }
       fileSave(account, jsonString);
@@ -214,7 +214,7 @@ var require_credential_store = __commonJS({
           linuxSave(serviceName, accountName, jsonString);
         }
       } catch (e) {
-        warn(`OS credential store failed (${e.message}), using file fallback`);
+        warn2(`OS credential store failed (${e.message}), using file fallback`);
         fileSave(accountName, jsonString);
       }
     }
@@ -237,10 +237,10 @@ var require_credential_store = __commonJS({
         const data = JSON.parse(fs7.readFileSync(legacyPath, "utf8"));
         await saveCache2(serviceName, accountName, data);
         fs7.unlinkSync(legacyPath);
-        warn(`Migrated ${legacyPath} to secure credential store`);
+        warn2(`Migrated ${legacyPath} to secure credential store`);
         return true;
       } catch (e) {
-        warn(`Migration failed: ${e.message}`);
+        warn2(`Migration failed: ${e.message}`);
         return false;
       }
     }
@@ -14999,6 +14999,7 @@ async function getOrAcquireIslandToken(tenantId, clusterCategory, label) {
 }
 var EXTENSION_ID = "ms-copilotstudio.vscode-copilotstudio";
 var BINARY_NAME = "LanguageServerHost";
+var MIN_EXTENSION_VERSION = "1.2.90";
 function getPlatformSuffix() {
   const p = os2.platform();
   const a = os2.arch();
@@ -15080,6 +15081,9 @@ function findBinary() {
       log(
         `Found Copilot Studio extension v${result.version} at ${result.lspOutDir}`
       );
+      if (compareSemver(result.version, MIN_EXTENSION_VERSION) < 0) {
+        warn(`Extension v${result.version} is older than tested v${MIN_EXTENSION_VERSION}. Some features may not work. Update: https://marketplace.visualstudio.com/items?itemName=ms-copilotstudio.vscode-copilotstudio`);
+      }
       return result;
     }
   }
