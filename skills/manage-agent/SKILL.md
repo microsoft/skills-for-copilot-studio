@@ -11,6 +11,15 @@ agent: manage
 
 Push and pull Copilot Studio agent content by calling the VS Code extension's LanguageServerHost binary directly, using the same custom LSP protocol the extension uses internally.
 
+## IMPORTANT: Do Not Modify Scripts
+
+This is a new capability under active development. The manage-agent scripts (`manage-agent.bundle.js`, `chat-with-agent.bundle.js`) are pre-built bundles that must not be modified, patched, or monkey-patched. If a script fails:
+
+1. **Report the error as-is** — show the user the full error output
+2. **Do not attempt to fix, patch, or work around script errors** — the scripts interact with the LSP binary using a specific protocol and any modifications will break things
+3. **Direct the user to raise an issue** at https://github.com/microsoft/skills-for-copilot-studio/issues with the error output
+4. **Suggest updating the VS Code extension** — the scripts depend on the Copilot Studio VS Code extension (`ms-copilotstudio.vscode-copilotstudio`) and errors may be caused by version mismatches
+
 ## Prerequisites
 
 1. **Copilot Studio VS Code extension** must be installed (`ms-copilotstudio.vscode-copilotstudio`).
