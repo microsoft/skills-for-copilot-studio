@@ -1287,7 +1287,7 @@ async function cmdClone(args) {
         displayName: args.environmentName || "Environment",
         environmentId: args.environmentId,
       },
-      ...solVersions,
+      solutionVersions: solVersions,
       agentInfo,
       assets: { cloneAgent: true, componentcollectionIds: [] },
       rootFolder,
