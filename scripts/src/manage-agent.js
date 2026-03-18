@@ -281,7 +281,7 @@ async function acquireTokenInteractive(tenantId, clientId, scopes) {
       log("");
       const { execFile } = require("child_process");
       const p = os.platform();
-      if (p === "win32") execFile("cmd", ["/c", "start", "", url]);
+      if (p === "win32") execFile("powershell", ["-NoProfile", "-NonInteractive", "-Command", `Start-Process '${url.replace(/'/g, "''")}'`]);
       else if (p === "darwin") execFile("open", [url]);
       else execFile("xdg-open", [url]);
     },
@@ -1235,9 +1235,14 @@ async function cmdClone(args) {
 
   const envUrl = args.environmentUrl.replace(/\/+$/, "");
 
-  // Clone uses Island API token (same as push/pull) — default to Prod cluster (5)
-  const DEFAULT_CLUSTER_CATEGORY = 5;
-  const cpsToken = await getOrAcquireIslandToken(args.tenantId, DEFAULT_CLUSTER_CATEGORY, "Island API");
+  // Derive cluster category from agentManagementUrl to use the right Island resource ID.
+  // Matches the VS Code extension's mapping: test=2, preprod=3, preview=4, prod=5
+  const mgmtUrl = args.agentMgmtUrl || "";
+  const clusterCategory = mgmtUrl.includes(".test.island.") ? 2
+    : mgmtUrl.includes(".preprod.island.") ? 3
+    : mgmtUrl.includes(".preview.island.") ? 4
+    : 5;
+  const cpsToken = await getOrAcquireIslandToken(args.tenantId, clusterCategory, "Island API");
 
   const dvScopes = useInteractive
     ? [`${envUrl}/.default`]
@@ -1266,7 +1271,7 @@ async function cmdClone(args) {
         accountId: args.accountId || dvToken.account?.homeAccountId || "unknown",
         accountEmail: args.accountEmail || dvToken.account?.username || undefined,
         tenantId: args.tenantId,
-        clusterCategory: DEFAULT_CLUSTER_CATEGORY,
+        clusterCategory: clusterCategory,
       },
       copilotStudioAccessToken: cpsToken.accessToken,
       dataverseAccessToken: dvToken.accessToken,
@@ -1276,7 +1281,7 @@ async function cmdClone(args) {
         displayName: args.environmentName || "Environment",
         environmentId: args.environmentId,
       },
-      ...solVersions,
+      solutionVersions: solVersions,
       agentInfo,
       assets: { cloneAgent: true, componentcollectionIds: [] },
       rootFolder,

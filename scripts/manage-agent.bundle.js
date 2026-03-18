@@ -4531,7 +4531,8 @@ var require_msal_node = __commonJS({
             refresh_on: atEntity.refreshOn,
             key_id: atEntity.keyId,
             token_type: atEntity.tokenType,
-            userAssertionHash: atEntity.userAssertionHash
+            userAssertionHash: atEntity.userAssertionHash,
+            resource: atEntity.resource
           };
         });
         return accessTokens;
@@ -4806,6 +4807,7 @@ var require_msal_node = __commonJS({
     var BROKER_CLIENT_ID = "brk_client_id";
     var BROKER_REDIRECT_URI = "brk_redirect_uri";
     var INSTANCE_AWARE = "instance_aware";
+    var RESOURCE = "resource";
     function getDefaultErrorMessage(code) {
       return `See https://aka.ms/msal.js.errors#${code} for details`;
     }
@@ -5000,6 +5002,8 @@ var require_msal_node = __commonJS({
     var methodNotImplemented = "method_not_implemented";
     var nestedAppAuthBridgeDisabled = "nested_app_auth_bridge_disabled";
     var platformBrokerError = "platform_broker_error";
+    var resourceParameterRequired = "resource_parameter_required";
+    var misplacedResourceParam = "misplaced_resource_parameter";
     var ClientAuthErrorCodes = /* @__PURE__ */ Object.freeze({
       __proto__: null,
       authTimeNotFound,
@@ -5019,6 +5023,7 @@ var require_msal_node = __commonJS({
       keyIdMissing,
       maxAgeTranspired,
       methodNotImplemented,
+      misplacedResourceParam,
       multipleMatchingAppMetadata,
       multipleMatchingTokens,
       nestedAppAuthBridgeDisabled,
@@ -5032,6 +5037,7 @@ var require_msal_node = __commonJS({
       openIdConfigError,
       platformBrokerError,
       requestCannotBeMade,
+      resourceParameterRequired,
       stateMismatch,
       stateNotFound,
       tokenClaimsCnfRequiredForSignedJwt,
@@ -5415,6 +5421,11 @@ var require_msal_node = __commonJS({
         parameters.set(BROKER_REDIRECT_URI, brokerRedirectUri);
       }
     }
+    function addResource(parameters, resource) {
+      if (resource) {
+        parameters.set(RESOURCE, resource);
+      }
+    }
     function stripLeadingHashOrQuery(responseString) {
       if (responseString.startsWith("#/")) {
         return responseString.substring(2);
@@ -5699,7 +5710,7 @@ var require_msal_node = __commonJS({
       }
     };
     var name$1 = "@azure/msal-common";
-    var version$1 = "16.2.0";
+    var version$1 = "16.3.0";
     var AzureCloudInstance = {
       // AzureCloudInstance is not specified.
       None: "none",
@@ -7292,6 +7303,7 @@ var require_msal_node = __commonJS({
         clientCapabilities: [],
         azureCloudOptions: DEFAULT_AZURE_CLOUD_OPTIONS,
         instanceAware: false,
+        isMcp: false,
         ...authOptions
       };
     }
@@ -7862,6 +7874,10 @@ ${serverError}`, correlationId);
           const extendedTokenExpirationSeconds = tokenExpirationSeconds + extExpiresIn;
           const refreshOnSeconds = refreshIn && refreshIn > 0 ? reqTimestamp + refreshIn : void 0;
           cachedAccessToken = createAccessTokenEntity(this.homeAccountIdentifier, env, serverTokenResponse.access_token, this.clientId, claimsTenantId || authority.tenant || "", responseScopes.printScopes(), tokenExpirationSeconds, extendedTokenExpirationSeconds, this.cryptoObj.base64Decode, refreshOnSeconds, serverTokenResponse.token_type, userAssertionHash, serverTokenResponse.key_id);
+          const resource = request.resource || null;
+          if (resource) {
+            cachedAccessToken.resource = resource;
+          }
         }
         let cachedRefreshToken = null;
         if (serverTokenResponse.refresh_token) {
@@ -9067,6 +9083,7 @@ Error Description: '${typedError.message}'`, this.correlationId);
           addRedirectUri(parameters, request.redirectUri);
         }
         addScopes(parameters, request.scopes, true, this.oidcDefaultScopes);
+        addResource(parameters, request.resource);
         addAuthorizationCode(parameters, request.code);
         addLibraryInfo(parameters, this.config.libraryInfo);
         addApplicationTelemetry(parameters, this.config.telemetry.application);
@@ -9399,6 +9416,11 @@ Error Description: '${typedError.message}'`, this.correlationId);
         } else if (wasClockTurnedBack(cachedAccessToken.cachedAt) || isTokenExpired(cachedAccessToken.expiresOn, this.config.systemOptions.tokenRenewalOffsetSeconds)) {
           this.setCacheOutcome(CacheOutcome.CACHED_ACCESS_TOKEN_EXPIRED, request.correlationId);
           throw createClientAuthError(tokenRefreshRequired);
+        } else if (request.resource) {
+          if (cachedAccessToken.resource !== request.resource) {
+            this.setCacheOutcome(CacheOutcome.NO_CACHED_ACCESS_TOKEN, request.correlationId);
+            throw createClientAuthError(tokenRefreshRequired);
+          }
         } else if (cachedAccessToken.refreshOn && isTokenExpired(cachedAccessToken.refreshOn, 0)) {
           lastCacheOutcome = CacheOutcome.PROACTIVELY_REFRESHED;
         }
@@ -9456,6 +9478,7 @@ Error Description: '${typedError.message}'`, this.correlationId);
         ...request.extraScopesToConsent || []
       ];
       addScopes(parameters, requestScopes, true, authOptions.authority.options.OIDCOptions?.defaultScopes);
+      addResource(parameters, request.resource);
       addRedirectUri(parameters, request.redirectUri);
       addCorrelationId(parameters, correlationId);
       addResponseMode(parameters, request.responseMode);
@@ -9543,6 +9566,23 @@ Error Description: '${typedError.message}'`, this.correlationId);
     }
     function extractLoginHint(account) {
       return account.loginHint || account.idTokenClaims?.login_hint || null;
+    }
+    function enforceResourceParameter(isMcp, request) {
+      if (!isMcp) {
+        return;
+      }
+      if (request.resource && (containsResourceParam(request.extraParameters) || containsResourceParam(request.extraQueryParameters))) {
+        throw createClientAuthError(misplacedResourceParam);
+      }
+      if (!request.resource) {
+        throw createClientAuthError(resourceParameterRequired);
+      }
+    }
+    function containsResourceParam(params) {
+      if (!params) {
+        return false;
+      }
+      return Object.prototype.hasOwnProperty.call(params, "resource");
     }
     var unexpectedError = "unexpected_error";
     var postRequestFailed = "post_request_failed";
@@ -9863,6 +9903,7 @@ Error Description: '${typedError.message}'`, this.correlationId);
               keyId: serializedAT.key_id,
               tokenType: serializedAT.token_type,
               userAssertionHash: serializedAT.userAssertionHash,
+              resource: serializedAT.resource,
               lastUpdatedAt: Date.now().toString()
             };
             atObjects[key] = accessToken;
@@ -10349,7 +10390,8 @@ Error Description: '${typedError.message}'`, this.correlationId);
       azureCloudOptions: {
         azureCloudInstance: AzureCloudInstance.None,
         tenant: ""
-      }
+      },
+      isMcp: false
     };
     var DEFAULT_LOGGER_OPTIONS = {
       loggerCallback: () => {
@@ -11372,7 +11414,7 @@ Error Description: '${typedError.message}'`, this.correlationId);
       }
     };
     var name = "@azure/msal-node";
-    var version2 = "5.0.6";
+    var version2 = "5.1.0";
     var BaseClient = class {
       constructor(configuration) {
         this.config = buildClientConfiguration(configuration);
@@ -11755,7 +11797,8 @@ Error Description: '${typedError.message}'`, this.correlationId);
             clientId: this.config.auth.clientId,
             authority: discoveredAuthority,
             clientCapabilities: this.config.auth.clientCapabilities,
-            redirectUri
+            redirectUri,
+            isMcp: this.config.auth.isMcp
           },
           loggerOptions: {
             logLevel: this.config.system.loggerOptions.logLevel,
@@ -12144,6 +12187,7 @@ Error Description: '${typedError.message}'`, this.correlationId);
        */
       async acquireTokenByDeviceCode(request) {
         this.logger.info("acquireTokenByDeviceCode called", request.correlationId || "");
+        enforceResourceParameter(this.config.auth.isMcp, request);
         const validRequest = Object.assign(request, await this.initializeBaseRequest(request));
         const serverTelemetryManager = this.initializeServerTelemetryManager(ApiId.acquireTokenByDeviceCode, validRequest.correlationId);
         try {
@@ -12166,6 +12210,7 @@ Error Description: '${typedError.message}'`, this.correlationId);
       async acquireTokenInteractive(request) {
         const correlationId = request.correlationId || this.cryptoProvider.createNewGuid();
         this.logger.trace("acquireTokenInteractive called", correlationId);
+        enforceResourceParameter(this.config.auth.isMcp, request);
         const { openBrowser, successTemplate, errorTemplate, windowHandle, loopbackClient: customLoopbackClient, ...remainingProperties } = request;
         if (this.nativeBrokerPlugin) {
           const brokerRequest = {
@@ -12241,6 +12286,7 @@ Error Description: '${typedError.message}'`, this.correlationId);
       async acquireTokenSilent(request) {
         const correlationId = request.correlationId || this.cryptoProvider.createNewGuid();
         this.logger.trace("acquireTokenSilent called", correlationId);
+        enforceResourceParameter(this.config.auth.isMcp, request);
         if (this.nativeBrokerPlugin) {
           const brokerRequest = {
             ...request,
@@ -12266,6 +12312,22 @@ Error Description: '${typedError.message}'`, this.correlationId);
           request.redirectUri = "";
         }
         return super.acquireTokenSilent(request);
+      }
+      /**
+       * Acquires a token by exchanging the authorization code received from the first step of OAuth 2.0 Authorization Code Flow.
+       * In MCP mode, a resource parameter is required on the request.
+       */
+      async acquireTokenByCode(request, authCodePayLoad) {
+        enforceResourceParameter(this.config.auth.isMcp, request);
+        return super.acquireTokenByCode(request, authCodePayLoad);
+      }
+      /**
+       * Acquires a token by exchanging the refresh token provided for a new set of tokens.
+       * In MCP mode, a resource parameter is required on the request.
+       */
+      async acquireTokenByRefreshToken(request) {
+        enforceResourceParameter(this.config.auth.isMcp, request);
+        return super.acquireTokenByRefreshToken(request);
       }
       /**
        * Removes cache artifacts associated with the given account
@@ -14221,7 +14283,7 @@ async function acquireTokenInteractive(tenantId, clientId, scopes) {
       log("");
       const { execFile } = require("child_process");
       const p = os.platform();
-      if (p === "win32") execFile("cmd", ["/c", "start", "", url]);
+      if (p === "win32") execFile("powershell", ["-NoProfile", "-NonInteractive", "-Command", `Start-Process '${url.replace(/'/g, "''")}'`]);
       else if (p === "darwin") execFile("open", [url]);
       else execFile("xdg-open", [url]);
     },
@@ -14994,8 +15056,9 @@ async function cmdClone(args) {
   const useInteractive = !args.clientId;
   const acquireToken = useInteractive ? getOrAcquireTokenInteractive : getOrAcquireToken;
   const envUrl = args.environmentUrl.replace(/\/+$/, "");
-  const DEFAULT_CLUSTER_CATEGORY = 5;
-  const cpsToken = await getOrAcquireIslandToken(args.tenantId, DEFAULT_CLUSTER_CATEGORY, "Island API");
+  const mgmtUrl = args.agentMgmtUrl || "";
+  const clusterCategory = mgmtUrl.includes(".test.island.") ? 2 : mgmtUrl.includes(".preprod.island.") ? 3 : mgmtUrl.includes(".preview.island.") ? 4 : 5;
+  const cpsToken = await getOrAcquireIslandToken(args.tenantId, clusterCategory, "Island API");
   const dvScopes = useInteractive ? [`${envUrl}/.default`] : [`${envUrl}/.default`, "offline_access"];
   const dvToken = await acquireToken(args.tenantId, clientId, dvScopes, "Dataverse API");
   const [agentInfo, solVersions] = await Promise.all([
@@ -15013,7 +15076,7 @@ async function cmdClone(args) {
         accountId: args.accountId || dvToken.account?.homeAccountId || "unknown",
         accountEmail: args.accountEmail || dvToken.account?.username || void 0,
         tenantId: args.tenantId,
-        clusterCategory: DEFAULT_CLUSTER_CATEGORY
+        clusterCategory
       },
       copilotStudioAccessToken: cpsToken.accessToken,
       dataverseAccessToken: dvToken.accessToken,
@@ -15023,7 +15086,7 @@ async function cmdClone(args) {
         displayName: args.environmentName || "Environment",
         environmentId: args.environmentId
       },
-      ...solVersions,
+      solutionVersions: solVersions,
       agentInfo,
       assets: { cloneAgent: true, componentcollectionIds: [] },
       rootFolder
@@ -15080,6 +15143,6 @@ safe-buffer/index.js:
   (*! safe-buffer. MIT License. Feross Aboukhadijeh <https://feross.org/opensource> *)
 
 @azure/msal-node/lib/msal-node.cjs:
-  (*! @azure/msal-node v5.0.6 2026-03-02 *)
-  (*! @azure/msal-common v16.2.0 2026-03-02 *)
+  (*! @azure/msal-node v5.1.0 2026-03-13 *)
+  (*! @azure/msal-common v16.3.0 2026-03-13 *)
 */
