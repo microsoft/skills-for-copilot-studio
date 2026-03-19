@@ -35,10 +35,10 @@ Set timestamp variable
         |
         v
 AI Builder model classifies error subcode
-  (input: System.Activity.Text -> output: Topic.ContentFilteringReason)
+  (input: System.Activity.Text -> output: Topic.ContentFilteringreason)
         |
         v
-Single ConditionGroup (switch-style) on Topic.ContentFilteringReason.text
+Single ConditionGroup (switch-style) on Topic.ContentFilteringreason.text
   |-- "OpenAIViolence"      -> violence-specific message
   |-- "OpenAIHate"          -> hate-specific message
   |-- "OpenAISexual"        -> sexual content message
@@ -48,7 +48,7 @@ Single ConditionGroup (switch-style) on Topic.ContentFilteringReason.text
   |-- else                  -> generic content policy message
         |
         v
-Test-mode error details / production error message
+Error details message (else fallback)
         |
         v
 Log telemetry -> CancelAllDialogs
@@ -73,7 +73,7 @@ Only one RAI subcode can match per error. Using separate sequential `ConditionGr
 2. Add an **AI Builder prompt** node after the timestamp variable and before the condition group
 3. Configure the prompt to classify the error subcode from the user's message
 4. Set the input to the user's message (`System.Activity.Text`)
-5. Map the output to a topic variable (e.g., `Topic.ContentFilteringReason`)
+5. Map the output to a topic variable (e.g., `Topic.ContentFilteringreason`)
 
 Use the following for the AI Builder prompt:
 
@@ -118,78 +118,106 @@ would be triggered. Output **only** the exact subcode — nothing else.
 Output only the exact matching subcode. Example: `OpenAIViolence`
 ```
 
-Once the AI Builder prompt node is in place and the output variable is set, the switch-style ConditionGroup in Step 2 will reference that output variable to branch on the RAI subcode.
+Once the AI Builder prompt node is in place and the output variable is set, the ConditionGroup will reference that output variable to branch on the RAI subcode.
 
-### Step 2 — Add the Switch-Style ConditionGroup
+### Step 2 — Full Topic YAML
 
-Place this after the AI Builder node. All 6 RAI subcodes are branches in a single `ConditionGroup`, with an `elseActions` fallback:
+Below is the complete OnError topic YAML with the timestamp variable, AI Builder classification, RAI switch ConditionGroup, telemetry logging, and dialog cancellation. Paste this into the Code editor view of your OnError topic:
 
 ```yaml
-- kind: ConditionGroup
-  id: conditionGroup_raiSwitch
-  conditions:
-    - id: cond_violence
-      condition: =Topic.ContentFilteringReason.text = "OpenAIViolence"
-      actions:
-        - kind: SendActivity
-          id: sendMessage_violence
-          activity: "[PLACEHOLDER] Your message was flagged for violent content. Please rephrase your request without references to violence, weapons, or physical harm."
+kind: AdaptiveDialog
+startBehavior: UseLatestPublishedContentAndCancelOtherTopics
+beginDialog:
+  kind: OnError
+  id: main
+  actions:
+    - kind: SetVariable
+      id: setVariable_timestamp
+      variable: init:Topic.CurrentTime
+      value: =Text(Now(), DateTimeFormat.UTC)
 
-    - id: cond_hate
-      condition: =Topic.ContentFilteringReason.text = "OpenAIHate"
-      actions:
-        - kind: SendActivity
-          id: sendMessage_hate
-          activity: "[PLACEHOLDER] Your message was flagged for hateful or discriminatory content. Please rephrase your request without references to identity-based hate or discrimination."
+    - kind: InvokeAIBuilderModelAction
+      id: invokeAIBuilderModelAction_xxoZmJ
+      input:
+        binding:
+          User_20Message: =System.Activity.Text
+      output:
+        binding:
+          predictionOutput: Topic.ContentFilteringreason
+      aIModelId: 216b2153-49c5-4291-a730-6bccd47710d2
 
-    - id: cond_sexual
-      condition: =Topic.ContentFilteringReason.text = "OpenAISexual"
-      actions:
-        - kind: SendActivity
-          id: sendMessage_sexual
-          activity: "[PLACEHOLDER] Your message was flagged for sexually explicit or inappropriate content. Please rephrase your request."
+    - kind: ConditionGroup
+      id: conditionGroup_raiSwitch
+      conditions:
+        - id: cond_Vl8mRk
+          condition: =Topic.ContentFilteringreason.text = "OpenAIViolence"
+          actions:
+            - kind: SendActivity
+              id: sendMessage_Vl8mRk
+              activity: "[PLACEHOLDER] Your message was flagged for violent content. Please rephrase your request without references to violence, weapons, or physical harm."
 
-    - id: cond_selfharm
-      condition: =Topic.ContentFilteringReason.text = "OpenAISelfHarm"
-      actions:
-        - kind: SendActivity
-          id: sendMessage_selfharm
-          activity: "[PLACEHOLDER] Your message was flagged for content related to self-harm. If you or someone you know is in crisis, please contact emergency services or a crisis helpline."
+        - id: cond_Ht4nQw
+          condition: =Topic.ContentFilteringreason.text = "OpenAIHate"
+          actions:
+            - kind: SendActivity
+              id: sendMessage_Ht4nQw
+              activity: "[PLACEHOLDER] Your message was flagged for hateful or discriminatory content. Please rephrase your request without references to identity-based hate or discrimination."
 
-    - id: cond_jailbreak
-      condition: =Topic.ContentFilteringReason.text = "OpenAIJailBreak"
-      actions:
-        - kind: SendActivity
-          id: sendMessage_jailbreak
-          activity: "[PLACEHOLDER] Your message was flagged as an attempt to override the system instructions. This type of prompt manipulation is not allowed."
+        - id: cond_Sx7pLe
+          condition: =Topic.ContentFilteringreason.text = "OpenAISexual"
+          actions:
+            - kind: SendActivity
+              id: sendMessage_Sx7pLe
+              activity: "[PLACEHOLDER] Your message was flagged for sexually explicit or inappropriate content. Please rephrase your request."
 
-    - id: cond_indirect
-      condition: =Topic.ContentFilteringReason.text = "OpenAIndirectAttack"
-      actions:
-        - kind: SendActivity
-          id: sendMessage_indirect
-          activity: "[PLACEHOLDER] A prompt injection attack was detected in external data (document or knowledge source). The request has been blocked for safety."
+        - id: cond_Sh9tWz
+          condition: =Topic.ContentFilteringreason.text = "OpenAISelfHarm"
+          actions:
+            - kind: SendActivity
+              id: sendMessage_Sh9tWz
+              activity: "[PLACEHOLDER] Your message was flagged for content related to self-harm. If you or someone you know is in crisis, please contact emergency services or a crisis helpline."
 
-  elseActions:
-    - kind: SendActivity
-      id: sendMessage_generic
-      activity: "[PLACEHOLDER] Your message was flagged for a content policy violation. Please rephrase your request."
+        - id: cond_Jb2kAx
+          condition: =Topic.ContentFilteringreason.text = "OpenAIJailBreak"
+          actions:
+            - kind: SendActivity
+              id: sendMessage_Jb2kAx
+              activity: "[PLACEHOLDER] Your message was flagged as an attempt to override the system instructions. This type of prompt manipulation is not allowed."
+
+        - id: cond_Ia5rNv
+          condition: =Topic.ContentFilteringreason.text = "OpenAIndirectAttack"
+          actions:
+            - kind: SendActivity
+              id: sendMessage_Ia5rNv
+              activity: "[PLACEHOLDER] A prompt injection attack was detected in external data (document or knowledge source). The request has been blocked for safety."
+
+      elseActions:
+        - kind: SendActivity
+          id: sendMessage_dZ0gaF
+          activity:
+            text:
+              - |-
+                An error has occurred.
+                Error code: {System.Error.Code}
+                Conversation Id: {System.Conversation.Id}
+                Time (UTC): {Topic.CurrentTime}.
+            speak:
+              - An error has occurred, please try again.
+
+    - kind: LogCustomTelemetryEvent
+      id: 9KwEAn
+      eventName: OnErrorLog
+      properties: "={ErrorMessage: System.Error.Message, ErrorCode: System.Error.Code, TimeUTC: Topic.CurrentTime, ConversationId: System.Conversation.Id}"
+
+    - kind: CancelAllDialogs
+      id: NW7NyY
 ```
 
 **Replace:**
 - All `[PLACEHOLDER]` messages with your organization's approved response text
-- All node `id` values with unique generated IDs
+- The `aIModelId` value with your own AI Builder model ID
 
-### Step 3 — Keep Existing Error Handling Below
-
-The RAI switch should be placed **before** the existing test-mode detection and telemetry logging nodes. The full flow order is:
-
-1. `SetVariable` — timestamp
-2. `InvokeAIBuilderModelAction` — classify RAI subcode
-3. `ConditionGroup` — RAI switch (this pattern)
-4. `ConditionGroup` — test-mode vs production error message (existing)
-5. `LogCustomTelemetryEvent` — telemetry (existing)
-6. `CancelAllDialogs` — end (existing)
+> **Note:** The variable name is `Topic.ContentFilteringreason` (lowercase "r") — this must match exactly between the AI Builder output binding and the ConditionGroup conditions.
 
 ## When to Use This Pattern
 
