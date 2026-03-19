@@ -37,30 +37,30 @@ claude plugin install /path/to/skills-for-copilot-studio --scope project
 The plugin provides four commands, each backed by a specialized agent:
 
 ```
-/copilot-studio:manage       Clone, push, pull, and sync agent content between local files and the cloud
-/copilot-studio:author       Create and edit YAML (topics, actions, knowledge, triggers, variables)
-/copilot-studio:test         Test published agents — point-tests, batch suites, or evaluation analysis
-/copilot-studio:troubleshoot Debug issues — wrong topic routing, validation errors, unexpected behavior
+/copilot-studio:copilot-studio-manage       Clone, push, pull, and sync agent content between local files and the cloud
+/copilot-studio:copilot-studio-author       Create and edit YAML (topics, actions, knowledge, triggers, variables)
+/copilot-studio:copilot-studio-test         Test published agents — point-tests, batch suites, or evaluation analysis
+/copilot-studio:copilot-studio-troubleshoot Debug issues — wrong topic routing, validation errors, unexpected behavior
 ```
 
 ## Quick Start
 
 ```bash
 # Clone an agent from the cloud (guided flow — opens browser for sign-in)
-/copilot-studio:manage clone
+/copilot-studio:copilot-studio-manage clone
 
 # Design and build topics
-/copilot-studio:author Create a topic that handles IT service requests
+/copilot-studio:copilot-studio-author Create a topic that handles IT service requests
 
 # Pull latest, push your changes
-/copilot-studio:manage pull
-/copilot-studio:manage push
+/copilot-studio:copilot-studio-manage pull
+/copilot-studio:copilot-studio-manage push
 
 # Publish in Copilot Studio UI, then test
-/copilot-studio:test Send "How do I request a new laptop?" to the published agent
+/copilot-studio:copilot-studio-test Send "How do I request a new laptop?" to the published agent
 
 # Troubleshoot and fix issues
-/copilot-studio:troubleshoot The agent is hallucinating — it's not using real data from our knowledge base
+/copilot-studio:copilot-studio-troubleshoot The agent is hallucinating — it's not using real data from our knowledge base
 ```
 
 See [SETUP_GUIDE.md](SETUP_GUIDE.md) for a full end-to-end walkthrough including validation, testing options, and troubleshooting.

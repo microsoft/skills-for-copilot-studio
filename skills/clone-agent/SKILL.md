@@ -4,7 +4,7 @@ description: Clone a Copilot Studio agent from the cloud. Guides through environ
 argument-hint: [agent name or environment hint]
 allowed-tools: Bash(node *manage-agent.bundle.js *), Read, Glob, Grep
 context: fork
-agent: manage
+agent: copilot-studio-manage
 ---
 
 # Clone Agent

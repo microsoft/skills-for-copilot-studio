@@ -50,6 +50,7 @@ npm run build
 
 ```
 .claude-plugin/          # Plugin manifest and marketplace config
+.github/plugin/          # GitHub Copilot Plugin manifest to speedup discovery  
 agents/                  # Sub-agent definitions (author, test, troubleshoot)
 hooks/                   # Session hooks (agent routing)
 skills/                  # Skill definitions (entry points + internal skills)

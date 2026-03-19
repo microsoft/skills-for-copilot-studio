@@ -3,4 +3,4 @@ description: Test a published Copilot Studio agent — send test messages, run b
 argument-hint: <utterance or test instruction>
 ---
 
-Delegate this task to `@copilot-studio:test`. Pass along the user's full request including any `$ARGUMENTS`.
+Delegate this task to `@copilot-studio:copilot-studio-test`. Pass along the user's full request including any `$ARGUMENTS`.

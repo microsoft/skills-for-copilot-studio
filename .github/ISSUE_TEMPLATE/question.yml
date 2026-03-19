@@ -24,9 +24,10 @@ body:
       label: Related Agent
       description: Which agent does this relate to?
       options:
-        - author
-        - test
-        - troubleshoot
+        - copilot-studio-author
+        - copilot-studio-manage
+        - copilot-studio-test
+        - copilot-studio-troubleshoot
         - General
     validations:
       required: true

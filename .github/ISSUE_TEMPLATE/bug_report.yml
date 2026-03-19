@@ -8,9 +8,10 @@ body:
       label: Agent
       description: Which agent were you using?
       options:
-        - author
-        - test
-        - troubleshoot
+        - copilot-studio-author
+        - copilot-studio-manage
+        - copilot-studio-test
+        - copilot-studio-troubleshoot
         - Not applicable
     validations:
       required: true
@@ -21,7 +22,7 @@ body:
       label: User Prompt
       description: The exact prompt you sent to the agent.
       placeholder: |
-        /copilot-studio:author Create a topic that asks for the user's order number and looks it up
+        /copilot-studio:copilot-studio-author Create a topic that asks for the user's order number and looks it up
     validations:
       required: true
 

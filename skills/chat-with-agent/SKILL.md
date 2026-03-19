@@ -4,7 +4,7 @@ description: Send a message to a published Copilot Studio agent and get its full
 argument-hint: <utterance to send>
 allowed-tools: Bash(node *chat-with-agent.bundle.js *), Read, Glob, Grep
 context: fork
-agent: test
+agent: copilot-studio-test
 ---
 
 # Chat With Agent

@@ -3,7 +3,7 @@ user-invocable: false
 description: Run or analyze tests for a published Copilot Studio agent. Two modes — run a batch test suite via the Copilot Studio Kit (Dataverse API), or import and analyze results from Copilot Studio's built-in evaluations. Not for sending a single test message — use /chat-with-agent for that instead.
 allowed-tools: Bash(node *run-tests.js *), Bash(npm install *), Read, Write, Glob, Grep, Edit
 context: fork
-agent: test
+agent: copilot-studio-test
 ---
 
 # Run Tests

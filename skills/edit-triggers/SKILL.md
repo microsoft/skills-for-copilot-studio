@@ -4,7 +4,7 @@ description: Modify topic triggers — trigger phrases and model description. Us
 argument-hint: <topic-name>
 allowed-tools: Read, Edit, Glob
 context: fork
-agent: author
+agent: copilot-studio-author
 ---
 
 # Edit Topic Triggers

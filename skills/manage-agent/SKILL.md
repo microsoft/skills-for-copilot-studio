@@ -4,7 +4,7 @@ description: Push/pull Copilot Studio agent content via the VS Code extension's 
 argument-hint: <push|pull|clone|changes|auth|list-agents|list-envs>
 allowed-tools: Bash(node *manage-agent.bundle.js *), Read, Glob, Grep
 context: fork
-agent: manage
+agent: copilot-studio-manage
 ---
 
 # Manage Agent

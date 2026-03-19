@@ -4,7 +4,7 @@ description: Add child agents, connected agents, or other multi-agent patterns t
 argument-hint: <agent description>
 allowed-tools: Bash(node *schema-lookup.bundle.js *), Read, Write, Glob
 context: fork
-agent: author
+agent: copilot-studio-author
 ---
 
 # Add Other Agents

@@ -3,7 +3,7 @@ user-invocable: false
 name: best-practices
 description: "Best practices for Copilot Studio agents. Covers JIT glossary loading (customer acronyms, terminology), JIT user context provisioning (M365 profile, country, department), the shared OnActivity initialization pattern, dynamic topic redirects with Switch expressions, and preventing child agents from responding directly to users. USE FOR: glossary, acronyms, user context, user profile, country-aware answers, JIT initialization, OnActivity provisioning, conversation-init, personalized knowledge, dynamic redirect, Switch, BeginDialog, if/then/else replacement, child agent responses, completion setting, SendMessageTool, output variables, connected agents. DO NOT USE FOR: general knowledge sources (use add-knowledge), topic creation (use new-topic)."
 context: fork
-agent: author
+agent: copilot-studio-author
 ---
 
 # Copilot Studio Best Practices

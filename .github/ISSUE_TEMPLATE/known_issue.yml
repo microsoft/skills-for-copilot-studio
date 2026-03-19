@@ -8,9 +8,10 @@ body:
       label: Affected Agent or Skill
       description: Which agent or skill does this issue affect?
       options:
-        - author
-        - test
-        - troubleshoot
+        - copilot-studio-author
+        - copilot-studio-manage
+        - copilot-studio-test
+        - copilot-studio-troubleshoot
         - validate
         - new-topic
         - add-node
@@ -87,8 +88,8 @@ body:
       label: Reproduction Steps
       description: Exact steps to reproduce. Include the agent, prompt, and what the agent produced.
       placeholder: |
-        1. Agent: author
-        2. Prompt: `/copilot-studio:author Create a topic that sends a welcome message`
+        1. Agent: copilot-studio-author
+        2. Prompt: `/copilot-studio:copilot-studio-author Create a topic that sends a welcome message`
         3. Agent generates topic with kind: SendMessage
         4. Run `/copilot-studio:validate` — fails with "unknown kind value: SendMessage"
       render: markdown

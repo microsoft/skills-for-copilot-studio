@@ -1,5 +1,5 @@
 ---
-name: troubleshoot
+name: Copilot Studio Troubleshoot
 description: >
   Debugging and fixing agent for Copilot Studio. Validates YAML, inspects
   schema, analyzes test failures, and proposes targeted fixes. Use when
