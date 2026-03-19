@@ -8,9 +8,10 @@ body:
       label: Affected Agent or Skill
       description: Which agent or skill does this issue affect?
       options:
-        - author
-        - test
-        - troubleshoot
+        - copilot-studio-author
+        - copilot-studio-manage
+        - copilot-studio-test
+        - copilot-studio-troubleshoot
         - validate
         - new-topic
         - add-node

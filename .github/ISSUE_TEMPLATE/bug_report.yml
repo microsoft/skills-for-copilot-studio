@@ -8,9 +8,10 @@ body:
       label: Agent
       description: Which agent were you using?
       options:
-        - author
-        - test
-        - troubleshoot
+        - copilot-studio-author
+        - copilot-studio-manage
+        - copilot-studio-test
+        - copilot-studio-troubleshoot
         - Not applicable
     validations:
       required: true
