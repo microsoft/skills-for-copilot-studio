@@ -1,7 +1,7 @@
 ---
 user-invocable: false
 name: best-practices
-description: "Best practices for Copilot Studio agents. Covers JIT glossary loading (customer acronyms, terminology), JIT user context provisioning (M365 profile, country, department), the shared OnActivity initialization pattern, dynamic topic redirects with Switch expressions, and preventing child agents from responding directly to users. USE FOR: glossary, acronyms, user context, user profile, country-aware answers, JIT initialization, OnActivity provisioning, conversation-init, personalized knowledge, dynamic redirect, Switch, BeginDialog, if/then/else replacement, child agent responses, completion setting, SendMessageTool, output variables, connected agents. DO NOT USE FOR: general knowledge sources (use add-knowledge), topic creation (use new-topic)."
+description: "Best practices for Copilot Studio agents. Covers JIT glossary loading (customer acronyms, terminology), JIT user context provisioning (M365 profile, country, department), the shared OnActivity initialization pattern, dynamic topic redirects with Switch expressions, preventing child agents from responding directly to users, RAI error handling with categorized responses, deterministic MCP server tool calls, and citations in Adaptive Cards for Teams. USE FOR: glossary, acronyms, user context, user profile, country-aware answers, JIT initialization, OnActivity provisioning, conversation-init, personalized knowledge, dynamic redirect, Switch, BeginDialog, if/then/else replacement, child agent responses, completion setting, SendMessageTool, output variables, connected agents, RAI, responsible AI, content filtering, OpenAI errors, ContentFiltered, OnError, jailbreak, self-harm, hate, violence, sexual content, indirect attack, MCP, MCP server, MCP tool, deterministic tool call, generative actions, child agent MCP, citations, adaptive card, Teams citations, references, citation sources, collapsible references, ForAll, CitationSources. DO NOT USE FOR: general knowledge sources (use add-knowledge), topic creation (use new-topic)."
 context: fork
 agent: author
 ---
@@ -54,6 +54,36 @@ Provides the current date to the orchestrator through agent instructions using P
 - The agent needs to filter time-sensitive knowledge sources
 - Date interpretation is causing confusion or hallucinations
 - The agent handles schedules, calendars, deadlines, or time-sensitive content
+
+## Deterministic MCP Server Tool Calls → [deterministic-mcp-calls.md](deterministic-mcp-calls.md)
+
+Ensures MCP server tools fire reliably for specific intents despite platform limitations (no `/` syntax in instructions, no MCP tool nodes in topics). Covers two approaches: naming the tool explicitly in agent instructions (simple, high reliability) or wrapping the MCP tool in a dedicated child agent with trigger phrases (near-deterministic, more setup).
+
+**Read this best-practice when:**
+- The user wants an MCP tool to always fire for a specific intent
+- The orchestrator is inconsistently calling an MCP server tool
+- The user asks how to call MCP tools deterministically or from topics
+- The user wants to force a generative action to execute reliably
+
+## RAI Error Handling → [rai-error-handling.md](rai-error-handling.md)
+
+Catches Azure OpenAI RAI content filtering errors in the `OnError` topic, classifies them by subcode (violence, hate, sexual, self-harm, jailbreak, indirect attack), and returns targeted, user-friendly responses instead of generic error messages. Uses an AI Builder prompt node to classify the subcode and a single switch-style `ConditionGroup` to branch on the result.
+
+**Read this best-practice when:**
+- The user wants to customize error messages for RAI content filtering violations
+- The user needs category-specific responses (e.g., crisis resources for self-harm triggers)
+- The user asks about handling `ContentFiltered` errors, OpenAI subcodes, or the `OnError` topic
+- The user wants visibility into which RAI filter categories are triggering
+
+## Citations in Adaptive Cards for Teams → [adaptive-card-citations.md](adaptive-card-citations.md)
+
+Replaces the default Teams citation rendering with a collapsible Adaptive Card that displays numbered, clickable references. Uses `ForAll()` over `Topic.Answer.Text.CitationSources` to dynamically generate citation rows with emoji badges and `Action.ToggleVisibility` for expand/collapse.
+
+**Read this best-practice when:**
+- The user wants to customize how citations appear in the Teams channel
+- Users are unhappy with the default citation rendering in Teams
+- The user asks about putting citations or references in an Adaptive Card
+- The user wants a collapsible references section for knowledge-grounded answers
 
 ## Combining patterns
 
