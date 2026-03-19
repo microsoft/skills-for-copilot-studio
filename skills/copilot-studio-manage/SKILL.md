@@ -3,4 +3,4 @@ description: Push, pull, clone, and manage Copilot Studio agent content between 
 argument-hint: <push|pull|clone|changes|list-agents|list-envs>
 ---
 
-Delegate this task to `@copilot-studio:manage`. Pass along the user's full request including any `$ARGUMENTS`.
+Delegate this task to `@copilot-studio:copilot-studio-manage`. Pass along the user's full request including any `$ARGUMENTS`.

@@ -4,7 +4,7 @@ description: Edit Copilot Studio agent settings, instructions, or configuration.
 argument-hint: <what to change>
 allowed-tools: Bash(node *schema-lookup.bundle.js *), Read, Edit, Glob
 context: fork
-agent: author
+agent: copilot-studio-author
 ---
 
 # Edit Agent Settings/Instructions

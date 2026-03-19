@@ -4,7 +4,7 @@ description: Generate and insert an Adaptive Card into a Copilot Studio topic us
 argument-hint: <card-type> in <topic-name>
 allowed-tools: Bash(node *schema-lookup.bundle.js *), Read, Write, Edit, Glob
 context: fork
-agent: author
+agent: copilot-studio-author
 ---
 
 # Add Adaptive Card

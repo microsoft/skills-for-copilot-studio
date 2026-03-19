@@ -4,7 +4,7 @@ description: Add generative answer nodes (SearchAndSummarizeContent or AnswerQue
 argument-hint: <topic-name or "new">
 allowed-tools: Bash(node *schema-lookup.bundle.js *), Read, Write, Edit, Glob
 context: fork
-agent: author
+agent: copilot-studio-author
 ---
 
 # Add Generative Answers

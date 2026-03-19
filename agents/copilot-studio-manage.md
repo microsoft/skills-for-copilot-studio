@@ -1,5 +1,5 @@
 ---
-name: manage
+name: Copilot Studio Manage
 description: >
   ALM operations for Copilot Studio agents. Pushes and pulls agent content
   between local YAML files and the cloud, lists environments and agents,

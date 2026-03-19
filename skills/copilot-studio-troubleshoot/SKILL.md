@@ -3,4 +3,4 @@ description: Debug and fix Copilot Studio agent issues — validate YAML, diagno
 argument-hint: <issue description>
 ---
 
-Delegate this task to `@copilot-studio:troubleshoot`. Pass along the user's full request including any `$ARGUMENTS`.
+Delegate this task to `@copilot-studio:copilot-studio-troubleshoot`. Pass along the user's full request including any `$ARGUMENTS`.

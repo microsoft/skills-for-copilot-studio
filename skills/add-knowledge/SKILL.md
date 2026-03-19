@@ -4,7 +4,7 @@ description: Add a knowledge source (public website or SharePoint) to a Copilot 
 argument-hint: <url>
 allowed-tools: Bash(node *schema-lookup.bundle.js *), Read, Write, Glob
 context: fork
-agent: author
+agent: copilot-studio-author
 ---
 
 # Add Knowledge Source

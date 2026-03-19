@@ -4,7 +4,7 @@ description: Edit an existing connector action (TaskDialog) in a Copilot Studio 
 argument-hint: <what to change, e.g. "add description to SharePoint inputs">
 allowed-tools: Bash(node *connector-lookup.bundle.js *), Bash(node *schema-lookup.bundle.js *), Read, Edit, Glob
 context: fork
-agent: author
+agent: copilot-studio-author
 ---
 
 # Edit Connector Action

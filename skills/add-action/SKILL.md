@@ -4,7 +4,7 @@ description: Guide users through adding a new connector action to a Copilot Stud
 argument-hint: <action description, e.g. "post a Teams message">
 allowed-tools: Bash(node *connector-lookup.bundle.js *), Read
 context: fork
-agent: author
+agent: copilot-studio-author
 ---
 
 # Add Connector Action (Guide)

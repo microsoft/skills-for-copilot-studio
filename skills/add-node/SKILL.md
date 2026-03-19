@@ -4,7 +4,7 @@ description: Add or modify a node in an existing Copilot Studio topic. Use when 
 argument-hint: <node-type> to <topic-name>
 allowed-tools: Bash(node *schema-lookup.bundle.js *), Read, Write, Edit, Glob
 context: fork
-agent: author
+agent: copilot-studio-author
 ---
 
 # Add Node to Topic

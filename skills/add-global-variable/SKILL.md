@@ -4,7 +4,7 @@ description: Add a global variable to a Copilot Studio agent. Use when the user 
 argument-hint: <variable name and purpose>
 allowed-tools: Read, Write, Glob, Grep
 context: fork
-agent: author
+agent: copilot-studio-author
 ---
 
 # Add Global Variable

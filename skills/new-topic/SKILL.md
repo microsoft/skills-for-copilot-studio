@@ -4,7 +4,7 @@ description: Create a new Copilot Studio topic YAML file. Use when the user asks
 argument-hint: <topic description>
 allowed-tools: Bash(node *schema-lookup.bundle.js *), Read, Write, Glob
 context: fork
-agent: author
+agent: copilot-studio-author
 ---
 
 # Create New Topic

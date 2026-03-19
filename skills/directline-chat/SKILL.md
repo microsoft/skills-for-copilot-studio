@@ -4,7 +4,7 @@ description: Send a message to a bot via DirectLine v3 REST API and get the full
 argument-hint: <utterance to send>
 allowed-tools: Bash(node *directline-chat.bundle.js *), Read, Glob, Grep
 context: fork
-agent: test
+agent: copilot-studio-test
 ---
 
 # DirectLine Chat
