@@ -2,6 +2,12 @@
 
 When a user asks a question that triggers a knowledge search, there can be a noticeable pause while the agent retrieves and summarizes results. This best practice sends a randomized "please hold" message to the user during that wait, creating a more natural conversational experience instead of leaving them staring at a blank screen.
 
+## Channel Targeting
+
+This pattern applies to **all channels** — Teams, Copilot, web chat, and custom channels. The `OnKnowledgeRequested` trigger fires regardless of the channel the user is on. There is no channel-specific behavior in this pattern; the hold message is sent the same way everywhere.
+
+If you only want the hold message in specific channels (e.g., Teams only), you can wrap the `SendActivity` node in a `ConditionGroup` that checks `System.Activity.ChannelId` — see the [Start Over & Reset Conversation v2](start-over-v2-teams.md) best practice for the channel check pattern.
+
 ## The Challenge
 
 Knowledge searches take time — the agent must query sources, retrieve relevant content, and generate a summarized answer. During this process:
@@ -9,10 +15,16 @@ Knowledge searches take time — the agent must query sources, retrieve relevant
 - The user sees no feedback and may think the agent is unresponsive
 - The silence feels unnatural compared to a human conversation where someone would say "let me check on that"
 - Users may resend their question or abandon the conversation
+- There is **limited support for streaming UI patterns** in Copilot Studio — channels like Teams and Copilot do not display planner actions, typing indicators, or progressive rendering during knowledge retrieval, so the user has no visual cue that work is happening
+- **Not all models support streaming responses** in Copilot Studio — when using non-streaming models, the user receives no incremental output during generation, making the wait feel even longer. A hold message bridges this gap by providing immediate feedback regardless of model streaming support
 
 ## The Solution
 
 Create a custom **On Knowledge Requested** topic that fires automatically whenever the orchestrator triggers a knowledge search. The topic picks a random friendly message from a predefined list and sends it before the search runs.
+
+### Important Trade-off: Multiple Messages per Response
+
+This pattern sends an **additional message** before the knowledge answer — meaning the user receives two messages for a single question (the hold message + the answer). Some users and organizations may not prefer this behavior, as it can feel fragmented or chatty compared to a single unified response. Before implementing, confirm with stakeholders that the trade-off of reduced perceived latency is worth the additional message. This is a UX behavior change, not just a cosmetic addition.
 
 The user experience becomes:
 
@@ -114,13 +126,11 @@ If you don't need variety and just want a consistent hold message, simplify the 
 
 No variables, no formulas. Every knowledge search shows the same message.
 
-### Option B — Use an AI Prompt to Generate Messages
+### Why NOT to Use an AI Prompt to Generate Messages
 
-Replace the two `SetVariable` nodes with an AI Builder prompt node configured with instructions like:
+You might consider using an AI Builder prompt node to dynamically generate hold messages instead of a predefined table. **Do not do this.** The `OnKnowledgeRequested` topic runs **sequentially** — all actions in the topic must complete before the knowledge search begins. AI Builder prompt calls typically take **4–6 seconds end-to-end**. A normal knowledge search already takes approximately **7 seconds**, so adding an AI prompt would increase total latency by nearly **80%** (from ~7s to ~13s). This defeats the purpose of the pattern, which is to improve perceived responsiveness — not add real latency.
 
-> *"Generate a single short, friendly message (under 80 characters) telling the user you are searching for information. Be creative and vary the tone. Output only the message text, nothing else."*
-
-Map the prompt output to `Topic.SelectedMessage` and keep the `SendActivity` node as-is. This gives unlimited variety but adds AI Builder latency and token cost.
+Use the Power Fx `Table()` approach (recommended) or a single static message instead. Both execute in milliseconds with no external calls.
 
 ## Adding a Delay Before the Hold Message
 

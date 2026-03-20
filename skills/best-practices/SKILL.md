@@ -90,7 +90,7 @@ Replaces the default Teams citation rendering with a collapsible Adaptive Card t
 Sends a randomized "please hold" message to the user while the agent searches knowledge sources, using an `OnKnowledgeRequested` topic with a Power Fx `Table()` of 40 messages and `Rand()` selection. Includes alternative approaches: static single message or AI-generated messages.
 
 **Read this best-practice when:**
-- The user specifically complains about latency or slow response times during knowledge search
+- The user complains about the lack of activity or streaming UI during knowledge search
 - The agent has a high volume of knowledge sources (500+ documents) or large SharePoint libraries
 - The user asks about the `OnKnowledgeRequested` trigger or customizing the knowledge search experience
 
