@@ -124,7 +124,7 @@ The test agent (`/copilot-studio:test`) supports three ways to test:
 Send a single utterance directly to the published agent and see its full response. Requires an **Azure App Registration**:
 - **Platform**: Public client / Native (Mobile and desktop applications)
 - **Redirect URI**: `http://localhost` (HTTP, not HTTPS)
-- **API permissions**: `CopilotStudio.Copilots.Invoke` (granted by admin)
+- **API permissions**: Add a permission → APIs my organization uses → search **Power Platform API** → Delegated permissions → expand CopilotStudio → check `CopilotStudio.Copilots.Invoke` (optionally grant admin consent)
 
 ```
 /copilot-studio:test Send "What products do you offer?" to the published agent

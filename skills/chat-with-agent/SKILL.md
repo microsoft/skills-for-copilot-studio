@@ -18,7 +18,7 @@ Send a single utterance to a published Copilot Studio agent and display its full
 2. An **Azure App Registration** configured as follows:
    - **Platform**: Public client / Native (Mobile and desktop applications) — NOT SPA
    - **Redirect URI**: `http://localhost` (HTTP, not HTTPS)
-   - **API permissions**: `CopilotStudio.Copilots.Invoke` (granted by admin)
+   - **API permissions**: Add a permission → APIs my organization uses → search **Power Platform API** → Delegated permissions → expand CopilotStudio → check `CopilotStudio.Copilots.Invoke` (optionally grant admin consent)
    - This uses MSAL device-code flow, which requires a public client
 
 ## Phase 0: Resolve Client ID
