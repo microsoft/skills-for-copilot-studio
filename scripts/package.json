@@ -6,14 +6,15 @@
   "scripts": {
     "build": "npm run build:schema-lookup && npm run build:chat-with-agent && npm run build:connector-lookup && npm run build:directline-chat && npm run build:manage-agent",
     "build:schema-lookup": "esbuild src/schema-lookup.js --bundle --platform=node --target=node18 --outfile=schema-lookup.bundle.js --format=cjs",
-    "build:chat-with-agent": "esbuild src/chat-with-agent.js --bundle --platform=node --target=node18 --outfile=chat-with-agent.bundle.js --format=cjs",
+    "build:chat-with-agent": "esbuild src/chat-with-agent.js --bundle --platform=node --target=node18 --outfile=chat-with-agent.bundle.js --format=cjs --external:keytar --banner:js=\"if(process.env.CLAUDE_PLUGIN_DATA){var _p=require('path');process.env.NODE_PATH=[_p.join(process.env.CLAUDE_PLUGIN_DATA,'node_modules'),process.env.NODE_PATH].filter(Boolean).join(_p.delimiter);require('module')._initPaths()}\"",
     "build:connector-lookup": "esbuild src/connector-lookup.js --bundle --platform=node --target=node18 --outfile=connector-lookup.bundle.js --format=cjs",
     "build:directline-chat": "esbuild src/directline-chat.js --bundle --platform=node --target=node18 --outfile=directline-chat.bundle.js --format=cjs",
-    "build:manage-agent": "esbuild src/manage-agent.js --bundle --platform=node --target=node18 --outfile=manage-agent.bundle.js --format=cjs",
+    "build:manage-agent": "esbuild src/manage-agent.js --bundle --platform=node --target=node18 --outfile=manage-agent.bundle.js --format=cjs --external:keytar --banner:js=\"if(process.env.CLAUDE_PLUGIN_DATA){var _p=require('path');process.env.NODE_PATH=[_p.join(process.env.CLAUDE_PLUGIN_DATA,'node_modules'),process.env.NODE_PATH].filter(Boolean).join(_p.delimiter);require('module')._initPaths()}\"",
     "prebuild": "npm install"
   },
   "dependencies": {
     "@azure/msal-node": "^5.0.5",
+    "@azure/msal-node-extensions": "^1.5.32",
     "@microsoft/agents-activity": "^1.1.0",
     "@microsoft/agents-copilotstudio-client": "^1.1.0",
     "js-yaml": "^4.1.0",

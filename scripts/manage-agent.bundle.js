@@ -1,3 +1,4 @@
+if(process.env.CLAUDE_PLUGIN_DATA){var _p=require('path');process.env.NODE_PATH=[_p.join(process.env.CLAUDE_PLUGIN_DATA,'node_modules'),process.env.NODE_PATH].filter(Boolean).join(_p.delimiter);require('module')._initPaths()}
 var __create = Object.create;
 var __defProp = Object.defineProperty;
 var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
@@ -32,219 +33,2037 @@ var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__ge
 ));
 var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
-// src/credential-store.js
-var require_credential_store = __commonJS({
-  "src/credential-store.js"(exports2, module2) {
-    var { execFileSync: execFileSync2, execSync } = require("child_process");
+// node_modules/@azure/msal-node-runtime/dist/index.cjs
+var require_dist = __commonJS({
+  "node_modules/@azure/msal-node-runtime/dist/index.cjs"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    var supportedPlatforms = /* @__PURE__ */ new Map([
+      ["win32", /* @__PURE__ */ new Set(["x64", "ia32"])],
+      ["darwin", /* @__PURE__ */ new Set(["arm64", "x64"])],
+      ["linux", /* @__PURE__ */ new Set(["x64"])]
+    ]);
+    exports2.ErrorStatus = void 0;
+    (function(ErrorStatus) {
+      ErrorStatus[ErrorStatus["Unexpected"] = 0] = "Unexpected";
+      ErrorStatus[ErrorStatus["Reserved"] = 1] = "Reserved";
+      ErrorStatus[ErrorStatus["InteractionRequired"] = 2] = "InteractionRequired";
+      ErrorStatus[ErrorStatus["NoNetwork"] = 3] = "NoNetwork";
+      ErrorStatus[ErrorStatus["NetworkTemporarilyUnavailable"] = 4] = "NetworkTemporarilyUnavailable";
+      ErrorStatus[ErrorStatus["ServerTemporarilyUnavailable"] = 5] = "ServerTemporarilyUnavailable";
+      ErrorStatus[ErrorStatus["ApiContractViolation"] = 6] = "ApiContractViolation";
+      ErrorStatus[ErrorStatus["UserCanceled"] = 7] = "UserCanceled";
+      ErrorStatus[ErrorStatus["ApplicationCanceled"] = 8] = "ApplicationCanceled";
+      ErrorStatus[ErrorStatus["IncorrectConfiguration"] = 9] = "IncorrectConfiguration";
+      ErrorStatus[ErrorStatus["InsufficientBuffer"] = 10] = "InsufficientBuffer";
+      ErrorStatus[ErrorStatus["AuthorityUntrusted"] = 11] = "AuthorityUntrusted";
+      ErrorStatus[ErrorStatus["UserSwitched"] = 12] = "UserSwitched";
+      ErrorStatus[ErrorStatus["AccountUnusable"] = 13] = "AccountUnusable";
+      ErrorStatus[ErrorStatus["UserDataRemovalRequired"] = 14] = "UserDataRemovalRequired";
+      ErrorStatus[ErrorStatus["KeyNotFound"] = 15] = "KeyNotFound";
+      ErrorStatus[ErrorStatus["AccountNotFound"] = 16] = "AccountNotFound";
+    })(exports2.ErrorStatus || (exports2.ErrorStatus = {}));
+    exports2.LogLevel = void 0;
+    (function(LogLevel) {
+      LogLevel[LogLevel["Trace"] = 1] = "Trace";
+      LogLevel[LogLevel["Debug"] = 2] = "Debug";
+      LogLevel[LogLevel["Info"] = 3] = "Info";
+      LogLevel[LogLevel["Warning"] = 4] = "Warning";
+      LogLevel[LogLevel["Error"] = 5] = "Error";
+      LogLevel[LogLevel["Fatal"] = 6] = "Fatal";
+    })(exports2.LogLevel || (exports2.LogLevel = {}));
+    var unsupportedSystemError = {
+      errorCode: 0,
+      errorStatus: exports2.ErrorStatus.Unexpected,
+      errorContext: "Platform and/or architecture combination is unsupported. Supported: Windows (x64, ia32), macOS (arm64). Unsupported: Windows (arm64), macOS (x64) and Linux.",
+      errorTag: 0
+    };
+    var unexpectedError = {
+      errorCode: 0,
+      errorStatus: exports2.ErrorStatus.Unexpected,
+      errorContext: "Binaries could not be loaded. This is unexpected.",
+      errorTag: 0
+    };
+    function getBinaryNotFoundError() {
+      var _a;
+      var platformArchs = supportedPlatforms.get(process.platform);
+      var isSupported = (_a = platformArchs === null || platformArchs === void 0 ? void 0 : platformArchs.has(process.arch)) !== null && _a !== void 0 ? _a : false;
+      return isSupported ? unexpectedError : unsupportedSystemError;
+    }
+    var DefaultAuthParameters = (
+      /** @class */
+      function() {
+        function DefaultAuthParameters2() {
+        }
+        DefaultAuthParameters2.prototype.CreateAuthParameters = function() {
+          throw getBinaryNotFoundError();
+        };
+        DefaultAuthParameters2.prototype.SetRedirectUri = function() {
+          throw getBinaryNotFoundError();
+        };
+        DefaultAuthParameters2.prototype.SetRequestedScopes = function() {
+          throw getBinaryNotFoundError();
+        };
+        DefaultAuthParameters2.prototype.SetDecodedClaims = function() {
+          throw getBinaryNotFoundError();
+        };
+        DefaultAuthParameters2.prototype.SetAccessTokenToRenew = function() {
+          throw getBinaryNotFoundError();
+        };
+        DefaultAuthParameters2.prototype.SetPopParams = function() {
+          throw getBinaryNotFoundError();
+        };
+        DefaultAuthParameters2.prototype.SetAdditionalParameter = function() {
+          throw getBinaryNotFoundError();
+        };
+        return DefaultAuthParameters2;
+      }()
+    );
+    var DefaultMsalNodeRuntime = (
+      /** @class */
+      function() {
+        function DefaultMsalNodeRuntime2() {
+          this.AuthParameters = DefaultAuthParameters;
+          this.StartupError = getBinaryNotFoundError();
+        }
+        DefaultMsalNodeRuntime2.prototype.ReadAccountByIdAsync = function() {
+          throw getBinaryNotFoundError();
+        };
+        DefaultMsalNodeRuntime2.prototype.SignInAsync = function() {
+          throw getBinaryNotFoundError();
+        };
+        DefaultMsalNodeRuntime2.prototype.SignInSilentlyAsync = function() {
+          throw getBinaryNotFoundError();
+        };
+        DefaultMsalNodeRuntime2.prototype.SignInInteractivelyAsync = function() {
+          throw getBinaryNotFoundError();
+        };
+        DefaultMsalNodeRuntime2.prototype.AcquireTokenSilentlyAsync = function() {
+          throw getBinaryNotFoundError();
+        };
+        DefaultMsalNodeRuntime2.prototype.AcquireTokenInteractivelyAsync = function() {
+          throw getBinaryNotFoundError();
+        };
+        DefaultMsalNodeRuntime2.prototype.SignOutSilentlyAsync = function() {
+          throw getBinaryNotFoundError();
+        };
+        DefaultMsalNodeRuntime2.prototype.RegisterLogger = function() {
+          throw getBinaryNotFoundError();
+        };
+        DefaultMsalNodeRuntime2.prototype.DiscoverAccountsAsync = function() {
+          throw getBinaryNotFoundError();
+        };
+        return DefaultMsalNodeRuntime2;
+      }()
+    );
+    exports2.msalNodeRuntime = void 0;
+    try {
+      exports2.msalNodeRuntime = require("./msal-node-runtime");
+    } catch (_a) {
+      exports2.msalNodeRuntime = new DefaultMsalNodeRuntime();
+    }
+  }
+});
+
+// node_modules/@azure/msal-node-extensions/lib/msal-node-extensions.cjs
+var require_msal_node_extensions = __commonJS({
+  "node_modules/@azure/msal-node-extensions/lib/msal-node-extensions.cjs"(exports2) {
+    "use strict";
     var fs7 = require("fs");
+    var process$1 = require("process");
     var path3 = require("path");
-    var os3 = require("os");
-    var SERVICE_NAME = "copilot-studio-cli";
-    var STORE_DIR = path3.join(__dirname, "..");
-    function warn2(msg) {
-      process.stderr.write(`[credential-store] ${msg}
-`);
-    }
-    function macSave(service, account, jsonString) {
-      execFileSync2("security", [
-        "add-generic-password",
-        "-s",
-        service,
-        "-a",
-        account,
-        "-w",
-        jsonString,
-        "-U"
-        // update if exists
-      ], { stdio: "ignore" });
-    }
-    function macLoad(service, account) {
-      const result = execFileSync2("security", [
-        "find-generic-password",
-        "-s",
-        service,
-        "-a",
-        account,
-        "-w"
-      ], { stdio: ["ignore", "pipe", "ignore"] });
-      return JSON.parse(result.toString().trim());
-    }
-    function macClear(service, account) {
-      execFileSync2("security", [
-        "delete-generic-password",
-        "-s",
-        service,
-        "-a",
-        account
-      ], { stdio: "ignore" });
-    }
-    function dpapiPath(account) {
-      return path3.join(STORE_DIR, `.token_cache_${account}.dpapi`);
-    }
-    function winSave(service, account, jsonString) {
-      const encPath = dpapiPath(account);
-      execSync(
-        `powershell -NoProfile -NonInteractive -Command "$s = [System.Management.Automation.PSCredential]::new('x',(ConvertTo-SecureString -String $input -AsPlainText -Force)).Password; ConvertFrom-SecureString -SecureString $s | Set-Content -Path '${encPath}'"`,
-        { input: jsonString, stdio: ["pipe", "ignore", "ignore"] }
-      );
-    }
-    function winLoad(service, account) {
-      const encPath = dpapiPath(account);
-      if (!fs7.existsSync(encPath)) return null;
-      const result = execSync(
-        `powershell -NoProfile -NonInteractive -Command "$enc = Get-Content -Path '${encPath}' | ConvertTo-SecureString; $bstr = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($enc); [Runtime.InteropServices.Marshal]::PtrToStringAuto($bstr)"`,
-        { stdio: ["ignore", "pipe", "ignore"] }
-      );
-      return JSON.parse(result.toString().trim());
-    }
-    function winClear(service, account) {
-      const encPath = dpapiPath(account);
-      try {
-        fs7.unlinkSync(encPath);
-      } catch {
+    var module$1 = require("module");
+    var keytar = require("keytar");
+    var msalNodeRuntime = require_dist();
+    var _documentCurrentScript = typeof document !== "undefined" ? document.currentScript : null;
+    var Constants$1 = {
+      /**
+       * An existing file was the target of an operation that required that the target not exist
+       */
+      EEXIST_ERROR: "EEXIST",
+      /**
+       * No such file or directory: Commonly raised by fs operations to indicate that a component
+       * of the specified pathname does not exist. No entity (file or directory) could be found
+       * by the given path
+       */
+      ENOENT_ERROR: "ENOENT",
+      /**
+       * Operation not permitted. An attempt was made to perform an operation that requires
+       * elevated privileges.
+       */
+      EPERM_ERROR: "EPERM",
+      /**
+       * Default service name for using MSAL Keytar
+       */
+      DEFAULT_SERVICE_NAME: "msal-node-extensions",
+      /**
+       * Test data used to verify underlying persistence mechanism
+       */
+      PERSISTENCE_TEST_DATA: "Dummy data to verify underlying persistence mechanism",
+      /**
+       * This is the value of a the guid if the process is being ran by the root user
+       */
+      LINUX_ROOT_USER_GUID: 0,
+      /**
+       * List of environment variables
+       */
+      ENVIRONMENT: {
+        HOME: "HOME",
+        LOGNAME: "LOGNAME",
+        USER: "USER",
+        LNAME: "LNAME",
+        USERNAME: "USERNAME",
+        PLATFORM: "platform",
+        LOCAL_APPLICATION_DATA: "LOCALAPPDATA"
+      },
+      // Name of the default cache file
+      DEFAULT_CACHE_FILE_NAME: "cache.json"
+    };
+    var Platform = {
+      WINDOWS: "win32",
+      LINUX: "linux",
+      MACOS: "darwin"
+    };
+    var ErrorCodes = {
+      INTERATION_REQUIRED_ERROR_CODE: "interaction_required",
+      SERVER_UNAVAILABLE: "server_unavailable",
+      UNKNOWN: "unknown_error"
+    };
+    var PersistenceError = class _PersistenceError extends Error {
+      constructor(errorCode, errorMessage) {
+        const errorString = errorMessage ? `${errorCode}: ${errorMessage}` : errorCode;
+        super(errorString);
+        Object.setPrototypeOf(this, _PersistenceError.prototype);
+        this.errorCode = errorCode;
+        this.errorMessage = errorMessage;
+        this.name = "PersistenceError";
       }
-    }
-    function hasSecretTool() {
-      try {
-        execFileSync2("which", ["secret-tool"], { stdio: "ignore" });
-        return true;
-      } catch {
-        return false;
+      /**
+       * Error thrown when trying to access the file system.
+       */
+      static createFileSystemError(errorCode, errorMessage) {
+        return new _PersistenceError(errorCode, errorMessage);
       }
-    }
-    function linuxSave(service, account, jsonString) {
-      if (hasSecretTool()) {
+      /**
+       * Error thrown when trying to write, load, or delete data from secret service on linux.
+       * Libsecret is used to access secret service.
+       */
+      static createLibSecretError(errorMessage) {
+        return new _PersistenceError("GnomeKeyringError", errorMessage);
+      }
+      /**
+       * Error thrown when trying to write, load, or delete data from keychain on macOs.
+       */
+      static createKeychainPersistenceError(errorMessage) {
+        return new _PersistenceError("KeychainError", errorMessage);
+      }
+      /**
+       * Error thrown when trying to encrypt or decrypt data using DPAPI on Windows.
+       */
+      static createFilePersistenceWithDPAPIError(errorMessage) {
+        return new _PersistenceError("DPAPIEncryptedFileError", errorMessage);
+      }
+      /**
+       * Error thrown when using the cross platform lock.
+       */
+      static createCrossPlatformLockError(errorMessage) {
+        return new _PersistenceError("CrossPlatformLockError", errorMessage);
+      }
+      /**
+       * Throw cache persistence error
+       *
+       * @param errorMessage string
+       * @returns PersistenceError
+       */
+      static createCachePersistenceError(errorMessage) {
+        return new _PersistenceError("CachePersistenceError", errorMessage);
+      }
+      /**
+       * Throw unsupported error
+       *
+       * @param errorMessage string
+       * @returns PersistenceError
+       */
+      static createNotSupportedError(errorMessage) {
+        return new _PersistenceError("NotSupportedError", errorMessage);
+      }
+      /**
+       * Throw persistence not verified error
+       *
+       * @param errorMessage string
+       * @returns PersistenceError
+       */
+      static createPersistenceNotVerifiedError(errorMessage) {
+        return new _PersistenceError("PersistenceNotVerifiedError", errorMessage);
+      }
+      /**
+       * Throw persistence creation validation error
+       *
+       * @param errorMessage string
+       * @returns PersistenceError
+       */
+      static createPersistenceNotValidatedError(errorMessage) {
+        return new _PersistenceError("PersistenceNotValidatedError", errorMessage);
+      }
+    };
+    var isNodeError = (error) => {
+      return !!error && typeof error === "object" && error.hasOwnProperty("code");
+    };
+    var CrossPlatformLock = class {
+      constructor(lockFilePath, logger, lockOptions) {
+        this.lockFilePath = lockFilePath;
+        this.retryNumber = lockOptions ? lockOptions.retryNumber : 500;
+        this.retryDelay = lockOptions ? lockOptions.retryDelay : 100;
+        this.logger = logger;
+      }
+      /**
+       * Locks cache from read or writes by creating file with same path and name as
+       * cache file but with .lockfile extension. If another process has already created
+       * the lockfile, will back off and retry based on configuration settings set by CrossPlatformLockOptions
+       */
+      async lock() {
+        for (let tryCount = 0; tryCount < this.retryNumber; tryCount++) {
+          try {
+            this.logger.info(`Pid ${process$1.pid} trying to acquire lock`);
+            this.lockFileHandle = await fs7.promises.open(this.lockFilePath, "wx+");
+            this.logger.info(`Pid ${process$1.pid} acquired lock`);
+            await this.lockFileHandle.write(process$1.pid.toString());
+            return;
+          } catch (err) {
+            if (isNodeError(err)) {
+              if (err.code === Constants$1.EEXIST_ERROR || err.code === Constants$1.EPERM_ERROR) {
+                this.logger.info(err.message);
+                await this.sleep(this.retryDelay);
+              } else {
+                this.logger.error(`${process$1.pid} was not able to acquire lock. Ran into error: ${err.message}`);
+                throw PersistenceError.createCrossPlatformLockError(err.message);
+              }
+            } else {
+              throw err;
+            }
+          }
+        }
+        this.logger.error(`${process$1.pid} was not able to acquire lock. Exceeded amount of retries set in the options`);
+        throw PersistenceError.createCrossPlatformLockError("Not able to acquire lock. Exceeded amount of retries set in options");
+      }
+      /**
+       * unlocks cache file by deleting .lockfile.
+       */
+      async unlock() {
         try {
-          execFileSync2("secret-tool", [
-            "store",
-            "--label",
-            service,
-            "service",
-            service,
-            "account",
-            account
-          ], { input: jsonString, stdio: ["pipe", "ignore", "ignore"] });
+          if (this.lockFileHandle) {
+            await fs7.promises.unlink(this.lockFilePath);
+            await this.lockFileHandle.close();
+            this.logger.info("lockfile deleted");
+          } else {
+            this.logger.warning("lockfile handle does not exist, so lockfile could not be deleted");
+          }
+        } catch (err) {
+          if (isNodeError(err)) {
+            if (err.code === Constants$1.ENOENT_ERROR) {
+              this.logger.info("Tried to unlock but lockfile does not exist");
+            } else {
+              this.logger.error(`${process$1.pid} was not able to release lock. Ran into error: ${err.message}`);
+              throw PersistenceError.createCrossPlatformLockError(err.message);
+            }
+          } else {
+            throw err;
+          }
+        }
+      }
+      sleep(ms) {
+        return new Promise((resolve) => {
+          setTimeout(resolve, ms);
+        });
+      }
+    };
+    var PersistenceCachePlugin = class {
+      constructor(persistence, lockOptions) {
+        this.persistence = persistence;
+        this.logger = persistence.getLogger();
+        this.lockFilePath = `${this.persistence.getFilePath()}.lockfile`;
+        this.crossPlatformLock = new CrossPlatformLock(this.lockFilePath, this.logger, lockOptions);
+        this.lastSync = 0;
+        this.currentCache = null;
+      }
+      /**
+       * Reads from storage and saves an in-memory copy. If persistence has not been updated
+       * since last time data was read, in memory copy is used.
+       *
+       * If cacheContext.cacheHasChanged === true, then file lock is created and not deleted until
+       * afterCacheAccess() is called, to prevent the cache file from changing in between
+       * beforeCacheAccess() and afterCacheAccess().
+       */
+      async beforeCacheAccess(cacheContext) {
+        this.logger.info("Executing before cache access");
+        const reloadNecessary = await this.persistence.reloadNecessary(this.lastSync);
+        if (!reloadNecessary && this.currentCache !== null) {
+          if (cacheContext.cacheHasChanged) {
+            this.logger.verbose("Cache context has changed");
+            await this.crossPlatformLock.lock();
+          }
           return;
-        } catch {
-          warn2("secret-tool store failed, falling back to file");
         }
-      }
-      fileSave(account, jsonString);
-    }
-    function linuxLoad(service, account) {
-      if (hasSecretTool()) {
         try {
-          const result = execFileSync2("secret-tool", [
-            "lookup",
-            "service",
-            service,
-            "account",
-            account
-          ], { stdio: ["ignore", "pipe", "ignore"] });
-          const text = result.toString().trim();
-          if (text) return JSON.parse(text);
-        } catch {
+          this.logger.info(`Reload necessary. Last sync time: ${this.lastSync}`);
+          await this.crossPlatformLock.lock();
+          this.currentCache = await this.persistence.load();
+          this.lastSync = (/* @__PURE__ */ new Date()).getTime();
+          if (this.currentCache) {
+            cacheContext.tokenCache.deserialize(this.currentCache);
+          } else {
+            this.logger.info("Cache empty.");
+          }
+          this.logger.info(`Last sync time updated to: ${this.lastSync}`);
+        } finally {
+          if (!cacheContext.cacheHasChanged) {
+            await this.crossPlatformLock.unlock();
+            this.logger.info(`Pid ${process$1.pid} released lock`);
+          } else {
+            this.logger.info(`Pid ${process$1.pid} beforeCacheAccess did not release lock`);
+          }
         }
       }
-      return fileLoad(account);
-    }
-    function linuxClear(service, account) {
-      if (hasSecretTool()) {
+      /**
+       * Writes to storage if MSAL in memory copy of cache has been changed.
+       */
+      async afterCacheAccess(cacheContext) {
+        this.logger.info("Executing after cache access");
         try {
-          execFileSync2("secret-tool", [
-            "clear",
-            "service",
-            service,
-            "account",
-            account
-          ], { stdio: "ignore" });
-        } catch {
+          if (cacheContext.cacheHasChanged) {
+            this.logger.info("Msal in-memory cache has changed. Writing changes to persistence");
+            this.currentCache = cacheContext.tokenCache.serialize();
+            await this.persistence.save(this.currentCache);
+          } else {
+            this.logger.info("Msal in-memory cache has not changed. Did not write to persistence");
+          }
+        } finally {
+          await this.crossPlatformLock.unlock();
+          this.logger.info(`Pid ${process$1.pid} afterCacheAccess released lock`);
         }
       }
-      fileClear(account);
+    };
+    var Constants = {
+      LIBRARY_NAME: "MSAL.JS",
+      SKU: "msal.js.common",
+      // default authority
+      DEFAULT_AUTHORITY: "https://login.microsoftonline.com/common/",
+      DEFAULT_AUTHORITY_HOST: "login.microsoftonline.com",
+      DEFAULT_COMMON_TENANT: "common",
+      // ADFS String
+      ADFS: "adfs",
+      DSTS: "dstsv2",
+      // Default AAD Instance Discovery Endpoint
+      AAD_INSTANCE_DISCOVERY_ENDPT: "https://login.microsoftonline.com/common/discovery/instance?api-version=1.1&authorization_endpoint=",
+      // CIAM URL
+      CIAM_AUTH_URL: ".ciamlogin.com",
+      AAD_TENANT_DOMAIN_SUFFIX: ".onmicrosoft.com",
+      // Resource delimiter - used for certain cache entries
+      RESOURCE_DELIM: "|",
+      // Placeholder for non-existent account ids/objects
+      NO_ACCOUNT: "NO_ACCOUNT",
+      // Claims
+      CLAIMS: "claims",
+      // Consumer UTID
+      CONSUMER_UTID: "9188040d-6c67-4c5b-b112-36a304b66dad",
+      // Default scopes
+      OPENID_SCOPE: "openid",
+      PROFILE_SCOPE: "profile",
+      OFFLINE_ACCESS_SCOPE: "offline_access",
+      EMAIL_SCOPE: "email",
+      CODE_GRANT_TYPE: "authorization_code",
+      RT_GRANT_TYPE: "refresh_token",
+      S256_CODE_CHALLENGE_METHOD: "S256",
+      URL_FORM_CONTENT_TYPE: "application/x-www-form-urlencoded;charset=utf-8",
+      AUTHORIZATION_PENDING: "authorization_pending",
+      NOT_DEFINED: "not_defined",
+      EMPTY_STRING: "",
+      NOT_APPLICABLE: "N/A",
+      NOT_AVAILABLE: "Not Available",
+      FORWARD_SLASH: "/",
+      IMDS_ENDPOINT: "http://169.254.169.254/metadata/instance/compute/location",
+      IMDS_VERSION: "2020-06-01",
+      IMDS_TIMEOUT: 2e3,
+      AZURE_REGION_AUTO_DISCOVER_FLAG: "TryAutoDetect",
+      REGIONAL_AUTH_PUBLIC_CLOUD_SUFFIX: "login.microsoft.com",
+      KNOWN_PUBLIC_CLOUDS: [
+        "login.microsoftonline.com",
+        "login.windows.net",
+        "login.microsoft.com",
+        "sts.windows.net"
+      ],
+      SHR_NONCE_VALIDITY: 240,
+      INVALID_INSTANCE: "invalid_instance"
+    };
+    var PromptValue = {
+      LOGIN: "login",
+      SELECT_ACCOUNT: "select_account",
+      CONSENT: "consent",
+      NONE: "none",
+      CREATE: "create",
+      NO_SESSION: "no_session"
+    };
+    var Separators = {
+      CACHE_KEY_SEPARATOR: "-"
+    };
+    var SERVER_TELEM_CONSTANTS = {
+      SCHEMA_VERSION: 5,
+      MAX_LAST_HEADER_BYTES: 330,
+      MAX_CACHED_ERRORS: 50,
+      CACHE_KEY: "server-telemetry",
+      CATEGORY_SEPARATOR: "|",
+      VALUE_SEPARATOR: ",",
+      OVERFLOW_TRUE: "1",
+      OVERFLOW_FALSE: "0",
+      UNKNOWN_ERROR: "unknown_error"
+    };
+    var AuthenticationScheme = {
+      BEARER: "Bearer",
+      POP: "pop",
+      SSH: "ssh-cert"
+    };
+    var CacheOutcome = {
+      // When a token is found in the cache or the cache is not supposed to be hit when making the request
+      NOT_APPLICABLE: "0"
+    };
+    var AuthError = class _AuthError extends Error {
+      constructor(errorCode, errorMessage, suberror) {
+        const errorString = errorMessage ? `${errorCode}: ${errorMessage}` : errorCode;
+        super(errorString);
+        Object.setPrototypeOf(this, _AuthError.prototype);
+        this.errorCode = errorCode || Constants.EMPTY_STRING;
+        this.errorMessage = errorMessage || Constants.EMPTY_STRING;
+        this.subError = suberror || Constants.EMPTY_STRING;
+        this.name = "AuthError";
+      }
+      setCorrelationId(correlationId) {
+        this.correlationId = correlationId;
+      }
+    };
+    var clientInfoDecodingError = "client_info_decoding_error";
+    var clientInfoEmptyError = "client_info_empty_error";
+    var tokenParsingError = "token_parsing_error";
+    var nullOrEmptyToken = "null_or_empty_token";
+    var endpointResolutionError = "endpoints_resolution_error";
+    var networkError = "network_error";
+    var openIdConfigError = "openid_config_error";
+    var hashNotDeserialized = "hash_not_deserialized";
+    var invalidState = "invalid_state";
+    var stateMismatch = "state_mismatch";
+    var stateNotFound = "state_not_found";
+    var nonceMismatch = "nonce_mismatch";
+    var authTimeNotFound = "auth_time_not_found";
+    var maxAgeTranspired = "max_age_transpired";
+    var multipleMatchingTokens = "multiple_matching_tokens";
+    var multipleMatchingAccounts = "multiple_matching_accounts";
+    var multipleMatchingAppMetadata = "multiple_matching_appMetadata";
+    var requestCannotBeMade = "request_cannot_be_made";
+    var cannotRemoveEmptyScope = "cannot_remove_empty_scope";
+    var cannotAppendScopeSet = "cannot_append_scopeset";
+    var emptyInputScopeSet = "empty_input_scopeset";
+    var deviceCodePollingCancelled = "device_code_polling_cancelled";
+    var deviceCodeExpired = "device_code_expired";
+    var deviceCodeUnknownError = "device_code_unknown_error";
+    var noAccountInSilentRequest = "no_account_in_silent_request";
+    var invalidCacheRecord = "invalid_cache_record";
+    var invalidCacheEnvironment = "invalid_cache_environment";
+    var noAccountFound = "no_account_found";
+    var noCryptoObject = "no_crypto_object";
+    var unexpectedCredentialType = "unexpected_credential_type";
+    var invalidAssertion = "invalid_assertion";
+    var invalidClientCredential = "invalid_client_credential";
+    var tokenRefreshRequired = "token_refresh_required";
+    var userTimeoutReached = "user_timeout_reached";
+    var tokenClaimsCnfRequiredForSignedJwt = "token_claims_cnf_required_for_signedjwt";
+    var authorizationCodeMissingFromServerResponse = "authorization_code_missing_from_server_response";
+    var bindingKeyNotRemoved = "binding_key_not_removed";
+    var endSessionEndpointNotSupported = "end_session_endpoint_not_supported";
+    var keyIdMissing = "key_id_missing";
+    var noNetworkConnectivity = "no_network_connectivity";
+    var userCanceled = "user_canceled";
+    var missingTenantIdError = "missing_tenant_id_error";
+    var methodNotImplemented = "method_not_implemented";
+    var nestedAppAuthBridgeDisabled = "nested_app_auth_bridge_disabled";
+    var platformBrokerError = "platform_broker_error";
+    var ClientAuthErrorMessages = {
+      [clientInfoDecodingError]: "The client info could not be parsed/decoded correctly",
+      [clientInfoEmptyError]: "The client info was empty",
+      [tokenParsingError]: "Token cannot be parsed",
+      [nullOrEmptyToken]: "The token is null or empty",
+      [endpointResolutionError]: "Endpoints cannot be resolved",
+      [networkError]: "Network request failed",
+      [openIdConfigError]: "Could not retrieve endpoints. Check your authority and verify the .well-known/openid-configuration endpoint returns the required endpoints.",
+      [hashNotDeserialized]: "The hash parameters could not be deserialized",
+      [invalidState]: "State was not the expected format",
+      [stateMismatch]: "State mismatch error",
+      [stateNotFound]: "State not found",
+      [nonceMismatch]: "Nonce mismatch error",
+      [authTimeNotFound]: "Max Age was requested and the ID token is missing the auth_time variable. auth_time is an optional claim and is not enabled by default - it must be enabled. See https://aka.ms/msaljs/optional-claims for more information.",
+      [maxAgeTranspired]: "Max Age is set to 0, or too much time has elapsed since the last end-user authentication.",
+      [multipleMatchingTokens]: "The cache contains multiple tokens satisfying the requirements. Call AcquireToken again providing more requirements such as authority or account.",
+      [multipleMatchingAccounts]: "The cache contains multiple accounts satisfying the given parameters. Please pass more info to obtain the correct account",
+      [multipleMatchingAppMetadata]: "The cache contains multiple appMetadata satisfying the given parameters. Please pass more info to obtain the correct appMetadata",
+      [requestCannotBeMade]: "Token request cannot be made without authorization code or refresh token.",
+      [cannotRemoveEmptyScope]: "Cannot remove null or empty scope from ScopeSet",
+      [cannotAppendScopeSet]: "Cannot append ScopeSet",
+      [emptyInputScopeSet]: "Empty input ScopeSet cannot be processed",
+      [deviceCodePollingCancelled]: "Caller has cancelled token endpoint polling during device code flow by setting DeviceCodeRequest.cancel = true.",
+      [deviceCodeExpired]: "Device code is expired.",
+      [deviceCodeUnknownError]: "Device code stopped polling for unknown reasons.",
+      [noAccountInSilentRequest]: "Please pass an account object, silent flow is not supported without account information",
+      [invalidCacheRecord]: "Cache record object was null or undefined.",
+      [invalidCacheEnvironment]: "Invalid environment when attempting to create cache entry",
+      [noAccountFound]: "No account found in cache for given key.",
+      [noCryptoObject]: "No crypto object detected.",
+      [unexpectedCredentialType]: "Unexpected credential type.",
+      [invalidAssertion]: "Client assertion must meet requirements described in https://tools.ietf.org/html/rfc7515",
+      [invalidClientCredential]: "Client credential (secret, certificate, or assertion) must not be empty when creating a confidential client. An application should at most have one credential",
+      [tokenRefreshRequired]: "Cannot return token from cache because it must be refreshed. This may be due to one of the following reasons: forceRefresh parameter is set to true, claims have been requested, there is no cached access token or it is expired.",
+      [userTimeoutReached]: "User defined timeout for device code polling reached",
+      [tokenClaimsCnfRequiredForSignedJwt]: "Cannot generate a POP jwt if the token_claims are not populated",
+      [authorizationCodeMissingFromServerResponse]: "Server response does not contain an authorization code to proceed",
+      [bindingKeyNotRemoved]: "Could not remove the credential's binding key from storage.",
+      [endSessionEndpointNotSupported]: "The provided authority does not support logout",
+      [keyIdMissing]: "A keyId value is missing from the requested bound token's cache record and is required to match the token to it's stored binding key.",
+      [noNetworkConnectivity]: "No network connectivity. Check your internet connection.",
+      [userCanceled]: "User cancelled the flow.",
+      [missingTenantIdError]: "A tenant id - not common, organizations, or consumers - must be specified when using the client_credentials flow.",
+      [methodNotImplemented]: "This method has not been implemented",
+      [nestedAppAuthBridgeDisabled]: "The nested app auth bridge is disabled",
+      [platformBrokerError]: "An error occurred in the native broker. See the platformBrokerError property for details."
+    };
+    var ClientAuthError = class _ClientAuthError extends AuthError {
+      constructor(errorCode, additionalMessage) {
+        super(errorCode, additionalMessage ? `${ClientAuthErrorMessages[errorCode]}: ${additionalMessage}` : ClientAuthErrorMessages[errorCode]);
+        this.name = "ClientAuthError";
+        Object.setPrototypeOf(this, _ClientAuthError.prototype);
+      }
+    };
+    function createClientAuthError(errorCode, additionalMessage) {
+      return new ClientAuthError(errorCode, additionalMessage);
     }
-    function filePath(account) {
-      return path3.join(STORE_DIR, `.token_cache_${account}.json`);
+    var LogLevel;
+    (function(LogLevel2) {
+      LogLevel2[LogLevel2["Error"] = 0] = "Error";
+      LogLevel2[LogLevel2["Warning"] = 1] = "Warning";
+      LogLevel2[LogLevel2["Info"] = 2] = "Info";
+      LogLevel2[LogLevel2["Verbose"] = 3] = "Verbose";
+      LogLevel2[LogLevel2["Trace"] = 4] = "Trace";
+    })(LogLevel || (LogLevel = {}));
+    var Logger = class _Logger {
+      constructor(loggerOptions, packageName, packageVersion) {
+        this.level = LogLevel.Info;
+        const defaultLoggerCallback = () => {
+          return;
+        };
+        const setLoggerOptions = loggerOptions || _Logger.createDefaultLoggerOptions();
+        this.localCallback = setLoggerOptions.loggerCallback || defaultLoggerCallback;
+        this.piiLoggingEnabled = setLoggerOptions.piiLoggingEnabled || false;
+        this.level = typeof setLoggerOptions.logLevel === "number" ? setLoggerOptions.logLevel : LogLevel.Info;
+        this.correlationId = setLoggerOptions.correlationId || Constants.EMPTY_STRING;
+        this.packageName = packageName || Constants.EMPTY_STRING;
+        this.packageVersion = packageVersion || Constants.EMPTY_STRING;
+      }
+      static createDefaultLoggerOptions() {
+        return {
+          loggerCallback: () => {
+          },
+          piiLoggingEnabled: false,
+          logLevel: LogLevel.Info
+        };
+      }
+      /**
+       * Create new Logger with existing configurations.
+       */
+      clone(packageName, packageVersion, correlationId) {
+        return new _Logger({
+          loggerCallback: this.localCallback,
+          piiLoggingEnabled: this.piiLoggingEnabled,
+          logLevel: this.level,
+          correlationId: correlationId || this.correlationId
+        }, packageName, packageVersion);
+      }
+      /**
+       * Log message with required options.
+       */
+      logMessage(logMessage, options) {
+        if (options.logLevel > this.level || !this.piiLoggingEnabled && options.containsPii) {
+          return;
+        }
+        const timestamp = (/* @__PURE__ */ new Date()).toUTCString();
+        const logHeader = `[${timestamp}] : [${options.correlationId || this.correlationId || ""}]`;
+        const log2 = `${logHeader} : ${this.packageName}@${this.packageVersion} : ${LogLevel[options.logLevel]} - ${logMessage}`;
+        this.executeCallback(options.logLevel, log2, options.containsPii || false);
+      }
+      /**
+       * Execute callback with message.
+       */
+      executeCallback(level, message, containsPii) {
+        if (this.localCallback) {
+          this.localCallback(level, message, containsPii);
+        }
+      }
+      /**
+       * Logs error messages.
+       */
+      error(message, correlationId) {
+        this.logMessage(message, {
+          logLevel: LogLevel.Error,
+          containsPii: false,
+          correlationId: correlationId || Constants.EMPTY_STRING
+        });
+      }
+      /**
+       * Logs error messages with PII.
+       */
+      errorPii(message, correlationId) {
+        this.logMessage(message, {
+          logLevel: LogLevel.Error,
+          containsPii: true,
+          correlationId: correlationId || Constants.EMPTY_STRING
+        });
+      }
+      /**
+       * Logs warning messages.
+       */
+      warning(message, correlationId) {
+        this.logMessage(message, {
+          logLevel: LogLevel.Warning,
+          containsPii: false,
+          correlationId: correlationId || Constants.EMPTY_STRING
+        });
+      }
+      /**
+       * Logs warning messages with PII.
+       */
+      warningPii(message, correlationId) {
+        this.logMessage(message, {
+          logLevel: LogLevel.Warning,
+          containsPii: true,
+          correlationId: correlationId || Constants.EMPTY_STRING
+        });
+      }
+      /**
+       * Logs info messages.
+       */
+      info(message, correlationId) {
+        this.logMessage(message, {
+          logLevel: LogLevel.Info,
+          containsPii: false,
+          correlationId: correlationId || Constants.EMPTY_STRING
+        });
+      }
+      /**
+       * Logs info messages with PII.
+       */
+      infoPii(message, correlationId) {
+        this.logMessage(message, {
+          logLevel: LogLevel.Info,
+          containsPii: true,
+          correlationId: correlationId || Constants.EMPTY_STRING
+        });
+      }
+      /**
+       * Logs verbose messages.
+       */
+      verbose(message, correlationId) {
+        this.logMessage(message, {
+          logLevel: LogLevel.Verbose,
+          containsPii: false,
+          correlationId: correlationId || Constants.EMPTY_STRING
+        });
+      }
+      /**
+       * Logs verbose messages with PII.
+       */
+      verbosePii(message, correlationId) {
+        this.logMessage(message, {
+          logLevel: LogLevel.Verbose,
+          containsPii: true,
+          correlationId: correlationId || Constants.EMPTY_STRING
+        });
+      }
+      /**
+       * Logs trace messages.
+       */
+      trace(message, correlationId) {
+        this.logMessage(message, {
+          logLevel: LogLevel.Trace,
+          containsPii: false,
+          correlationId: correlationId || Constants.EMPTY_STRING
+        });
+      }
+      /**
+       * Logs trace messages with PII.
+       */
+      tracePii(message, correlationId) {
+        this.logMessage(message, {
+          logLevel: LogLevel.Trace,
+          containsPii: true,
+          correlationId: correlationId || Constants.EMPTY_STRING
+        });
+      }
+      /**
+       * Returns whether PII Logging is enabled or not.
+       */
+      isPiiLoggingEnabled() {
+        return this.piiLoggingEnabled || false;
+      }
+    };
+    var redirectUriEmpty = "redirect_uri_empty";
+    var claimsRequestParsingError = "claims_request_parsing_error";
+    var authorityUriInsecure = "authority_uri_insecure";
+    var urlParseError = "url_parse_error";
+    var urlEmptyError = "empty_url_error";
+    var emptyInputScopesError = "empty_input_scopes_error";
+    var invalidClaims = "invalid_claims";
+    var tokenRequestEmpty = "token_request_empty";
+    var logoutRequestEmpty = "logout_request_empty";
+    var invalidCodeChallengeMethod = "invalid_code_challenge_method";
+    var pkceParamsMissing = "pkce_params_missing";
+    var invalidCloudDiscoveryMetadata = "invalid_cloud_discovery_metadata";
+    var invalidAuthorityMetadata = "invalid_authority_metadata";
+    var untrustedAuthority = "untrusted_authority";
+    var missingSshJwk = "missing_ssh_jwk";
+    var missingSshKid = "missing_ssh_kid";
+    var missingNonceAuthenticationHeader = "missing_nonce_authentication_header";
+    var invalidAuthenticationHeader = "invalid_authentication_header";
+    var cannotSetOIDCOptions = "cannot_set_OIDCOptions";
+    var cannotAllowPlatformBroker = "cannot_allow_platform_broker";
+    var authorityMismatch = "authority_mismatch";
+    var invalidRequestMethodForEAR = "invalid_request_method_for_EAR";
+    var invalidAuthorizePostBodyParameters = "invalid_authorize_post_body_parameters";
+    var invalidPlatformBrokerConfiguration = "invalid_platform_broker_configuration";
+    var ClientConfigurationErrorMessages = {
+      [redirectUriEmpty]: "A redirect URI is required for all calls, and none has been set.",
+      [claimsRequestParsingError]: "Could not parse the given claims request object.",
+      [authorityUriInsecure]: "Authority URIs must use https.  Please see here for valid authority configuration options: https://docs.microsoft.com/en-us/azure/active-directory/develop/msal-js-initializing-client-applications#configuration-options",
+      [urlParseError]: "URL could not be parsed into appropriate segments.",
+      [urlEmptyError]: "URL was empty or null.",
+      [emptyInputScopesError]: "Scopes cannot be passed as null, undefined or empty array because they are required to obtain an access token.",
+      [invalidClaims]: "Given claims parameter must be a stringified JSON object.",
+      [tokenRequestEmpty]: "Token request was empty and not found in cache.",
+      [logoutRequestEmpty]: "The logout request was null or undefined.",
+      [invalidCodeChallengeMethod]: 'code_challenge_method passed is invalid. Valid values are "plain" and "S256".',
+      [pkceParamsMissing]: "Both params: code_challenge and code_challenge_method are to be passed if to be sent in the request",
+      [invalidCloudDiscoveryMetadata]: "Invalid cloudDiscoveryMetadata provided. Must be a stringified JSON object containing tenant_discovery_endpoint and metadata fields",
+      [invalidAuthorityMetadata]: "Invalid authorityMetadata provided. Must by a stringified JSON object containing authorization_endpoint, token_endpoint, issuer fields.",
+      [untrustedAuthority]: "The provided authority is not a trusted authority. Please include this authority in the knownAuthorities config parameter.",
+      [missingSshJwk]: "Missing sshJwk in SSH certificate request. A stringified JSON Web Key is required when using the SSH authentication scheme.",
+      [missingSshKid]: "Missing sshKid in SSH certificate request. A string that uniquely identifies the public SSH key is required when using the SSH authentication scheme.",
+      [missingNonceAuthenticationHeader]: "Unable to find an authentication header containing server nonce. Either the Authentication-Info or WWW-Authenticate headers must be present in order to obtain a server nonce.",
+      [invalidAuthenticationHeader]: "Invalid authentication header provided",
+      [cannotSetOIDCOptions]: "Cannot set OIDCOptions parameter. Please change the protocol mode to OIDC or use a non-Microsoft authority.",
+      [cannotAllowPlatformBroker]: "Cannot set allowPlatformBroker parameter to true when not in AAD protocol mode.",
+      [authorityMismatch]: "Authority mismatch error. Authority provided in login request or PublicClientApplication config does not match the environment of the provided account. Please use a matching account or make an interactive request to login to this authority.",
+      [invalidAuthorizePostBodyParameters]: "Invalid authorize post body parameters provided. If you are using authorizePostBodyParameters, the request method must be POST. Please check the request method and parameters.",
+      [invalidRequestMethodForEAR]: "Invalid request method for EAR protocol mode. The request method cannot be GET when using EAR protocol mode. Please change the request method to POST.",
+      [invalidPlatformBrokerConfiguration]: "Invalid platform broker configuration. `allowPlatformBrokerWithDOM` can only be enabled when `allowPlatformBroker` is enabled."
+    };
+    var ClientConfigurationError = class _ClientConfigurationError extends AuthError {
+      constructor(errorCode) {
+        super(errorCode, ClientConfigurationErrorMessages[errorCode]);
+        this.name = "ClientConfigurationError";
+        Object.setPrototypeOf(this, _ClientConfigurationError.prototype);
+      }
+    };
+    function createClientConfigurationError(errorCode) {
+      return new ClientConfigurationError(errorCode);
     }
-    function fileSave(account, jsonString) {
-      fs7.writeFileSync(filePath(account), jsonString, { mode: 384 });
+    var X_CLIENT_EXTRA_SKU = "x-client-xtra-sku";
+    function toDateFromSeconds(seconds) {
+      if (seconds) {
+        return new Date(Number(seconds) * 1e3);
+      }
+      return /* @__PURE__ */ new Date();
     }
-    function fileLoad(account) {
+    var ServerError = class _ServerError extends AuthError {
+      constructor(errorCode, errorMessage, subError, errorNo, status) {
+        super(errorCode, errorMessage, subError);
+        this.name = "ServerError";
+        this.errorNo = errorNo;
+        this.status = status;
+        Object.setPrototypeOf(this, _ServerError.prototype);
+      }
+    };
+    var InteractionRequiredAuthError = class _InteractionRequiredAuthError extends AuthError {
+      constructor(errorCode, errorMessage, subError, timestamp, traceId, correlationId, claims, errorNo) {
+        super(errorCode, errorMessage, subError);
+        Object.setPrototypeOf(this, _InteractionRequiredAuthError.prototype);
+        this.timestamp = timestamp || Constants.EMPTY_STRING;
+        this.traceId = traceId || Constants.EMPTY_STRING;
+        this.correlationId = correlationId || Constants.EMPTY_STRING;
+        this.claims = claims || Constants.EMPTY_STRING;
+        this.name = "InteractionRequiredAuthError";
+        this.errorNo = errorNo;
+      }
+    };
+    function tagToString(tag) {
+      if (tag === 0) {
+        return "UNTAG";
+      }
+      const tagSymbolSpace = "abcdefghijklmnopqrstuvwxyz0123456789****************************";
+      let tagBuffer = "*****";
+      const chars = [
+        tagSymbolSpace[tag >> 24 & 63],
+        tagSymbolSpace[tag >> 18 & 63],
+        tagSymbolSpace[tag >> 12 & 63],
+        tagSymbolSpace[tag >> 6 & 63],
+        tagSymbolSpace[tag >> 0 & 63]
+      ];
+      tagBuffer = chars.join("");
+      return tagBuffer;
+    }
+    var PlatformBrokerError = class _PlatformBrokerError extends AuthError {
+      constructor(errorStatus, errorContext, errorCode, errorTag) {
+        const tagString = tagToString(errorTag);
+        const enhancedErrorContext = errorContext ? `${errorContext} (Error Code: ${errorCode}, Tag: ${tagString})` : `(Error Code: ${errorCode}, Tag: ${tagString})`;
+        super(errorStatus, enhancedErrorContext);
+        this.name = "PlatformBrokerError";
+        this.statusCode = errorCode;
+        this.tag = tagString;
+        Object.setPrototypeOf(this, _PlatformBrokerError.prototype);
+      }
+    };
+    var skuGroupSeparator = ",";
+    var skuValueSeparator = "|";
+    function makeExtraSkuString(params) {
+      const { skus, libraryName, libraryVersion, extensionName, extensionVersion } = params;
+      const skuMap = /* @__PURE__ */ new Map([
+        [0, [libraryName, libraryVersion]],
+        [2, [extensionName, extensionVersion]]
+      ]);
+      let skuArr = [];
+      if (skus?.length) {
+        skuArr = skus.split(skuGroupSeparator);
+        if (skuArr.length < 4) {
+          return skus;
+        }
+      } else {
+        skuArr = Array.from({ length: 4 }, () => skuValueSeparator);
+      }
+      skuMap.forEach((value, key) => {
+        if (value.length === 2 && value[0]?.length && value[1]?.length) {
+          setSku({
+            skuArr,
+            index: key,
+            skuName: value[0],
+            skuVersion: value[1]
+          });
+        }
+      });
+      return skuArr.join(skuGroupSeparator);
+    }
+    function setSku(params) {
+      const { skuArr, index, skuName, skuVersion } = params;
+      if (index >= skuArr.length) {
+        return;
+      }
+      skuArr[index] = [skuName, skuVersion].join(skuValueSeparator);
+    }
+    var ServerTelemetryManager = class _ServerTelemetryManager {
+      constructor(telemetryRequest, cacheManager) {
+        this.cacheOutcome = CacheOutcome.NOT_APPLICABLE;
+        this.cacheManager = cacheManager;
+        this.apiId = telemetryRequest.apiId;
+        this.correlationId = telemetryRequest.correlationId;
+        this.wrapperSKU = telemetryRequest.wrapperSKU || Constants.EMPTY_STRING;
+        this.wrapperVer = telemetryRequest.wrapperVer || Constants.EMPTY_STRING;
+        this.telemetryCacheKey = SERVER_TELEM_CONSTANTS.CACHE_KEY + Separators.CACHE_KEY_SEPARATOR + telemetryRequest.clientId;
+      }
+      /**
+       * API to add MSER Telemetry to request
+       */
+      generateCurrentRequestHeaderValue() {
+        const request = `${this.apiId}${SERVER_TELEM_CONSTANTS.VALUE_SEPARATOR}${this.cacheOutcome}`;
+        const platformFieldsArr = [this.wrapperSKU, this.wrapperVer];
+        const nativeBrokerErrorCode = this.getNativeBrokerErrorCode();
+        if (nativeBrokerErrorCode?.length) {
+          platformFieldsArr.push(`broker_error=${nativeBrokerErrorCode}`);
+        }
+        const platformFields = platformFieldsArr.join(SERVER_TELEM_CONSTANTS.VALUE_SEPARATOR);
+        const regionDiscoveryFields = this.getRegionDiscoveryFields();
+        const requestWithRegionDiscoveryFields = [
+          request,
+          regionDiscoveryFields
+        ].join(SERVER_TELEM_CONSTANTS.VALUE_SEPARATOR);
+        return [
+          SERVER_TELEM_CONSTANTS.SCHEMA_VERSION,
+          requestWithRegionDiscoveryFields,
+          platformFields
+        ].join(SERVER_TELEM_CONSTANTS.CATEGORY_SEPARATOR);
+      }
+      /**
+       * API to add MSER Telemetry for the last failed request
+       */
+      generateLastRequestHeaderValue() {
+        const lastRequests = this.getLastRequests();
+        const maxErrors = _ServerTelemetryManager.maxErrorsToSend(lastRequests);
+        const failedRequests = lastRequests.failedRequests.slice(0, 2 * maxErrors).join(SERVER_TELEM_CONSTANTS.VALUE_SEPARATOR);
+        const errors = lastRequests.errors.slice(0, maxErrors).join(SERVER_TELEM_CONSTANTS.VALUE_SEPARATOR);
+        const errorCount = lastRequests.errors.length;
+        const overflow = maxErrors < errorCount ? SERVER_TELEM_CONSTANTS.OVERFLOW_TRUE : SERVER_TELEM_CONSTANTS.OVERFLOW_FALSE;
+        const platformFields = [errorCount, overflow].join(SERVER_TELEM_CONSTANTS.VALUE_SEPARATOR);
+        return [
+          SERVER_TELEM_CONSTANTS.SCHEMA_VERSION,
+          lastRequests.cacheHits,
+          failedRequests,
+          errors,
+          platformFields
+        ].join(SERVER_TELEM_CONSTANTS.CATEGORY_SEPARATOR);
+      }
+      /**
+       * API to cache token failures for MSER data capture
+       * @param error
+       */
+      cacheFailedRequest(error) {
+        const lastRequests = this.getLastRequests();
+        if (lastRequests.errors.length >= SERVER_TELEM_CONSTANTS.MAX_CACHED_ERRORS) {
+          lastRequests.failedRequests.shift();
+          lastRequests.failedRequests.shift();
+          lastRequests.errors.shift();
+        }
+        lastRequests.failedRequests.push(this.apiId, this.correlationId);
+        if (error instanceof Error && !!error && error.toString()) {
+          if (error instanceof AuthError) {
+            if (error.subError) {
+              lastRequests.errors.push(error.subError);
+            } else if (error.errorCode) {
+              lastRequests.errors.push(error.errorCode);
+            } else {
+              lastRequests.errors.push(error.toString());
+            }
+          } else {
+            lastRequests.errors.push(error.toString());
+          }
+        } else {
+          lastRequests.errors.push(SERVER_TELEM_CONSTANTS.UNKNOWN_ERROR);
+        }
+        this.cacheManager.setServerTelemetry(this.telemetryCacheKey, lastRequests, this.correlationId);
+        return;
+      }
+      /**
+       * Update server telemetry cache entry by incrementing cache hit counter
+       */
+      incrementCacheHits() {
+        const lastRequests = this.getLastRequests();
+        lastRequests.cacheHits += 1;
+        this.cacheManager.setServerTelemetry(this.telemetryCacheKey, lastRequests, this.correlationId);
+        return lastRequests.cacheHits;
+      }
+      /**
+       * Get the server telemetry entity from cache or initialize a new one
+       */
+      getLastRequests() {
+        const initialValue = {
+          failedRequests: [],
+          errors: [],
+          cacheHits: 0
+        };
+        const lastRequests = this.cacheManager.getServerTelemetry(this.telemetryCacheKey);
+        return lastRequests || initialValue;
+      }
+      /**
+       * Remove server telemetry cache entry
+       */
+      clearTelemetryCache() {
+        const lastRequests = this.getLastRequests();
+        const numErrorsFlushed = _ServerTelemetryManager.maxErrorsToSend(lastRequests);
+        const errorCount = lastRequests.errors.length;
+        if (numErrorsFlushed === errorCount) {
+          this.cacheManager.removeItem(this.telemetryCacheKey, this.correlationId);
+        } else {
+          const serverTelemEntity = {
+            failedRequests: lastRequests.failedRequests.slice(numErrorsFlushed * 2),
+            errors: lastRequests.errors.slice(numErrorsFlushed),
+            cacheHits: 0
+          };
+          this.cacheManager.setServerTelemetry(this.telemetryCacheKey, serverTelemEntity, this.correlationId);
+        }
+      }
+      /**
+       * Returns the maximum number of errors that can be flushed to the server in the next network request
+       * @param serverTelemetryEntity
+       */
+      static maxErrorsToSend(serverTelemetryEntity) {
+        let i;
+        let maxErrors = 0;
+        let dataSize = 0;
+        const errorCount = serverTelemetryEntity.errors.length;
+        for (i = 0; i < errorCount; i++) {
+          const apiId = serverTelemetryEntity.failedRequests[2 * i] || Constants.EMPTY_STRING;
+          const correlationId = serverTelemetryEntity.failedRequests[2 * i + 1] || Constants.EMPTY_STRING;
+          const errorCode = serverTelemetryEntity.errors[i] || Constants.EMPTY_STRING;
+          dataSize += apiId.toString().length + correlationId.toString().length + errorCode.length + 3;
+          if (dataSize < SERVER_TELEM_CONSTANTS.MAX_LAST_HEADER_BYTES) {
+            maxErrors += 1;
+          } else {
+            break;
+          }
+        }
+        return maxErrors;
+      }
+      /**
+       * Get the region discovery fields
+       *
+       * @returns string
+       */
+      getRegionDiscoveryFields() {
+        const regionDiscoveryFields = [];
+        regionDiscoveryFields.push(this.regionUsed || Constants.EMPTY_STRING);
+        regionDiscoveryFields.push(this.regionSource || Constants.EMPTY_STRING);
+        regionDiscoveryFields.push(this.regionOutcome || Constants.EMPTY_STRING);
+        return regionDiscoveryFields.join(",");
+      }
+      /**
+       * Update the region discovery metadata
+       *
+       * @param regionDiscoveryMetadata
+       * @returns void
+       */
+      updateRegionDiscoveryMetadata(regionDiscoveryMetadata) {
+        this.regionUsed = regionDiscoveryMetadata.region_used;
+        this.regionSource = regionDiscoveryMetadata.region_source;
+        this.regionOutcome = regionDiscoveryMetadata.region_outcome;
+      }
+      /**
+       * Set cache outcome
+       */
+      setCacheOutcome(cacheOutcome) {
+        this.cacheOutcome = cacheOutcome;
+      }
+      setNativeBrokerErrorCode(errorCode) {
+        const lastRequests = this.getLastRequests();
+        lastRequests.nativeBrokerErrorCode = errorCode;
+        this.cacheManager.setServerTelemetry(this.telemetryCacheKey, lastRequests, this.correlationId);
+      }
+      getNativeBrokerErrorCode() {
+        return this.getLastRequests().nativeBrokerErrorCode;
+      }
+      clearNativeBrokerErrorCode() {
+        const lastRequests = this.getLastRequests();
+        delete lastRequests.nativeBrokerErrorCode;
+        this.cacheManager.setServerTelemetry(this.telemetryCacheKey, lastRequests, this.correlationId);
+      }
+      static makeExtraSkuString(params) {
+        return makeExtraSkuString(params);
+      }
+    };
+    var BasePersistence = class {
+      async verifyPersistence() {
+        const persistenceValidator = await this.createForPersistenceValidation();
+        try {
+          await persistenceValidator.save(Constants$1.PERSISTENCE_TEST_DATA);
+          const retrievedDummyData = await persistenceValidator.load();
+          if (!retrievedDummyData) {
+            throw PersistenceError.createCachePersistenceError("Persistence check failed. Data was written but it could not be read. Possible cause: on Linux, LibSecret is installed but D-Bus isn't running                     because it cannot be started over SSH.");
+          }
+          if (retrievedDummyData !== Constants$1.PERSISTENCE_TEST_DATA) {
+            throw PersistenceError.createCachePersistenceError(`Persistence check failed. Data written ${Constants$1.PERSISTENCE_TEST_DATA} is different                     from data read ${retrievedDummyData}`);
+          }
+          await persistenceValidator.delete();
+          return true;
+        } catch (e) {
+          throw PersistenceError.createCachePersistenceError(`Verifing persistence failed with the error: ${e}`);
+        }
+      }
+    };
+    var FilePersistence = class _FilePersistence extends BasePersistence {
+      constructor(fileLocation, loggerOptions) {
+        super();
+        this.logger = new Logger(loggerOptions || _FilePersistence.createDefaultLoggerOptions());
+        this.filePath = fileLocation;
+      }
+      static async create(fileLocation, loggerOptions) {
+        const filePersistence = new _FilePersistence(fileLocation, loggerOptions);
+        await filePersistence.createCacheFile();
+        return filePersistence;
+      }
+      async save(contents) {
+        try {
+          await fs7.promises.writeFile(this.getFilePath(), contents, "utf-8");
+        } catch (err) {
+          if (isNodeError(err)) {
+            throw PersistenceError.createFileSystemError(err.code || ErrorCodes.UNKNOWN, err.message);
+          } else {
+            throw err;
+          }
+        }
+      }
+      async saveBuffer(contents) {
+        try {
+          await fs7.promises.writeFile(this.getFilePath(), contents);
+        } catch (err) {
+          if (isNodeError(err)) {
+            throw PersistenceError.createFileSystemError(err.code || ErrorCodes.UNKNOWN, err.message);
+          } else {
+            throw err;
+          }
+        }
+      }
+      async load() {
+        try {
+          return await fs7.promises.readFile(this.getFilePath(), "utf-8");
+        } catch (err) {
+          if (isNodeError(err)) {
+            throw PersistenceError.createFileSystemError(err.code || ErrorCodes.UNKNOWN, err.message);
+          } else {
+            throw err;
+          }
+        }
+      }
+      async loadBuffer() {
+        try {
+          return await fs7.promises.readFile(this.getFilePath());
+        } catch (err) {
+          if (isNodeError(err)) {
+            throw PersistenceError.createFileSystemError(err.code || ErrorCodes.UNKNOWN, err.message);
+          } else {
+            throw err;
+          }
+        }
+      }
+      async delete() {
+        try {
+          await fs7.promises.unlink(this.getFilePath());
+          return true;
+        } catch (err) {
+          if (isNodeError(err)) {
+            if (err.code === Constants$1.ENOENT_ERROR) {
+              this.logger.warning("Cache file does not exist, so it could not be deleted");
+              return false;
+            }
+            throw PersistenceError.createFileSystemError(err.code || ErrorCodes.UNKNOWN, err.message);
+          } else {
+            throw err;
+          }
+        }
+      }
+      getFilePath() {
+        return this.filePath;
+      }
+      async reloadNecessary(lastSync) {
+        return lastSync < await this.timeLastModified();
+      }
+      getLogger() {
+        return this.logger;
+      }
+      createForPersistenceValidation() {
+        const testCacheFileLocation = `${path3.dirname(this.filePath)}/test.cache`;
+        return _FilePersistence.create(testCacheFileLocation);
+      }
+      static createDefaultLoggerOptions() {
+        return {
+          loggerCallback: () => {
+          },
+          piiLoggingEnabled: false,
+          logLevel: LogLevel.Info
+        };
+      }
+      async timeLastModified() {
+        try {
+          const stats = await fs7.promises.stat(this.filePath);
+          return stats.mtime.getTime();
+        } catch (err) {
+          if (isNodeError(err)) {
+            if (err.code === Constants$1.ENOENT_ERROR) {
+              this.logger.verbose("Cache file does not exist");
+              return 0;
+            }
+            throw PersistenceError.createFileSystemError(err.code || ErrorCodes.UNKNOWN, err.message);
+          } else {
+            throw err;
+          }
+        }
+      }
+      async createCacheFile() {
+        await this.createFileDirectory();
+        const fileHandle = await fs7.promises.open(this.filePath, "a");
+        await fileHandle.close();
+        this.logger.info(`File created at ${this.filePath}`);
+      }
+      async createFileDirectory() {
+        try {
+          await fs7.promises.mkdir(path3.dirname(this.filePath), { recursive: true });
+        } catch (err) {
+          if (isNodeError(err)) {
+            if (err.code === Constants$1.EEXIST_ERROR) {
+              this.logger.info(`Directory ${path3.dirname(this.filePath)}  already exists`);
+            } else {
+              throw PersistenceError.createFileSystemError(err.code || ErrorCodes.UNKNOWN, err.message);
+            }
+          } else {
+            throw err;
+          }
+        }
+      }
+    };
+    var UnavailableDpapi = class {
+      constructor(errorMessage) {
+        this.errorMessage = errorMessage;
+      }
+      protectData() {
+        throw new Error(this.errorMessage);
+      }
+      unprotectData() {
+        throw new Error(this.errorMessage);
+      }
+    };
+    var Dpapi;
+    if (process.platform !== "win32") {
+      Dpapi = new UnavailableDpapi("Dpapi is not supported on this platform");
+    } else {
+      const safeRequire = typeof require !== "undefined" ? require : module$1.createRequire(typeof document === "undefined" ? require("url").pathToFileURL(__filename).href : _documentCurrentScript && _documentCurrentScript.tagName.toUpperCase() === "SCRIPT" && _documentCurrentScript.src || new URL("msal-node-extensions.cjs", document.baseURI).href);
       try {
-        return JSON.parse(fs7.readFileSync(filePath(account), "utf8"));
-      } catch {
+        Dpapi = safeRequire(`../bin/${process.arch}/dpapi`);
+      } catch (e) {
+        Dpapi = new UnavailableDpapi("Dpapi bindings unavailable");
+      }
+    }
+    var DataProtectionScope = {
+      CurrentUser: "CurrentUser",
+      LocalMachine: "LocalMachine"
+    };
+    var FilePersistenceWithDataProtection = class _FilePersistenceWithDataProtection extends BasePersistence {
+      constructor(filePersistence, scope, optionalEntropy) {
+        super();
+        this.scope = scope;
+        this.optionalEntropy = optionalEntropy ? Buffer.from(optionalEntropy, "utf-8") : null;
+        this.filePersistence = filePersistence;
+      }
+      static async create(fileLocation, scope, optionalEntropy, loggerOptions) {
+        const filePersistence = await FilePersistence.create(fileLocation, loggerOptions);
+        const persistence = new _FilePersistenceWithDataProtection(filePersistence, scope, optionalEntropy);
+        return persistence;
+      }
+      async save(contents) {
+        try {
+          const encryptedContents = Dpapi.protectData(Buffer.from(contents, "utf-8"), this.optionalEntropy, this.scope.toString());
+          await this.filePersistence.saveBuffer(encryptedContents);
+        } catch (err) {
+          if (isNodeError(err)) {
+            throw PersistenceError.createFilePersistenceWithDPAPIError(err.message);
+          } else {
+            throw err;
+          }
+        }
+      }
+      async load() {
+        try {
+          const encryptedContents = await this.filePersistence.loadBuffer();
+          if (typeof encryptedContents === "undefined" || !encryptedContents || 0 === encryptedContents.length) {
+            this.filePersistence.getLogger().info("Encrypted contents loaded from file were null or empty");
+            return null;
+          }
+          return Dpapi.unprotectData(encryptedContents, this.optionalEntropy, this.scope.toString()).toString();
+        } catch (err) {
+          if (isNodeError(err)) {
+            throw PersistenceError.createFilePersistenceWithDPAPIError(err.message);
+          } else {
+            throw err;
+          }
+        }
+      }
+      async delete() {
+        return this.filePersistence.delete();
+      }
+      async reloadNecessary(lastSync) {
+        return this.filePersistence.reloadNecessary(lastSync);
+      }
+      getFilePath() {
+        return this.filePersistence.getFilePath();
+      }
+      getLogger() {
+        return this.filePersistence.getLogger();
+      }
+      createForPersistenceValidation() {
+        const testCacheFileLocation = `${path3.dirname(this.filePersistence.getFilePath())}/test.cache`;
+        return _FilePersistenceWithDataProtection.create(testCacheFileLocation, DataProtectionScope.CurrentUser);
+      }
+    };
+    var KeychainPersistence = class _KeychainPersistence extends BasePersistence {
+      constructor(filePersistence, serviceName, accountName) {
+        super();
+        this.filePersistence = filePersistence;
+        this.serviceName = serviceName;
+        this.accountName = accountName;
+      }
+      static async create(fileLocation, serviceName, accountName, loggerOptions) {
+        const filePersistence = await FilePersistence.create(fileLocation, loggerOptions);
+        const persistence = new _KeychainPersistence(filePersistence, serviceName, accountName);
+        return persistence;
+      }
+      async save(contents) {
+        try {
+          await keytar.setPassword(this.serviceName, this.accountName, contents);
+        } catch (err) {
+          if (isNodeError(err)) {
+            throw PersistenceError.createKeychainPersistenceError(err.message);
+          } else {
+            throw err;
+          }
+        }
+        await this.filePersistence.save("{}");
+      }
+      async load() {
+        try {
+          return await keytar.getPassword(this.serviceName, this.accountName);
+        } catch (err) {
+          if (isNodeError(err)) {
+            throw PersistenceError.createKeychainPersistenceError(err.message);
+          } else {
+            throw err;
+          }
+        }
+      }
+      async delete() {
+        try {
+          await this.filePersistence.delete();
+          return await keytar.deletePassword(this.serviceName, this.accountName);
+        } catch (err) {
+          if (isNodeError(err)) {
+            throw PersistenceError.createKeychainPersistenceError(err.message);
+          } else {
+            throw err;
+          }
+        }
+      }
+      async reloadNecessary(lastSync) {
+        return this.filePersistence.reloadNecessary(lastSync);
+      }
+      getFilePath() {
+        return this.filePersistence.getFilePath();
+      }
+      getLogger() {
+        return this.filePersistence.getLogger();
+      }
+      createForPersistenceValidation() {
+        const testCacheFileLocation = `${path3.dirname(this.filePersistence.getFilePath())}/test.cache`;
+        return _KeychainPersistence.create(testCacheFileLocation, "persistenceValidationServiceName", "persistencValidationAccountName");
+      }
+    };
+    var LibSecretPersistence = class _LibSecretPersistence extends BasePersistence {
+      constructor(filePersistence, serviceName, accountName) {
+        super();
+        this.filePersistence = filePersistence;
+        this.serviceName = serviceName;
+        this.accountName = accountName;
+      }
+      static async create(fileLocation, serviceName, accountName, loggerOptions) {
+        const filePersistence = await FilePersistence.create(fileLocation, loggerOptions);
+        const persistence = new _LibSecretPersistence(filePersistence, serviceName, accountName);
+        return persistence;
+      }
+      async save(contents) {
+        try {
+          await keytar.setPassword(this.serviceName, this.accountName, contents);
+        } catch (err) {
+          if (isNodeError(err)) {
+            throw PersistenceError.createLibSecretError(err.message);
+          } else {
+            throw err;
+          }
+        }
+        await this.filePersistence.save("{}");
+      }
+      async load() {
+        try {
+          return await keytar.getPassword(this.serviceName, this.accountName);
+        } catch (err) {
+          if (isNodeError(err)) {
+            throw PersistenceError.createLibSecretError(err.message);
+          } else {
+            throw err;
+          }
+        }
+      }
+      async delete() {
+        try {
+          await this.filePersistence.delete();
+          return await keytar.deletePassword(this.serviceName, this.accountName);
+        } catch (err) {
+          if (isNodeError(err)) {
+            throw PersistenceError.createLibSecretError(err.message);
+          } else {
+            throw err;
+          }
+        }
+      }
+      async reloadNecessary(lastSync) {
+        return this.filePersistence.reloadNecessary(lastSync);
+      }
+      getFilePath() {
+        return this.filePersistence.getFilePath();
+      }
+      getLogger() {
+        return this.filePersistence.getLogger();
+      }
+      createForPersistenceValidation() {
+        const testCacheFileLocation = `${path3.dirname(this.filePersistence.getFilePath())}/test.cache`;
+        return _LibSecretPersistence.create(testCacheFileLocation, "persistenceValidationServiceName", "persistencValidationAccountName");
+      }
+    };
+    var Environment = class {
+      static get homeEnvVar() {
+        return this.getEnvironmentVariable(Constants$1.ENVIRONMENT.HOME);
+      }
+      static get lognameEnvVar() {
+        return this.getEnvironmentVariable(Constants$1.ENVIRONMENT.LOGNAME);
+      }
+      static get userEnvVar() {
+        return this.getEnvironmentVariable(Constants$1.ENVIRONMENT.USER);
+      }
+      static get lnameEnvVar() {
+        return this.getEnvironmentVariable(Constants$1.ENVIRONMENT.LNAME);
+      }
+      static get usernameEnvVar() {
+        return this.getEnvironmentVariable(Constants$1.ENVIRONMENT.USERNAME);
+      }
+      static getEnvironmentVariable(name2) {
+        return process.env[name2] || "";
+      }
+      static getEnvironmentPlatform() {
+        return process.platform;
+      }
+      static isWindowsPlatform() {
+        return this.getEnvironmentPlatform() === Platform.WINDOWS;
+      }
+      static isLinuxPlatform() {
+        return this.getEnvironmentPlatform() === Platform.LINUX;
+      }
+      static isMacPlatform() {
+        return this.getEnvironmentPlatform() === Platform.MACOS;
+      }
+      static isLinuxRootUser() {
+        if (typeof process.getuid !== "function") {
+          return false;
+        }
+        return process.getuid() === Constants$1.LINUX_ROOT_USER_GUID;
+      }
+      static getUserRootDirectory() {
+        return !this.isWindowsPlatform() ? this.getUserHomeDirOnUnix() : this.getUserHomeDirOnWindows();
+      }
+      static getUserHomeDirOnWindows() {
+        return this.getEnvironmentVariable(Constants$1.ENVIRONMENT.LOCAL_APPLICATION_DATA);
+      }
+      static getUserHomeDirOnUnix() {
+        if (this.isWindowsPlatform()) {
+          throw PersistenceError.createNotSupportedError("Getting the user home directory for unix is not supported in windows");
+        }
+        if (this.homeEnvVar) {
+          return this.homeEnvVar;
+        }
+        let username = null;
+        if (this.lognameEnvVar) {
+          username = this.lognameEnvVar;
+        } else if (this.userEnvVar) {
+          username = this.userEnvVar;
+        } else if (this.lnameEnvVar) {
+          username = this.lnameEnvVar;
+        } else if (this.usernameEnvVar) {
+          username = this.usernameEnvVar;
+        }
+        if (this.isMacPlatform()) {
+          return username ? path3.join("/Users", username) : null;
+        } else if (this.isLinuxPlatform()) {
+          if (this.isLinuxRootUser()) {
+            return "/root";
+          } else {
+            return username ? path3.join("/home", username) : null;
+          }
+        } else {
+          throw PersistenceError.createNotSupportedError("Getting the user home directory for unix is not supported in windows");
+        }
+      }
+    };
+    var PersistenceCreator = class {
+      static async createPersistence(config) {
+        let peristence;
+        if (Environment.isWindowsPlatform()) {
+          if (!config.cachePath || !config.dataProtectionScope) {
+            throw PersistenceError.createPersistenceNotValidatedError("Cache path and/or data protection scope not provided for the FilePersistenceWithDataProtection cache plugin");
+          }
+          peristence = await FilePersistenceWithDataProtection.create(config.cachePath, DataProtectionScope.CurrentUser, void 0, config.loggerOptions);
+        } else if (Environment.isMacPlatform()) {
+          if (!config.cachePath || !config.serviceName || !config.accountName) {
+            throw PersistenceError.createPersistenceNotValidatedError("Cache path, service name and/or account name not provided for the KeychainPersistence cache plugin");
+          }
+          peristence = await KeychainPersistence.create(config.cachePath, config.serviceName, config.accountName, config.loggerOptions);
+        } else if (Environment.isLinuxPlatform()) {
+          if (!config.cachePath || !config.serviceName || !config.accountName) {
+            throw PersistenceError.createPersistenceNotValidatedError("Cache path, service name and/or account name not provided for the LibSecretPersistence cache plugin");
+          }
+          peristence = await LibSecretPersistence.create(config.cachePath, config.serviceName, config.accountName, config.loggerOptions);
+        } else {
+          throw PersistenceError.createNotSupportedError("The current environment is not supported by msal-node-extensions yet.");
+        }
+        await peristence.verifyPersistence().catch(async (e) => {
+          if (Environment.isLinuxPlatform() && config.usePlaintextFileOnLinux) {
+            if (!config.cachePath) {
+              throw PersistenceError.createPersistenceNotValidatedError("Cache path not provided for the FilePersistence cache plugin");
+            }
+            peristence = await FilePersistence.create(config.cachePath, config.loggerOptions);
+            const isFilePersistenceVerified = await peristence.verifyPersistence();
+            if (isFilePersistenceVerified) {
+              return peristence;
+            }
+            throw PersistenceError.createPersistenceNotVerifiedError("Persistence could not be verified");
+          } else {
+            throw e;
+          }
+        });
+        return peristence;
+      }
+    };
+    var name = "@azure/msal-node-extensions";
+    var version2 = "1.5.32";
+    var NativeBrokerPlugin = class {
+      constructor() {
+        const defaultLoggerOptions = {
+          loggerCallback: () => {
+          },
+          piiLoggingEnabled: false
+        };
+        this.logger = new Logger(defaultLoggerOptions, name, version2);
+        this.isBrokerAvailable = msalNodeRuntime.msalNodeRuntime.StartupError ? false : true;
+      }
+      setLogger(loggerOptions) {
+        this.logger = new Logger(loggerOptions, name, version2);
+        const logCallback = (message, logLevel, containsPii) => {
+          switch (logLevel) {
+            case msalNodeRuntime.LogLevel.Trace:
+              if (containsPii) {
+                this.logger.tracePii(message);
+              } else {
+                this.logger.trace(message);
+              }
+              break;
+            case msalNodeRuntime.LogLevel.Debug:
+              if (containsPii) {
+                this.logger.tracePii(message);
+              } else {
+                this.logger.trace(message);
+              }
+              break;
+            case msalNodeRuntime.LogLevel.Info:
+              if (containsPii) {
+                this.logger.infoPii(message);
+              } else {
+                this.logger.info(message);
+              }
+              break;
+            case msalNodeRuntime.LogLevel.Warning:
+              if (containsPii) {
+                this.logger.warningPii(message);
+              } else {
+                this.logger.warning(message);
+              }
+              break;
+            case msalNodeRuntime.LogLevel.Error:
+              if (containsPii) {
+                this.logger.errorPii(message);
+              } else {
+                this.logger.error(message);
+              }
+              break;
+            case msalNodeRuntime.LogLevel.Fatal:
+              if (containsPii) {
+                this.logger.errorPii(message);
+              } else {
+                this.logger.error(message);
+              }
+              break;
+            default:
+              if (containsPii) {
+                this.logger.infoPii(message);
+              } else {
+                this.logger.info(message);
+              }
+              break;
+          }
+        };
+        try {
+          msalNodeRuntime.msalNodeRuntime.RegisterLogger(logCallback, loggerOptions.piiLoggingEnabled || false);
+        } catch (e) {
+          const wrappedError = this.wrapError(e);
+          if (wrappedError) {
+            throw wrappedError;
+          }
+        }
+      }
+      async getAccountById(accountId, correlationId) {
+        this.logger.trace("NativeBrokerPlugin - getAccountById called", correlationId);
+        const readAccountResult = await this.readAccountById(accountId, correlationId);
+        return this.generateAccountInfo(readAccountResult.account);
+      }
+      async getAllAccounts(clientId, correlationId) {
+        this.logger.trace("NativeBrokerPlugin - getAllAccounts called", correlationId);
+        return new Promise((resolve, reject) => {
+          const resultCallback = (result) => {
+            try {
+              result.CheckError();
+            } catch (e) {
+              const wrappedError = this.wrapError(e);
+              if (wrappedError) {
+                reject(wrappedError);
+                return;
+              }
+            }
+            const accountInfoResult = [];
+            result.accounts.forEach((account) => {
+              accountInfoResult.push(this.generateAccountInfo(account));
+            });
+            resolve(accountInfoResult);
+          };
+          try {
+            msalNodeRuntime.msalNodeRuntime.DiscoverAccountsAsync(clientId, correlationId, resultCallback);
+          } catch (e) {
+            const wrappedError = this.wrapError(e);
+            if (wrappedError) {
+              reject(wrappedError);
+            }
+          }
+        });
+      }
+      async acquireTokenSilent(request) {
+        this.logger.trace("NativeBrokerPlugin - acquireTokenSilent called", request.correlationId);
+        const platformRequest = request;
+        if (!platformRequest.redirectUri) {
+          platformRequest.redirectUri = this.chooseRedirectUriByPlatform(platformRequest);
+          this.logger.info("NativeBrokerPlugin - No Redirect URI provided, using default", platformRequest.correlationId);
+        }
+        const authParams = this.generateRequestParameters(platformRequest);
+        const account = await this.getAccount(platformRequest);
+        return new Promise((resolve, reject) => {
+          const resultCallback = (result) => {
+            try {
+              result.CheckError();
+            } catch (e) {
+              const wrappedError = this.wrapError(e);
+              if (wrappedError) {
+                reject(wrappedError);
+                return;
+              }
+            }
+            const authenticationResult = this.getAuthenticationResult(platformRequest, result);
+            resolve(authenticationResult);
+          };
+          try {
+            if (account) {
+              msalNodeRuntime.msalNodeRuntime.AcquireTokenSilentlyAsync(authParams, platformRequest.correlationId, account, resultCallback);
+            } else {
+              msalNodeRuntime.msalNodeRuntime.SignInSilentlyAsync(authParams, platformRequest.correlationId, resultCallback);
+            }
+          } catch (e) {
+            const wrappedError = this.wrapError(e);
+            if (wrappedError) {
+              reject(wrappedError);
+            }
+          }
+        });
+      }
+      async acquireTokenInteractive(request, providedWindowHandle) {
+        this.logger.trace("NativeBrokerPlugin - acquireTokenInteractive called", request.correlationId);
+        const platformRequest = request;
+        if (!platformRequest.redirectUri) {
+          platformRequest.redirectUri = this.chooseRedirectUriByPlatform(platformRequest);
+          this.logger.info("NativeBrokerPlugin - No Redirect URI provided, using default", platformRequest.correlationId);
+        }
+        const authParams = this.generateRequestParameters(platformRequest);
+        const account = await this.getAccount(platformRequest);
+        const windowHandle = providedWindowHandle || Buffer.from([0]);
+        return new Promise((resolve, reject) => {
+          const resultCallback = (result) => {
+            try {
+              result.CheckError();
+            } catch (e) {
+              const wrappedError = this.wrapError(e);
+              if (wrappedError) {
+                reject(wrappedError);
+                return;
+              }
+            }
+            const authenticationResult = this.getAuthenticationResult(platformRequest, result);
+            resolve(authenticationResult);
+          };
+          try {
+            switch (platformRequest.prompt) {
+              case PromptValue.LOGIN:
+              case PromptValue.SELECT_ACCOUNT:
+              case PromptValue.CREATE:
+                this.logger.info("Calling native interop SignInInteractively API", platformRequest.correlationId);
+                const loginHint = platformRequest.loginHint || Constants.EMPTY_STRING;
+                msalNodeRuntime.msalNodeRuntime.SignInInteractivelyAsync(windowHandle, authParams, platformRequest.correlationId, loginHint, resultCallback);
+                break;
+              case PromptValue.NONE:
+                if (account) {
+                  this.logger.info("Calling native interop AcquireTokenSilently API", platformRequest.correlationId);
+                  msalNodeRuntime.msalNodeRuntime.AcquireTokenSilentlyAsync(authParams, platformRequest.correlationId, account, resultCallback);
+                } else {
+                  this.logger.info("Calling native interop SignInSilently API", platformRequest.correlationId);
+                  msalNodeRuntime.msalNodeRuntime.SignInSilentlyAsync(authParams, platformRequest.correlationId, resultCallback);
+                }
+                break;
+              default:
+                if (account) {
+                  this.logger.info("Calling native interop AcquireTokenInteractively API", platformRequest.correlationId);
+                  msalNodeRuntime.msalNodeRuntime.AcquireTokenInteractivelyAsync(windowHandle, authParams, platformRequest.correlationId, account, resultCallback);
+                } else {
+                  this.logger.info("Calling native interop SignIn API", platformRequest.correlationId);
+                  const loginHint2 = platformRequest.loginHint || Constants.EMPTY_STRING;
+                  msalNodeRuntime.msalNodeRuntime.SignInAsync(windowHandle, authParams, platformRequest.correlationId, loginHint2, resultCallback);
+                }
+                break;
+            }
+          } catch (e) {
+            const wrappedError = this.wrapError(e);
+            if (wrappedError) {
+              reject(wrappedError);
+            }
+          }
+        });
+      }
+      async signOut(request) {
+        this.logger.trace("NativeBrokerPlugin - signOut called", request.correlationId);
+        const account = await this.getAccount(request);
+        if (!account) {
+          throw createClientAuthError(noAccountFound);
+        }
+        return new Promise((resolve, reject) => {
+          const resultCallback = (result) => {
+            try {
+              result.CheckError();
+            } catch (e) {
+              const wrappedError = this.wrapError(e);
+              if (wrappedError) {
+                reject(wrappedError);
+                return;
+              }
+            }
+            resolve();
+          };
+          try {
+            msalNodeRuntime.msalNodeRuntime.SignOutSilentlyAsync(request.clientId, request.correlationId, account, resultCallback);
+          } catch (e) {
+            const wrappedError = this.wrapError(e);
+            if (wrappedError) {
+              reject(wrappedError);
+            }
+          }
+        });
+      }
+      async getAccount(request) {
+        if (request.accountId) {
+          const readAccountResult = await this.readAccountById(request.accountId, request.correlationId);
+          return readAccountResult.account;
+        }
         return null;
       }
-    }
-    function fileClear(account) {
-      try {
-        fs7.unlinkSync(filePath(account));
-      } catch {
+      async readAccountById(accountId, correlationId) {
+        this.logger.trace("NativeBrokerPlugin - readAccountById called", correlationId);
+        return new Promise((resolve, reject) => {
+          const resultCallback = (result) => {
+            try {
+              result.CheckError();
+            } catch (e) {
+              const wrappedError = this.wrapError(e);
+              if (wrappedError) {
+                reject(wrappedError);
+                return;
+              }
+            }
+            resolve(result);
+          };
+          try {
+            msalNodeRuntime.msalNodeRuntime.ReadAccountByIdAsync(accountId, correlationId, resultCallback);
+          } catch (e) {
+            const wrappedError = this.wrapError(e);
+            if (wrappedError) {
+              reject(wrappedError);
+            }
+          }
+        });
       }
-    }
-    var platform2 = os3.platform();
-    async function loadCache2(serviceName = SERVICE_NAME, accountName = "default") {
-      try {
-        let data;
-        if (platform2 === "darwin") {
-          data = macLoad(serviceName, accountName);
-        } else if (platform2 === "win32") {
-          data = winLoad(serviceName, accountName);
-        } else {
-          data = linuxLoad(serviceName, accountName);
-        }
-        return data || {};
-      } catch {
+      generateRequestParameters(request) {
+        this.logger.trace("NativeBrokerPlugin - generateRequestParameters called", request.correlationId);
+        const authParams = new msalNodeRuntime.msalNodeRuntime.AuthParameters();
         try {
-          const fallback = fileLoad(accountName);
-          return fallback || {};
-        } catch {
-          return {};
+          authParams.CreateAuthParameters(request.clientId, request.authority);
+          authParams.SetRedirectUri(request.redirectUri);
+          authParams.SetRequestedScopes(request.scopes.join(" "));
+          if (request.claims) {
+            authParams.SetDecodedClaims(request.claims);
+          }
+          if (request.authenticationScheme === AuthenticationScheme.POP) {
+            if (!request.resourceRequestMethod || !request.resourceRequestUri) {
+              throw new Error("Authentication Scheme set to POP but one or more of the following parameters are missing: resourceRequestMethod, resourceRequestUri");
+            }
+            const resourceUrl = new URL(request.resourceRequestUri);
+            authParams.SetPopParams(request.resourceRequestMethod, resourceUrl.host, resourceUrl.pathname, request.shrNonce || "");
+          }
+          if (request.extraParameters) {
+            Object.entries(request.extraParameters).forEach(([key, value]) => {
+              authParams.SetAdditionalParameter(key, value);
+            });
+          }
+          const skus = request.extraParameters && request.extraParameters[X_CLIENT_EXTRA_SKU]?.length ? request.extraParameters[X_CLIENT_EXTRA_SKU] : "";
+          authParams.SetAdditionalParameter(X_CLIENT_EXTRA_SKU, ServerTelemetryManager.makeExtraSkuString({
+            skus,
+            extensionName: "msal.node.ext",
+            extensionVersion: version2
+          }));
+        } catch (e) {
+          const wrappedError = this.wrapError(e);
+          if (wrappedError) {
+            throw wrappedError;
+          }
         }
+        return authParams;
       }
-    }
-    async function saveCache2(serviceName = SERVICE_NAME, accountName = "default", data = {}) {
-      const jsonString = JSON.stringify(data);
-      try {
-        if (platform2 === "darwin") {
-          macSave(serviceName, accountName, jsonString);
-        } else if (platform2 === "win32") {
-          winSave(serviceName, accountName, jsonString);
+      chooseRedirectUriByPlatform(request) {
+        this.logger.trace("NativeBrokerPlugin - chooseRedirectUriByPlatform called", request.correlationId);
+        let redirectUri;
+        switch (process.platform) {
+          case "darwin":
+            redirectUri = "msauth.com.msauth.unsignedapp://auth";
+            break;
+          case "win32":
+            redirectUri = `ms-appx-web://Microsoft.AAD.BrokerPlugin/${request.clientId}`;
+            break;
+          default:
+            redirectUri = "https://login.microsoftonline.com/common/oauth2/nativeclient";
+        }
+        return redirectUri;
+      }
+      getAuthenticationResult(request, authResult) {
+        this.logger.trace("NativeBrokerPlugin - getAuthenticationResult called", request.correlationId);
+        let fromCache = false;
+        try {
+          const telemetryJSON = JSON.parse(authResult.telemetryData);
+          fromCache = !!telemetryJSON["is_cache"];
+        } catch (e) {
+          this.logger.error("NativeBrokerPlugin: getAuthenticationResult - Error parsing telemetry data. Could not determine if response came from cache.", request.correlationId);
+        }
+        let idTokenClaims;
+        try {
+          idTokenClaims = JSON.parse(authResult.idToken);
+        } catch (e) {
+          throw new Error("Unable to parse idToken claims");
+        }
+        const accountInfo = this.generateAccountInfo(authResult.account, idTokenClaims);
+        let accessToken;
+        let tokenType;
+        if (authResult.isPopAuthorization) {
+          accessToken = authResult.authorizationHeader.split(" ")[1];
+          tokenType = AuthenticationScheme.POP;
         } else {
-          linuxSave(serviceName, accountName, jsonString);
+          accessToken = authResult.accessToken;
+          tokenType = AuthenticationScheme.BEARER;
         }
-      } catch (e) {
-        warn2(`OS credential store failed (${e.message}), using file fallback`);
-        fileSave(accountName, jsonString);
+        const result = {
+          authority: request.authority,
+          uniqueId: idTokenClaims.oid || idTokenClaims.sub || "",
+          tenantId: idTokenClaims.tid || "",
+          scopes: authResult.grantedScopes.split(" "),
+          account: accountInfo,
+          idToken: authResult.rawIdToken,
+          idTokenClaims,
+          accessToken,
+          fromCache,
+          // MsalRuntime expiresOn returned in seconds, converting to Date for AuthenticationResult
+          expiresOn: toDateFromSeconds(authResult.expiresOn),
+          tokenType,
+          correlationId: request.correlationId,
+          fromNativeBroker: true
+        };
+        return result;
       }
-    }
-    async function clearCache2(serviceName = SERVICE_NAME, accountName = "default") {
-      try {
-        if (platform2 === "darwin") {
-          macClear(serviceName, accountName);
-        } else if (platform2 === "win32") {
-          winClear(serviceName, accountName);
-        } else {
-          linuxClear(serviceName, accountName);
+      generateAccountInfo(account, idTokenClaims) {
+        this.logger.trace("NativeBrokerPlugin - generateAccountInfo called");
+        const accountInfo = {
+          homeAccountId: account.homeAccountId,
+          environment: account.environment,
+          tenantId: account.realm,
+          username: account.username,
+          localAccountId: account.localAccountId,
+          name: account.displayName,
+          idTokenClaims,
+          nativeAccountId: account.accountId
+        };
+        return accountInfo;
+      }
+      isMsalRuntimeError(result) {
+        return result.hasOwnProperty("errorCode") || result.hasOwnProperty("errorStatus") || result.hasOwnProperty("errorContext") || result.hasOwnProperty("errorTag");
+      }
+      wrapError(error) {
+        if (error && typeof error === "object" && this.isMsalRuntimeError(error)) {
+          const { errorCode, errorStatus, errorContext, errorTag } = error;
+          const msalNodeRuntimeError = new PlatformBrokerError(msalNodeRuntime.ErrorStatus[errorStatus], errorContext, errorCode, errorTag);
+          let wrappedError;
+          switch (errorStatus) {
+            case msalNodeRuntime.ErrorStatus.InteractionRequired:
+            case msalNodeRuntime.ErrorStatus.AccountUnusable:
+              wrappedError = new InteractionRequiredAuthError(ErrorCodes.INTERATION_REQUIRED_ERROR_CODE, msalNodeRuntimeError.message);
+              break;
+            case msalNodeRuntime.ErrorStatus.NoNetwork:
+            case msalNodeRuntime.ErrorStatus.NetworkTemporarilyUnavailable:
+              wrappedError = createClientAuthError(noNetworkConnectivity);
+              break;
+            case msalNodeRuntime.ErrorStatus.ServerTemporarilyUnavailable:
+              wrappedError = new ServerError(ErrorCodes.SERVER_UNAVAILABLE, errorContext);
+              break;
+            case msalNodeRuntime.ErrorStatus.UserCanceled:
+              wrappedError = createClientAuthError(userCanceled);
+              break;
+            case msalNodeRuntime.ErrorStatus.AuthorityUntrusted:
+              wrappedError = createClientConfigurationError(untrustedAuthority);
+              break;
+            case msalNodeRuntime.ErrorStatus.UserSwitched:
+              return null;
+            case msalNodeRuntime.ErrorStatus.AccountNotFound:
+              wrappedError = createClientAuthError(noAccountFound);
+              break;
+            default:
+              wrappedError = createClientAuthError(platformBrokerError);
+          }
+          wrappedError.platformBrokerError = msalNodeRuntimeError;
+          return wrappedError;
         }
-      } catch {
+        throw error;
       }
-      fileClear(accountName);
+    };
+    exports2.DataProtectionScope = DataProtectionScope;
+    exports2.Environment = Environment;
+    exports2.FilePersistence = FilePersistence;
+    exports2.FilePersistenceWithDataProtection = FilePersistenceWithDataProtection;
+    exports2.KeychainPersistence = KeychainPersistence;
+    exports2.LibSecretPersistence = LibSecretPersistence;
+    exports2.NativeBrokerPlugin = NativeBrokerPlugin;
+    exports2.PersistenceCachePlugin = PersistenceCachePlugin;
+    exports2.PersistenceCreator = PersistenceCreator;
+  }
+});
+
+// src/msal-cache.js
+var require_msal_cache = __commonJS({
+  "src/msal-cache.js"(exports2, module2) {
+    var { PersistenceCreator, PersistenceCachePlugin, DataProtectionScope } = require_msal_node_extensions();
+    var path3 = require("path");
+    var os3 = require("os");
+    var CACHE_DIR = path3.join(os3.homedir(), ".copilot-studio-cli");
+    var SERVICE_NAME = "copilot-studio-cli";
+    async function createCachePlugin2(accountName) {
+      const cachePath = path3.join(CACHE_DIR, `${accountName}.cache.json`);
+      const persistence = await PersistenceCreator.createPersistence({
+        cachePath,
+        dataProtectionScope: DataProtectionScope.CurrentUser,
+        serviceName: SERVICE_NAME,
+        accountName,
+        usePlaintextFileOnLinux: true
+      });
+      return new PersistenceCachePlugin(persistence);
     }
-    async function migrateLegacyCache2(legacyPath, serviceName = SERVICE_NAME, accountName = "default") {
-      try {
-        if (!fs7.existsSync(legacyPath)) return false;
-        const data = JSON.parse(fs7.readFileSync(legacyPath, "utf8"));
-        await saveCache2(serviceName, accountName, data);
-        fs7.unlinkSync(legacyPath);
-        warn2(`Migrated ${legacyPath} to secure credential store`);
-        return true;
-      } catch (e) {
-        warn2(`Migration failed: ${e.message}`);
-        return false;
-      }
-    }
-    module2.exports = { loadCache: loadCache2, saveCache: saveCache2, clearCache: clearCache2, migrateLegacyCache: migrateLegacyCache2 };
+    module2.exports = { createCachePlugin: createCachePlugin2 };
   }
 });
 
@@ -14432,7 +16251,7 @@ function detectPlatformBinary({ [platform]: platformBinary }, { wsl } = {}) {
   }
   return detectArchBinary(platformBinary);
 }
-var import_node_process7, import_node_path, import_node_url, import_node_child_process7, import_promises2, import_meta, fallbackAttemptSymbol, __dirname2, localXdgOpenPath, platform, arch, tryEachApp, baseOpen, open, openApp, apps, open_default;
+var import_node_process7, import_node_path, import_node_url, import_node_child_process7, import_promises2, import_meta, fallbackAttemptSymbol, __dirname, localXdgOpenPath, platform, arch, tryEachApp, baseOpen, open, openApp, apps, open_default;
 var init_open = __esm({
   "node_modules/open/index.js"() {
     import_node_process7 = __toESM(require("node:process"), 1);
@@ -14448,8 +16267,8 @@ var init_open = __esm({
     init_is_in_ssh();
     import_meta = {};
     fallbackAttemptSymbol = Symbol("fallbackAttempt");
-    __dirname2 = import_meta.url ? import_node_path.default.dirname((0, import_node_url.fileURLToPath)(import_meta.url)) : "";
-    localXdgOpenPath = import_node_path.default.join(__dirname2, "xdg-open");
+    __dirname = import_meta.url ? import_node_path.default.dirname((0, import_node_url.fileURLToPath)(import_meta.url)) : "";
+    localXdgOpenPath = import_node_path.default.join(__dirname, "xdg-open");
     ({ platform, arch } = import_node_process7.default);
     tryEachApp = async (apps2, opener) => {
       if (apps2.length === 0) {
@@ -14594,7 +16413,7 @@ var init_open = __esm({
         if (app) {
           command = app;
         } else {
-          const isBundled = !__dirname2 || __dirname2 === "/";
+          const isBundled = !__dirname || __dirname === "/";
           let exeLocalXdgOpen = false;
           try {
             await import_promises2.default.access(localXdgOpenPath, import_promises2.constants.X_OK);
@@ -14733,7 +16552,7 @@ var { randomUUID } = require("crypto");
 var path2 = require("path");
 var fs6 = require("fs");
 var os2 = require("os");
-var { loadCache, saveCache, clearCache, migrateLegacyCache } = require_credential_store();
+var { createCachePlugin } = require_msal_cache();
 function log(msg) {
   process.stderr.write(msg + "\n");
 }
@@ -14807,60 +16626,10 @@ function parseArgs() {
   }
   return parsed;
 }
-var CREDENTIAL_SERVICE = "copilot-studio-cli";
-var CREDENTIAL_ACCOUNT = "manage-agent";
-var LEGACY_CREDENTIAL_ACCOUNT = "lsp-sync";
-var LEGACY_CACHE_PATH = path2.join(__dirname, "..", ".token_cache.json");
-var _cache = null;
-async function ensureCacheLoaded() {
-  if (_cache !== null) return;
-  await migrateLegacyCache(LEGACY_CACHE_PATH, CREDENTIAL_SERVICE, CREDENTIAL_ACCOUNT);
-  await migrateAccountName();
-  _cache = await loadCache(CREDENTIAL_SERVICE, CREDENTIAL_ACCOUNT);
-}
-async function migrateAccountName() {
-  try {
-    const oldData = await loadCache(CREDENTIAL_SERVICE, LEGACY_CREDENTIAL_ACCOUNT);
-    if (oldData && Object.keys(oldData).length > 0) {
-      await saveCache(CREDENTIAL_SERVICE, CREDENTIAL_ACCOUNT, oldData);
-      await clearCache(CREDENTIAL_SERVICE, LEGACY_CREDENTIAL_ACCOUNT);
-      log(`Migrated credentials from "${LEGACY_CREDENTIAL_ACCOUNT}" to "${CREDENTIAL_ACCOUNT}"`);
-    }
-  } catch (e) {
-    log(`Account migration skipped: ${e.message}`);
-  }
-}
-async function persistCache() {
-  await saveCache(CREDENTIAL_SERVICE, CREDENTIAL_ACCOUNT, _cache);
-}
-function createMsalCachePlugin() {
-  return {
-    beforeCacheAccess: async (context) => {
-      await ensureCacheLoaded();
-      context.tokenCache.deserialize(_cache._msalCache || "");
-    },
-    afterCacheAccess: async (context) => {
-      if (context.cacheHasChanged) {
-        await ensureCacheLoaded();
-        _cache._msalCache = context.tokenCache.serialize();
-        await persistCache();
-      }
-    }
-  };
-}
-async function getCachedToken(scope) {
-  await ensureCacheLoaded();
-  const entry = _cache[scope];
-  if (!entry) return null;
-  const expiresOn = new Date(entry.expiresOn);
-  const bufferMs = 5 * 60 * 1e3;
-  if (expiresOn.getTime() - bufferMs < Date.now()) return null;
-  return entry;
-}
-async function setCachedToken(scope, tokenInfo) {
-  await ensureCacheLoaded();
-  _cache[scope] = tokenInfo;
-  await persistCache();
+var _cachePlugin = null;
+async function getCachePlugin() {
+  if (!_cachePlugin) _cachePlugin = await createCachePlugin("manage-agent");
+  return _cachePlugin;
 }
 var VSCODE_CLIENT_ID = "51f81489-12ee-4a9e-aaae-a2591f45987d";
 var ISLAND_RESOURCE_IDS = {
@@ -14879,14 +16648,15 @@ function getIslandResourceId(clusterCategory) {
   if (!id) throw new Error(`Unknown cluster category: ${clusterCategory}`);
   return id;
 }
-function createMsalApp(tenantId, clientId) {
+async function createMsalApp(tenantId, clientId) {
   const msal = require_msal_node();
+  const cachePlugin = await getCachePlugin();
   return new msal.PublicClientApplication({
     auth: {
       clientId,
       authority: `https://login.microsoftonline.com/${tenantId}`
     },
-    cache: { cachePlugin: createMsalCachePlugin() }
+    cache: { cachePlugin }
   });
 }
 function buildTokenInfo(result) {
@@ -14902,34 +16672,8 @@ function buildTokenInfo(result) {
     } : void 0
   };
 }
-async function acquireTokenDeviceCode(tenantId, clientId, scopes) {
-  const app = createMsalApp(tenantId, clientId);
-  const scopeKey = scopes[0];
-  const result = await app.acquireTokenByDeviceCode({
-    scopes,
-    deviceCodeCallback: (response) => {
-      log("");
-      log(`  ${response.message}`);
-      log("");
-      process.stdout.write(
-        JSON.stringify({
-          status: "device_code",
-          userCode: response.userCode,
-          verificationUri: response.verificationUri,
-          message: response.message,
-          expiresIn: response.expiresIn
-        }) + "\n"
-      );
-    }
-  });
-  if (!result) throw new Error("Device code flow returned no result");
-  const tokenInfo = buildTokenInfo(result);
-  await setCachedToken(scopeKey, tokenInfo);
-  return tokenInfo;
-}
 async function acquireTokenInteractive(tenantId, clientId, scopes) {
-  const app = createMsalApp(tenantId, clientId);
-  const scopeKey = scopes[0];
+  const app = await createMsalApp(tenantId, clientId);
   const result = await app.acquireTokenInteractive({
     scopes,
     openBrowser: async (url) => {
@@ -14942,44 +16686,27 @@ async function acquireTokenInteractive(tenantId, clientId, scopes) {
     successTemplate: "<html><body><h1>Login successful. You can close this tab.</h1></body></html>"
   });
   if (!result) throw new Error("Interactive flow returned no result");
-  const tokenInfo = buildTokenInfo(result);
-  await setCachedToken(scopeKey, tokenInfo);
-  return tokenInfo;
+  return buildTokenInfo(result);
 }
 async function acquireTokenSilent(tenantId, clientId, scopes) {
-  const scopeKey = scopes[0];
-  const cached = await getCachedToken(scopeKey);
-  if (cached) return cached;
-  const app = createMsalApp(tenantId, clientId);
+  const app = await createMsalApp(tenantId, clientId);
   const accounts = await app.getTokenCache().getAllAccounts();
-  if (accounts.length > 0) {
-    try {
-      const result = await app.acquireTokenSilent({
-        scopes,
-        account: accounts[0]
-      });
-      if (result) {
-        const tokenInfo = buildTokenInfo(result);
-        await setCachedToken(scopeKey, tokenInfo);
-        log(`${scopeKey}: silently refreshed (expires ${tokenInfo.expiresOn})`);
-        return tokenInfo;
-      }
-    } catch (e) {
-      log(`Silent refresh failed: ${e.message}`);
+  if (accounts.length === 0) return null;
+  try {
+    const result = await app.acquireTokenSilent({
+      scopes,
+      account: accounts[0]
+    });
+    if (result) {
+      log(`${scopes[0]}: silently refreshed (expires ${result.expiresOn.toISOString()})`);
+      return buildTokenInfo(result);
     }
+  } catch (e) {
+    log(`Silent refresh failed: ${e.message}`);
   }
   return null;
 }
 async function getOrAcquireToken(tenantId, clientId, scopes, label) {
-  const silent = await acquireTokenSilent(tenantId, clientId, scopes);
-  if (silent) {
-    log(`${label}: using cached token (expires ${silent.expiresOn})`);
-    return silent;
-  }
-  log(`${label}: starting device code flow...`);
-  return acquireTokenDeviceCode(tenantId, clientId, scopes);
-}
-async function getOrAcquireTokenInteractive(tenantId, clientId, scopes, label) {
   const silent = await acquireTokenSilent(tenantId, clientId, scopes);
   if (silent) {
     log(`${label}: using cached token (expires ${silent.expiresOn})`);
@@ -14990,7 +16717,7 @@ async function getOrAcquireTokenInteractive(tenantId, clientId, scopes, label) {
 }
 async function getOrAcquireIslandToken(tenantId, clusterCategory, label) {
   const resourceId = getIslandResourceId(clusterCategory);
-  return getOrAcquireTokenInteractive(
+  return getOrAcquireToken(
     tenantId,
     VSCODE_CLIENT_ID,
     [`api://${resourceId}/.default`],
@@ -15394,21 +17121,21 @@ function buildSyncRequest(args, tokens) {
 }
 async function cmdAuth(args) {
   if (!args.tenantId) die("--tenant-id (or CPS_TENANT_ID) is required");
-  if (!args.clientId) die("--client-id (or CPS_CLIENT_ID) is required");
   if (!args.environmentUrl) die("--environment-url (or CPS_ENVIRONMENT_URL) is required");
+  const clientId = args.clientId || VSCODE_CLIENT_ID;
   log("Acquiring Copilot Studio API token...");
   const cpsToken = await getOrAcquireToken(
     args.tenantId,
-    args.clientId,
-    ["https://api.powerplatform.com/.default", "offline_access"],
+    clientId,
+    ["https://api.powerplatform.com/.default"],
     "Copilot Studio API"
   );
   const envUrl = args.environmentUrl.replace(/\/+$/, "");
   log("Acquiring Dataverse API token...");
   const dvToken = await getOrAcquireToken(
     args.tenantId,
-    args.clientId,
-    [`${envUrl}/.default`, "offline_access"],
+    clientId,
+    [`${envUrl}/.default`],
     "Dataverse API"
   );
   const result = {
@@ -15434,43 +17161,27 @@ async function cmdWithLsp(args, method) {
   const conn = loadConnJson(agentDir);
   const clusterCategory = conn?.AccountInfo?.clusterCategory;
   const tenantId = conn?.AccountInfo?.TenantId || args.tenantId;
-  const clientId = args.clientId || VSCODE_CLIENT_ID;
-  const useInteractive = !args.clientId;
   const envUrl = args.environmentUrl.replace(/\/+$/, "");
   let cpsToken, dvToken;
   if (clusterCategory != null) {
     cpsToken = await getOrAcquireIslandToken(tenantId, clusterCategory, "Island API");
-    dvToken = await getOrAcquireTokenInteractive(
-      tenantId,
-      VSCODE_CLIENT_ID,
-      [`${envUrl}/.default`],
-      "Dataverse API"
-    );
-  } else if (useInteractive) {
-    cpsToken = await getOrAcquireTokenInteractive(
-      tenantId,
-      VSCODE_CLIENT_ID,
-      ["https://api.powerplatform.com/.default"],
-      "Copilot Studio API"
-    );
-    dvToken = await getOrAcquireTokenInteractive(
+    dvToken = await getOrAcquireToken(
       tenantId,
       VSCODE_CLIENT_ID,
       [`${envUrl}/.default`],
       "Dataverse API"
     );
   } else {
-    log("Warning: no cluster category in conn.json, falling back to device code flow");
     cpsToken = await getOrAcquireToken(
       tenantId,
-      clientId,
-      ["https://api.powerplatform.com/.default", "offline_access"],
+      VSCODE_CLIENT_ID,
+      ["https://api.powerplatform.com/.default"],
       "Copilot Studio API"
     );
     dvToken = await getOrAcquireToken(
       tenantId,
-      clientId,
-      [`${envUrl}/.default`, "offline_access"],
+      VSCODE_CLIENT_ID,
+      [`${envUrl}/.default`],
       "Dataverse API"
     );
   }
@@ -15522,15 +17233,11 @@ async function httpGetJson(url, accessToken) {
 async function cmdListAgents(args) {
   if (!args.tenantId) die("--tenant-id (or CPS_TENANT_ID) is required");
   if (!args.environmentUrl) die("--environment-url (or CPS_ENVIRONMENT_URL) is required");
-  const clientId = args.clientId || VSCODE_CLIENT_ID;
-  const useInteractive = !args.clientId;
-  const acquireToken = useInteractive ? getOrAcquireTokenInteractive : getOrAcquireToken;
   const envUrl = args.environmentUrl.replace(/\/+$/, "");
-  const dvScopes = useInteractive ? [`${envUrl}/.default`] : [`${envUrl}/.default`, "offline_access"];
-  const dvToken = await acquireToken(
+  const dvToken = await getOrAcquireToken(
     args.tenantId,
-    clientId,
-    dvScopes,
+    VSCODE_CLIENT_ID,
+    [`${envUrl}/.default`],
     "Dataverse API"
   );
   const ownerOnly = args.owner !== false;
@@ -15563,14 +17270,10 @@ async function cmdListAgents(args) {
 }
 async function cmdListEnvs(args) {
   if (!args.tenantId) die("--tenant-id (or CPS_TENANT_ID) is required");
-  const clientId = args.clientId || VSCODE_CLIENT_ID;
-  const useInteractive = !args.clientId;
-  const acquireToken = useInteractive ? getOrAcquireTokenInteractive : getOrAcquireToken;
-  const scopes = useInteractive ? [BAP_TOKEN_SCOPE] : [BAP_TOKEN_SCOPE, "offline_access"];
-  const bapToken = await acquireToken(
+  const bapToken = await getOrAcquireToken(
     args.tenantId,
-    clientId,
-    scopes,
+    VSCODE_CLIENT_ID,
+    [BAP_TOKEN_SCOPE],
     "Power Platform API"
   );
   const filter = encodeURIComponent("properties/environmentSku ne 'Platform'");
@@ -15602,26 +17305,11 @@ async function cmdChanges(args) {
   const conn = loadConnJson(agentDir);
   const clusterCategory = conn?.AccountInfo?.clusterCategory;
   const tenantId = conn?.AccountInfo?.TenantId || args.tenantId;
-  const clientId = args.clientId || VSCODE_CLIENT_ID;
-  const useInteractive = !args.clientId;
   const envUrl = args.environmentUrl.replace(/\/+$/, "");
   let cpsToken, dvToken;
   if (clusterCategory != null) {
     cpsToken = await getOrAcquireIslandToken(tenantId, clusterCategory, "Island API");
-    dvToken = await getOrAcquireTokenInteractive(
-      tenantId,
-      VSCODE_CLIENT_ID,
-      [`${envUrl}/.default`],
-      "Dataverse API"
-    );
-  } else if (useInteractive) {
-    cpsToken = await getOrAcquireTokenInteractive(
-      tenantId,
-      VSCODE_CLIENT_ID,
-      ["https://api.powerplatform.com/.default"],
-      "Copilot Studio API"
-    );
-    dvToken = await getOrAcquireTokenInteractive(
+    dvToken = await getOrAcquireToken(
       tenantId,
       VSCODE_CLIENT_ID,
       [`${envUrl}/.default`],
@@ -15630,14 +17318,14 @@ async function cmdChanges(args) {
   } else {
     cpsToken = await getOrAcquireToken(
       tenantId,
-      clientId,
-      ["https://api.powerplatform.com/.default", "offline_access"],
+      VSCODE_CLIENT_ID,
+      ["https://api.powerplatform.com/.default"],
       "Copilot Studio API"
     );
     dvToken = await getOrAcquireToken(
       tenantId,
-      clientId,
-      [`${envUrl}/.default`, "offline_access"],
+      VSCODE_CLIENT_ID,
+      [`${envUrl}/.default`],
       "Dataverse API"
     );
   }
@@ -15714,14 +17402,15 @@ async function cmdClone(args) {
   if (!args.environmentId) die("--environment-id (or CPS_ENVIRONMENT_ID) is required");
   if (!args.agentMgmtUrl) die("--agent-mgmt-url (or CPS_AGENT_MGMT_URL) is required");
   if (!args.agentId) die("--agent-id is required for clone");
-  const clientId = args.clientId || VSCODE_CLIENT_ID;
-  const useInteractive = !args.clientId;
-  const acquireToken = useInteractive ? getOrAcquireTokenInteractive : getOrAcquireToken;
   const envUrl = args.environmentUrl.replace(/\/+$/, "");
   const DEFAULT_CLUSTER_CATEGORY = 5;
   const cpsToken = await getOrAcquireIslandToken(args.tenantId, DEFAULT_CLUSTER_CATEGORY, "Island API");
-  const dvScopes = useInteractive ? [`${envUrl}/.default`] : [`${envUrl}/.default`, "offline_access"];
-  const dvToken = await acquireToken(args.tenantId, clientId, dvScopes, "Dataverse API");
+  const dvToken = await getOrAcquireToken(
+    args.tenantId,
+    VSCODE_CLIENT_ID,
+    [`${envUrl}/.default`],
+    "Dataverse API"
+  );
   const [agentInfo, solVersions] = await Promise.all([
     fetchAgentInfo(envUrl, args.agentId, dvToken.accessToken),
     fetchSolutionVersions(envUrl, dvToken.accessToken)
@@ -15799,6 +17488,10 @@ async function main() {
 }
 main();
 /*! Bundled license information:
+
+@azure/msal-node-extensions/lib/msal-node-extensions.cjs:
+  (*! @azure/msal-node-extensions v1.5.32 2026-03-18 *)
+  (*! @azure/msal-common v15.17.0 2026-03-18 *)
 
 safe-buffer/index.js:
   (*! safe-buffer. MIT License. Feross Aboukhadijeh <https://feross.org/opensource> *)

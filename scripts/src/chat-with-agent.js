@@ -18,7 +18,7 @@ const fs = require("fs");
 const path = require("path");
 const yaml = require("js-yaml");
 const { PublicClientApplication } = require("@azure/msal-node");
-const { loadCache, saveCache, migrateLegacyCache } = require("./credential-store");
+const { createCachePlugin } = require("./msal-cache");
 const {
   CopilotStudioClient,
   PowerPlatformCloud,
@@ -133,31 +133,11 @@ function loadAgentConfig(agentDir) {
 }
 
 // ---------------------------------------------------------------------------
-// Authentication (MSAL device-code flow with file cache)
+// Authentication (MSAL device-code flow with persistent cache)
 // ---------------------------------------------------------------------------
 
-const CHAT_SERVICE = "copilot-studio-cli";
-const CHAT_ACCOUNT = "chat";
-
-async function getAccessToken(tenantId, clientId, legacyCachePath) {
-  // Migrate legacy plaintext cache on first run
-  await migrateLegacyCache(legacyCachePath, CHAT_SERVICE, CHAT_ACCOUNT);
-
-  let cacheData = await loadCache(CHAT_SERVICE, CHAT_ACCOUNT);
-  let msalCacheStr = cacheData._msalCache || "";
-
-  const cachePlugin = {
-    beforeCacheAccess: async (context) => {
-      context.tokenCache.deserialize(msalCacheStr);
-    },
-    afterCacheAccess: async (context) => {
-      if (context.cacheHasChanged) {
-        msalCacheStr = context.tokenCache.serialize();
-        cacheData._msalCache = msalCacheStr;
-        await saveCache(CHAT_SERVICE, CHAT_ACCOUNT, cacheData);
-      }
-    },
-  };
+async function getAccessToken(tenantId, clientId) {
+  const cachePlugin = await createCachePlugin("chat");
 
   const app = new PublicClientApplication({
     auth: {
@@ -284,11 +264,8 @@ async function main() {
   const config = loadAgentConfig(agentDir);
   log(`Using agent: ${config.agentIdentifier}`);
 
-  // Token cache next to conn.json
-  const cachePath = path.join(agentDir, ".mcs", ".token_cache.json");
-
   log("Authenticating...");
-  const token = await getAccessToken(config.tenantId, args.clientId, cachePath);
+  const token = await getAccessToken(config.tenantId, args.clientId);
 
   try {
     const result = await chat(

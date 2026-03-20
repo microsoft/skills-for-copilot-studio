@@ -3,7 +3,7 @@
  * LanguageServerHost binary, using its custom LSP protocol.
  *
  * Subcommands:
- *   node manage-agent.bundle.js auth                          # Device code flow for both tokens
+ *   node manage-agent.bundle.js auth                          # Interactive browser login for both tokens
  *   node manage-agent.bundle.js push --workspace <path>       # Push local changes
  *   node manage-agent.bundle.js pull --workspace <path>       # Pull remote changes
  *   node manage-agent.bundle.js clone --workspace <path>      # Clone agent to local
@@ -28,7 +28,7 @@ const { randomUUID } = require("crypto");
 const path = require("path");
 const fs = require("fs");
 const os = require("os");
-const { loadCache, saveCache, clearCache, migrateLegacyCache } = require("./credential-store");
+const { createCachePlugin } = require("./msal-cache");
 
 // ---------------------------------------------------------------------------
 // Logging helpers
@@ -118,79 +118,18 @@ function parseArgs() {
 }
 
 // ---------------------------------------------------------------------------
-// Token cache — MSAL persistence plugin + access token cache
+// Token cache — MSAL persistence via @azure/msal-node-extensions
 // ---------------------------------------------------------------------------
 
-const CREDENTIAL_SERVICE = "copilot-studio-cli";
-const CREDENTIAL_ACCOUNT = "manage-agent";
-const LEGACY_CREDENTIAL_ACCOUNT = "lsp-sync";
-const LEGACY_CACHE_PATH = path.join(__dirname, "..", ".token_cache.json");
+let _cachePlugin = null;
 
-// In-memory copy of the cache — loaded once at startup, written back on change.
-let _cache = null;
-
-async function ensureCacheLoaded() {
-  if (_cache !== null) return;
-  // Migrate legacy plaintext file on first run
-  await migrateLegacyCache(LEGACY_CACHE_PATH, CREDENTIAL_SERVICE, CREDENTIAL_ACCOUNT);
-  // Migrate from old "lsp-sync" account to "manage-agent"
-  await migrateAccountName();
-  _cache = await loadCache(CREDENTIAL_SERVICE, CREDENTIAL_ACCOUNT);
-}
-
-async function migrateAccountName() {
-  try {
-    const oldData = await loadCache(CREDENTIAL_SERVICE, LEGACY_CREDENTIAL_ACCOUNT);
-    if (oldData && Object.keys(oldData).length > 0) {
-      await saveCache(CREDENTIAL_SERVICE, CREDENTIAL_ACCOUNT, oldData);
-      await clearCache(CREDENTIAL_SERVICE, LEGACY_CREDENTIAL_ACCOUNT);
-      log(`Migrated credentials from "${LEGACY_CREDENTIAL_ACCOUNT}" to "${CREDENTIAL_ACCOUNT}"`);
-    }
-  } catch (e) {
-    log(`Account migration skipped: ${e.message}`);
-  }
-}
-
-async function persistCache() {
-  await saveCache(CREDENTIAL_SERVICE, CREDENTIAL_ACCOUNT, _cache);
-}
-
-// MSAL cache plugin — persists MSAL's internal cache (incl. refresh tokens)
-// via the OS credential store so acquireTokenSilent works across invocations.
-function createMsalCachePlugin() {
-  return {
-    beforeCacheAccess: async (context) => {
-      await ensureCacheLoaded();
-      context.tokenCache.deserialize(_cache._msalCache || "");
-    },
-    afterCacheAccess: async (context) => {
-      if (context.cacheHasChanged) {
-        await ensureCacheLoaded();
-        _cache._msalCache = context.tokenCache.serialize();
-        await persistCache();
-      }
-    },
-  };
-}
-
-async function getCachedToken(scope) {
-  await ensureCacheLoaded();
-  const entry = _cache[scope];
-  if (!entry) return null;
-  const expiresOn = new Date(entry.expiresOn);
-  const bufferMs = 5 * 60 * 1000;
-  if (expiresOn.getTime() - bufferMs < Date.now()) return null;
-  return entry;
-}
-
-async function setCachedToken(scope, tokenInfo) {
-  await ensureCacheLoaded();
-  _cache[scope] = tokenInfo;
-  await persistCache();
+async function getCachePlugin() {
+  if (!_cachePlugin) _cachePlugin = await createCachePlugin("manage-agent");
+  return _cachePlugin;
 }
 
 // ---------------------------------------------------------------------------
-// MSAL — device code + interactive flows with persistent cache
+// MSAL — interactive browser login with persistent cache
 // ---------------------------------------------------------------------------
 
 // VS Code's first-party client ID — pre-authorized with the Island API gateway.
@@ -215,14 +154,15 @@ function getIslandResourceId(clusterCategory) {
   return id;
 }
 
-function createMsalApp(tenantId, clientId) {
+async function createMsalApp(tenantId, clientId) {
   const msal = require("@azure/msal-node");
+  const cachePlugin = await getCachePlugin();
   return new msal.PublicClientApplication({
     auth: {
       clientId,
       authority: `https://login.microsoftonline.com/${tenantId}`,
     },
-    cache: { cachePlugin: createMsalCachePlugin() },
+    cache: { cachePlugin },
   });
 }
 
@@ -244,38 +184,8 @@ function buildTokenInfo(result) {
   };
 }
 
-async function acquireTokenDeviceCode(tenantId, clientId, scopes) {
-  const app = createMsalApp(tenantId, clientId);
-  const scopeKey = scopes[0];
-
-  const result = await app.acquireTokenByDeviceCode({
-    scopes,
-    deviceCodeCallback: (response) => {
-      log("");
-      log(`  ${response.message}`);
-      log("");
-      // Also emit structured JSON so skills/Claude can parse it
-      process.stdout.write(
-        JSON.stringify({
-          status: "device_code",
-          userCode: response.userCode,
-          verificationUri: response.verificationUri,
-          message: response.message,
-          expiresIn: response.expiresIn,
-        }) + "\n"
-      );
-    },
-  });
-
-  if (!result) throw new Error("Device code flow returned no result");
-  const tokenInfo = buildTokenInfo(result);
-  await setCachedToken(scopeKey, tokenInfo);
-  return tokenInfo;
-}
-
 async function acquireTokenInteractive(tenantId, clientId, scopes) {
-  const app = createMsalApp(tenantId, clientId);
-  const scopeKey = scopes[0];
+  const app = await createMsalApp(tenantId, clientId);
 
   const result = await app.acquireTokenInteractive({
     scopes,
@@ -291,51 +201,29 @@ async function acquireTokenInteractive(tenantId, clientId, scopes) {
   });
 
   if (!result) throw new Error("Interactive flow returned no result");
-  const tokenInfo = buildTokenInfo(result);
-  await setCachedToken(scopeKey, tokenInfo);
-  return tokenInfo;
+  return buildTokenInfo(result);
 }
 
 async function acquireTokenSilent(tenantId, clientId, scopes) {
-  const scopeKey = scopes[0];
-  const cached = await getCachedToken(scopeKey);
-  if (cached) return cached;
-
-  // Access token expired — try silent refresh using MSAL's persisted cache
-  // (which contains refresh tokens from previous device code flows)
-  const app = createMsalApp(tenantId, clientId);
+  const app = await createMsalApp(tenantId, clientId);
   const accounts = await app.getTokenCache().getAllAccounts();
-  if (accounts.length > 0) {
-    try {
-      const result = await app.acquireTokenSilent({
-        scopes,
-        account: accounts[0],
-      });
-      if (result) {
-        const tokenInfo = buildTokenInfo(result);
-        await setCachedToken(scopeKey, tokenInfo);
-        log(`${scopeKey}: silently refreshed (expires ${tokenInfo.expiresOn})`);
-        return tokenInfo;
-      }
-    } catch (e) {
-      log(`Silent refresh failed: ${e.message}`);
+  if (accounts.length === 0) return null;
+  try {
+    const result = await app.acquireTokenSilent({
+      scopes,
+      account: accounts[0],
+    });
+    if (result) {
+      log(`${scopes[0]}: silently refreshed (expires ${result.expiresOn.toISOString()})`);
+      return buildTokenInfo(result);
     }
+  } catch (e) {
+    log(`Silent refresh failed: ${e.message}`);
   }
-
   return null;
 }
 
 async function getOrAcquireToken(tenantId, clientId, scopes, label) {
-  const silent = await acquireTokenSilent(tenantId, clientId, scopes);
-  if (silent) {
-    log(`${label}: using cached token (expires ${silent.expiresOn})`);
-    return silent;
-  }
-  log(`${label}: starting device code flow...`);
-  return acquireTokenDeviceCode(tenantId, clientId, scopes);
-}
-
-async function getOrAcquireTokenInteractive(tenantId, clientId, scopes, label) {
   const silent = await acquireTokenSilent(tenantId, clientId, scopes);
   if (silent) {
     log(`${label}: using cached token (expires ${silent.expiresOn})`);
@@ -347,7 +235,7 @@ async function getOrAcquireTokenInteractive(tenantId, clientId, scopes, label) {
 
 async function getOrAcquireIslandToken(tenantId, clusterCategory, label) {
   const resourceId = getIslandResourceId(clusterCategory);
-  return getOrAcquireTokenInteractive(
+  return getOrAcquireToken(
     tenantId, VSCODE_CLIENT_ID,
     [`api://${resourceId}/.default`],
     label
@@ -862,14 +750,15 @@ function buildSyncRequest(args, tokens) {
 
 async function cmdAuth(args) {
   if (!args.tenantId) die("--tenant-id (or CPS_TENANT_ID) is required");
-  if (!args.clientId) die("--client-id (or CPS_CLIENT_ID) is required");
   if (!args.environmentUrl) die("--environment-url (or CPS_ENVIRONMENT_URL) is required");
+
+  const clientId = args.clientId || VSCODE_CLIENT_ID;
 
   log("Acquiring Copilot Studio API token...");
   const cpsToken = await getOrAcquireToken(
     args.tenantId,
-    args.clientId,
-    ["https://api.powerplatform.com/.default", "offline_access"],
+    clientId,
+    ["https://api.powerplatform.com/.default"],
     "Copilot Studio API"
   );
 
@@ -877,8 +766,8 @@ async function cmdAuth(args) {
   log("Acquiring Dataverse API token...");
   const dvToken = await getOrAcquireToken(
     args.tenantId,
-    args.clientId,
-    [`${envUrl}/.default`, "offline_access"],
+    clientId,
+    [`${envUrl}/.default`],
     "Dataverse API"
   );
 
@@ -912,42 +801,26 @@ async function cmdWithLsp(args, method) {
   const clusterCategory = conn?.AccountInfo?.clusterCategory;
   const tenantId = conn?.AccountInfo?.TenantId || args.tenantId;
 
-  const clientId = args.clientId || VSCODE_CLIENT_ID;
-  const useInteractive = !args.clientId;
-
   const envUrl = args.environmentUrl.replace(/\/+$/, "");
   let cpsToken, dvToken;
 
   if (clusterCategory != null) {
     // Use VS Code's 1p app for both tokens — single interactive login
     cpsToken = await getOrAcquireIslandToken(tenantId, clusterCategory, "Island API");
-    dvToken = await getOrAcquireTokenInteractive(
-      tenantId, VSCODE_CLIENT_ID,
-      [`${envUrl}/.default`],
-      "Dataverse API"
-    );
-  } else if (useInteractive) {
-    // No conn.json cluster category and no --client-id: use VS Code 1p client with interactive login
-    cpsToken = await getOrAcquireTokenInteractive(
-      tenantId, VSCODE_CLIENT_ID,
-      ["https://api.powerplatform.com/.default"],
-      "Copilot Studio API"
-    );
-    dvToken = await getOrAcquireTokenInteractive(
+    dvToken = await getOrAcquireToken(
       tenantId, VSCODE_CLIENT_ID,
       [`${envUrl}/.default`],
       "Dataverse API"
     );
   } else {
-    log("Warning: no cluster category in conn.json, falling back to device code flow");
     cpsToken = await getOrAcquireToken(
-      tenantId, clientId,
-      ["https://api.powerplatform.com/.default", "offline_access"],
+      tenantId, VSCODE_CLIENT_ID,
+      ["https://api.powerplatform.com/.default"],
       "Copilot Studio API"
     );
     dvToken = await getOrAcquireToken(
-      tenantId, clientId,
-      [`${envUrl}/.default`, "offline_access"],
+      tenantId, VSCODE_CLIENT_ID,
+      [`${envUrl}/.default`],
       "Dataverse API"
     );
   }
@@ -1007,18 +880,11 @@ async function cmdListAgents(args) {
   if (!args.tenantId) die("--tenant-id (or CPS_TENANT_ID) is required");
   if (!args.environmentUrl) die("--environment-url (or CPS_ENVIRONMENT_URL) is required");
 
-  const clientId = args.clientId || VSCODE_CLIENT_ID;
-  const useInteractive = !args.clientId;
-  const acquireToken = useInteractive ? getOrAcquireTokenInteractive : getOrAcquireToken;
-
   const envUrl = args.environmentUrl.replace(/\/+$/, "");
-  const dvScopes = useInteractive
-    ? [`${envUrl}/.default`]
-    : [`${envUrl}/.default`, "offline_access"];
-  const dvToken = await acquireToken(
+  const dvToken = await getOrAcquireToken(
     args.tenantId,
-    clientId,
-    dvScopes,
+    VSCODE_CLIENT_ID,
+    [`${envUrl}/.default`],
     "Dataverse API"
   );
 
@@ -1063,17 +929,10 @@ async function cmdListAgents(args) {
 async function cmdListEnvs(args) {
   if (!args.tenantId) die("--tenant-id (or CPS_TENANT_ID) is required");
 
-  const clientId = args.clientId || VSCODE_CLIENT_ID;
-  const useInteractive = !args.clientId;
-  const acquireToken = useInteractive ? getOrAcquireTokenInteractive : getOrAcquireToken;
-  const scopes = useInteractive
-    ? [BAP_TOKEN_SCOPE]
-    : [BAP_TOKEN_SCOPE, "offline_access"];
-
-  const bapToken = await acquireToken(
+  const bapToken = await getOrAcquireToken(
     args.tenantId,
-    clientId,
-    scopes,
+    VSCODE_CLIENT_ID,
+    [BAP_TOKEN_SCOPE],
     "Power Platform API"
   );
 
@@ -1115,39 +974,25 @@ async function cmdChanges(args) {
   const clusterCategory = conn?.AccountInfo?.clusterCategory;
   const tenantId = conn?.AccountInfo?.TenantId || args.tenantId;
 
-  const clientId = args.clientId || VSCODE_CLIENT_ID;
-  const useInteractive = !args.clientId;
-
   const envUrl = args.environmentUrl.replace(/\/+$/, "");
   let cpsToken, dvToken;
 
   if (clusterCategory != null) {
     cpsToken = await getOrAcquireIslandToken(tenantId, clusterCategory, "Island API");
-    dvToken = await getOrAcquireTokenInteractive(
-      tenantId, VSCODE_CLIENT_ID,
-      [`${envUrl}/.default`],
-      "Dataverse API"
-    );
-  } else if (useInteractive) {
-    cpsToken = await getOrAcquireTokenInteractive(
-      tenantId, VSCODE_CLIENT_ID,
-      ["https://api.powerplatform.com/.default"],
-      "Copilot Studio API"
-    );
-    dvToken = await getOrAcquireTokenInteractive(
+    dvToken = await getOrAcquireToken(
       tenantId, VSCODE_CLIENT_ID,
       [`${envUrl}/.default`],
       "Dataverse API"
     );
   } else {
     cpsToken = await getOrAcquireToken(
-      tenantId, clientId,
-      ["https://api.powerplatform.com/.default", "offline_access"],
+      tenantId, VSCODE_CLIENT_ID,
+      ["https://api.powerplatform.com/.default"],
       "Copilot Studio API"
     );
     dvToken = await getOrAcquireToken(
-      tenantId, clientId,
-      [`${envUrl}/.default`, "offline_access"],
+      tenantId, VSCODE_CLIENT_ID,
+      [`${envUrl}/.default`],
       "Dataverse API"
     );
   }
@@ -1244,20 +1089,17 @@ async function cmdClone(args) {
   if (!args.agentMgmtUrl) die("--agent-mgmt-url (or CPS_AGENT_MGMT_URL) is required");
   if (!args.agentId) die("--agent-id is required for clone");
 
-  const clientId = args.clientId || VSCODE_CLIENT_ID;
-  const useInteractive = !args.clientId;
-  const acquireToken = useInteractive ? getOrAcquireTokenInteractive : getOrAcquireToken;
-
   const envUrl = args.environmentUrl.replace(/\/+$/, "");
 
   // Clone uses Island API token (same as push/pull) — default to Prod cluster (5)
   const DEFAULT_CLUSTER_CATEGORY = 5;
   const cpsToken = await getOrAcquireIslandToken(args.tenantId, DEFAULT_CLUSTER_CATEGORY, "Island API");
 
-  const dvScopes = useInteractive
-    ? [`${envUrl}/.default`]
-    : [`${envUrl}/.default`, "offline_access"];
-  const dvToken = await acquireToken(args.tenantId, clientId, dvScopes, "Dataverse API");
+  const dvToken = await getOrAcquireToken(
+    args.tenantId, VSCODE_CLIENT_ID,
+    [`${envUrl}/.default`],
+    "Dataverse API"
+  );
 
   // Fetch agent info and solution versions from Dataverse
   const [agentInfo, solVersions] = await Promise.all([

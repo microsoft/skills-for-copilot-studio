@@ -1,0 +1,8 @@
+{
+  "name": "copilot-studio-native-deps",
+  "private": true,
+  "description": "Native dependencies that cannot be bundled by esbuild. Installed into CLAUDE_PLUGIN_DATA at session start.",
+  "dependencies": {
+    "keytar": "7.9.0"
+  }
+}
