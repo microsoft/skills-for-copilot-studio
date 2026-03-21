@@ -14633,6 +14633,7 @@ function getIslandResourceId(clusterCategory) {
   return id;
 }
 var _cachePlugin = null;
+var _msalApps = /* @__PURE__ */ new Map();
 async function getCachePlugin() {
   if (!_cachePlugin) {
     _cachePlugin = await createCachePlugin("manage-agent");
@@ -14640,15 +14641,19 @@ async function getCachePlugin() {
   return _cachePlugin;
 }
 async function createMsalApp(tenantId, clientId) {
+  const key = `${tenantId}:${clientId}`;
+  if (_msalApps.has(key)) return _msalApps.get(key);
   const msal = require_msal_node();
   const cachePlugin = await getCachePlugin();
-  return new msal.PublicClientApplication({
+  const app = new msal.PublicClientApplication({
     auth: {
       clientId,
       authority: `https://login.microsoftonline.com/${tenantId}`
     },
     cache: { cachePlugin }
   });
+  _msalApps.set(key, app);
+  return app;
 }
 function buildTokenInfo(result) {
   return {
