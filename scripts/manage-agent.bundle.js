@@ -15267,6 +15267,7 @@ async function cmdChanges(args) {
   }
 }
 var SOLUTION_NAMES = [
+  "msft_AIPlatformExtensionsComponents",
   "msdyn_RelevanceSearch",
   "PowerVirtualAgents"
 ];
