@@ -484,16 +484,17 @@ class LspClient {
     this.workspaceRoot = workspaceRoot || process.cwd();
     this.process = null;
     this.running = false;
-    this._pendingRequests = new Map();
-    this._nextId = 1;
-    this._responseBuffer = "";
+    this._connection = null;
     this._pipeSocket = null;
+    this._pipeServer = null;
+    this._diagnostics = new Map(); // uri → diagnostics[]
   }
 
   async start() {
     if (this.running) return;
 
     const net = require("net");
+    const { SocketMessageReader, SocketMessageWriter, createMessageConnection } = require("vscode-jsonrpc/node");
     const sessionId = randomUUID();
     const pipePath = os.platform() === "win32"
       ? `\\\\.\\pipe\\manage-agent-${sessionId}`
@@ -560,18 +561,36 @@ class LspClient {
     this._pipeServer = server;
     log("LSP connected via named pipe (clean channel, no stdout filtering)");
 
-    // Parse JSON-RPC from the clean pipe stream
-    this._responseBuffer = "";
-    this._expectedLength = -1;
+    // Create JSON-RPC connection over the socket
+    const reader = new SocketMessageReader(this._pipeSocket);
+    const writer = new SocketMessageWriter(this._pipeSocket);
+    this._connection = createMessageConnection(reader, writer);
 
-    this._pipeSocket.on("data", (chunk) => {
-      this._responseBuffer += chunk.toString("utf-8");
-      this._processBuffer();
+    // Handle server requests
+    this._connection.onRequest("workspace/configuration", (params) => {
+      log(`[LSP server request] workspace/configuration`);
+      return (params.items || []).map(() => ({}));
     });
+
+    // Handle server notifications
+    this._connection.onNotification("textDocument/publishDiagnostics", (params) => {
+      const { uri, diagnostics } = params;
+      this._diagnostics.set(uri, diagnostics || []);
+      log(`[LSP diagnostics] ${uri}: ${(diagnostics || []).length} diagnostic(s)`);
+    });
+
+    this._connection.onUnhandledNotification((msg) => {
+      const detail = msg.params
+        ? ` ${JSON.stringify(msg.params).substring(0, 300)}`
+        : "";
+      log(`[LSP notification] ${msg.method}${detail}`);
+    });
+
+    this._connection.listen();
 
     // Send initialize
     const rootUri = toFileUri(this.workspaceRoot);
-    const initResult = await this._sendRequest("initialize", {
+    const initResult = await this._connection.sendRequest("initialize", {
       processId: process.pid,
       rootUri,
       capabilities: {
@@ -587,154 +606,33 @@ class LspClient {
     log("LSP initialized successfully");
 
     // Send initialized notification
-    this._sendNotification("initialized", {});
+    this._connection.sendNotification("initialized", {});
     this.running = true;
 
     return initResult;
   }
 
-  _processBuffer() {
-    while (true) {
-      if (this._expectedLength === -1) {
-        const headerEnd = this._responseBuffer.indexOf("\r\n\r\n");
-        if (headerEnd === -1) return;
-
-        const header = this._responseBuffer.substring(0, headerEnd);
-        const match = header.match(/Content-Length:\s*(\d+)/);
-        if (!match) {
-          // Discard up to the end of this header
-          this._responseBuffer = this._responseBuffer.substring(headerEnd + 4);
-          continue;
-        }
-        this._expectedLength = parseInt(match[1], 10);
-        this._responseBuffer = this._responseBuffer.substring(headerEnd + 4);
-      }
-
-      if (this._responseBuffer.length < this._expectedLength) return;
-
-      const body = this._responseBuffer.substring(0, this._expectedLength);
-      this._responseBuffer = this._responseBuffer.substring(
-        this._expectedLength
-      );
-      this._expectedLength = -1;
-
-      try {
-        const msg = JSON.parse(body);
-        this._handleMessage(msg);
-      } catch (e) {
-        log(`Failed to parse LSP message: ${e.message}`);
-      }
-    }
-  }
-
-  _handleMessage(msg) {
-    // Response to our request
-    if (msg.id !== undefined && this._pendingRequests.has(msg.id)) {
-      const { resolve, reject } = this._pendingRequests.get(msg.id);
-      this._pendingRequests.delete(msg.id);
-      if (msg.error) {
-        log(`[LSP response] id=${msg.id} ERROR: ${msg.error.code} ${msg.error.message}`);
-        reject(
-          new Error(`LSP error ${msg.error.code}: ${msg.error.message}`)
-        );
-      } else {
-        log(`[LSP response] id=${msg.id} OK`);
-        resolve(msg.result);
-      }
-      return;
-    }
-
-    // Server request (has id + method) — needs a response
-    if (msg.method && msg.id !== undefined) {
-      log(`[LSP server request] ${msg.method} id=${msg.id} params=${JSON.stringify(msg.params).substring(0, 200)}`);
-
-      // Handle known server requests
-      if (msg.method === "workspace/configuration") {
-        // Return empty configs for each requested item
-        const items = msg.params?.items || [];
-        this._sendRaw({
-          jsonrpc: "2.0",
-          id: msg.id,
-          result: items.map(() => ({})),
-        });
-        return;
-      }
-
-      // Default: respond with null
-      this._sendRaw({
-        jsonrpc: "2.0",
-        id: msg.id,
-        result: null,
-      });
-      return;
-    }
-
-    // Server notification (no id)
-    if (msg.method) {
-      const detail = msg.params
-        ? ` ${JSON.stringify(msg.params).substring(0, 300)}`
-        : "";
-      log(`[LSP notification] ${msg.method}${detail}`);
-      return;
-    }
-
-    // Unmatched response (id doesn't match any pending request)
-    if (msg.id !== undefined) {
-      log(`[LSP unmatched response] id=${msg.id} result=${JSON.stringify(msg.result || msg.error).substring(0, 200)}`);
-    }
-  }
-
-  _sendRaw(obj) {
-    const body = JSON.stringify(obj);
-    const header = `Content-Length: ${Buffer.byteLength(body)}\r\n\r\n`;
-    this._pipeSocket.write(header + body);
-  }
-
-  _sendRequest(method, params) {
-    return new Promise((resolve, reject) => {
-      const id = this._nextId++;
-      this._pendingRequests.set(id, { resolve, reject });
-      this._sendRaw({
-        jsonrpc: "2.0",
-        id,
-        method,
-        params,
-      });
-
-      // Timeout after 120s
-      setTimeout(() => {
-        if (this._pendingRequests.has(id)) {
-          this._pendingRequests.delete(id);
-          reject(new Error(`LSP request '${method}' timed out after 120s`));
-        }
-      }, 120000);
-    });
-  }
-
-  _sendNotification(method, params) {
-    this._sendRaw({
-      jsonrpc: "2.0",
-      method,
-      params,
-    });
-  }
-
   async sendCustomRequest(method, params) {
     if (!this.running) throw new Error("LSP client not running");
     log(`Sending: ${method}`);
-    const result = await this._sendRequest(method, params);
-    return result;
+    return await this._connection.sendRequest(method, params);
+  }
+
+  sendNotification(method, params) {
+    this._connection.sendNotification(method, params);
+  }
+
+  getDiagnostics() {
+    return this._diagnostics;
   }
 
   async stop() {
     if (!this.running) return;
 
-    // Match the VS Code extension's LanguageClient.stop() pattern:
-    // Race shutdown+exit against a 2s timeout. If the binary doesn't
-    // respond in time, move on and force-dispose everything.
+    // Race shutdown+exit against a 2s timeout
     const graceful = (async () => {
-      await this._sendRequest("shutdown", null);
-      this._sendNotification("exit", null);
+      await this._connection.sendRequest("shutdown", null);
+      this._connection.sendNotification("exit", null);
     })();
     const timeout = new Promise((resolve) => setTimeout(resolve, 2000));
 
@@ -751,6 +649,8 @@ class LspClient {
     }
 
     this.running = false;
+    this._connection.dispose();
+    this._connection = null;
     if (this._pipeSocket) {
       this._pipeSocket.destroy();
       this._pipeSocket = null;
