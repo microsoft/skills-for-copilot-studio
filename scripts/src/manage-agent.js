@@ -1189,7 +1189,6 @@ async function cmdChanges(args) {
 // ---------------------------------------------------------------------------
 
 const SOLUTION_NAMES = [
-  "msft_AIPlatformExtensionsComponents",
   "msdyn_RelevanceSearch",
   "PowerVirtualAgents",
 ];

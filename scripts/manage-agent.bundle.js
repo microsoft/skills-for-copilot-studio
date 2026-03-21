@@ -1,3 +1,4 @@
+if(process.env.CLAUDE_PLUGIN_DATA){var _p=require('path');process.env.NODE_PATH=[_p.join(process.env.CLAUDE_PLUGIN_DATA,'node_modules'),process.env.NODE_PATH].filter(Boolean).join(_p.delimiter);require('module')._initPaths()}
 var __create = Object.create;
 var __defProp = Object.defineProperty;
 var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
@@ -15669,7 +15670,6 @@ async function cmdChanges(args) {
   }
 }
 var SOLUTION_NAMES = [
-  "msft_AIPlatformExtensionsComponents",
   "msdyn_RelevanceSearch",
   "PowerVirtualAgents"
 ];
