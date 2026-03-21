@@ -1,3 +1,4 @@
+if(process.env.CLAUDE_PLUGIN_DATA){var _p=require('path');process.env.NODE_PATH=[_p.join(process.env.CLAUDE_PLUGIN_DATA,'node_modules'),process.env.NODE_PATH].filter(Boolean).join(_p.delimiter);require('module')._initPaths()}
 var __create = Object.create;
 var __defProp = Object.defineProperty;
 var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
@@ -16594,219 +16595,26 @@ Error Description: '${typedError.message}'`, this.correlationId);
   }
 });
 
-// src/credential-store.js
-var require_credential_store = __commonJS({
-  "src/credential-store.js"(exports2, module2) {
-    var { execFileSync, execSync } = require("child_process");
-    var fs2 = require("fs");
+// src/msal-cache.js
+var require_msal_cache = __commonJS({
+  "src/msal-cache.js"(exports2, module2) {
+    var { PersistenceCreator, PersistenceCachePlugin, DataProtectionScope } = require("@azure/msal-node-extensions");
     var path2 = require("path");
     var os = require("os");
+    var CACHE_DIR = path2.join(os.homedir(), ".copilot-studio-cli");
     var SERVICE_NAME = "copilot-studio-cli";
-    var STORE_DIR = path2.join(__dirname, "..");
-    function warn(msg) {
-      process.stderr.write(`[credential-store] ${msg}
-`);
+    async function createCachePlugin2(accountName) {
+      const cachePath = path2.join(CACHE_DIR, `${accountName}.cache.json`);
+      const persistence = await PersistenceCreator.createPersistence({
+        cachePath,
+        dataProtectionScope: DataProtectionScope.CurrentUser,
+        serviceName: SERVICE_NAME,
+        accountName,
+        usePlaintextFileOnLinux: true
+      });
+      return new PersistenceCachePlugin(persistence);
     }
-    function macSave(service, account, jsonString) {
-      execFileSync("security", [
-        "add-generic-password",
-        "-s",
-        service,
-        "-a",
-        account,
-        "-w",
-        jsonString,
-        "-U"
-        // update if exists
-      ], { stdio: "ignore" });
-    }
-    function macLoad(service, account) {
-      const result = execFileSync("security", [
-        "find-generic-password",
-        "-s",
-        service,
-        "-a",
-        account,
-        "-w"
-      ], { stdio: ["ignore", "pipe", "ignore"] });
-      return JSON.parse(result.toString().trim());
-    }
-    function macClear(service, account) {
-      execFileSync("security", [
-        "delete-generic-password",
-        "-s",
-        service,
-        "-a",
-        account
-      ], { stdio: "ignore" });
-    }
-    function dpapiPath(account) {
-      return path2.join(STORE_DIR, `.token_cache_${account}.dpapi`);
-    }
-    function winSave(service, account, jsonString) {
-      const encPath = dpapiPath(account);
-      execSync(
-        `powershell -NoProfile -NonInteractive -Command "$s = [System.Management.Automation.PSCredential]::new('x',(ConvertTo-SecureString -String $input -AsPlainText -Force)).Password; ConvertFrom-SecureString -SecureString $s | Set-Content -Path '${encPath}'"`,
-        { input: jsonString, stdio: ["pipe", "ignore", "ignore"] }
-      );
-    }
-    function winLoad(service, account) {
-      const encPath = dpapiPath(account);
-      if (!fs2.existsSync(encPath)) return null;
-      const result = execSync(
-        `powershell -NoProfile -NonInteractive -Command "$enc = Get-Content -Path '${encPath}' | ConvertTo-SecureString; $bstr = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($enc); [Runtime.InteropServices.Marshal]::PtrToStringAuto($bstr)"`,
-        { stdio: ["ignore", "pipe", "ignore"] }
-      );
-      return JSON.parse(result.toString().trim());
-    }
-    function winClear(service, account) {
-      const encPath = dpapiPath(account);
-      try {
-        fs2.unlinkSync(encPath);
-      } catch {
-      }
-    }
-    function hasSecretTool() {
-      try {
-        execFileSync("which", ["secret-tool"], { stdio: "ignore" });
-        return true;
-      } catch {
-        return false;
-      }
-    }
-    function linuxSave(service, account, jsonString) {
-      if (hasSecretTool()) {
-        try {
-          execFileSync("secret-tool", [
-            "store",
-            "--label",
-            service,
-            "service",
-            service,
-            "account",
-            account
-          ], { input: jsonString, stdio: ["pipe", "ignore", "ignore"] });
-          return;
-        } catch {
-          warn("secret-tool store failed, falling back to file");
-        }
-      }
-      fileSave(account, jsonString);
-    }
-    function linuxLoad(service, account) {
-      if (hasSecretTool()) {
-        try {
-          const result = execFileSync("secret-tool", [
-            "lookup",
-            "service",
-            service,
-            "account",
-            account
-          ], { stdio: ["ignore", "pipe", "ignore"] });
-          const text = result.toString().trim();
-          if (text) return JSON.parse(text);
-        } catch {
-        }
-      }
-      return fileLoad(account);
-    }
-    function linuxClear(service, account) {
-      if (hasSecretTool()) {
-        try {
-          execFileSync("secret-tool", [
-            "clear",
-            "service",
-            service,
-            "account",
-            account
-          ], { stdio: "ignore" });
-        } catch {
-        }
-      }
-      fileClear(account);
-    }
-    function filePath(account) {
-      return path2.join(STORE_DIR, `.token_cache_${account}.json`);
-    }
-    function fileSave(account, jsonString) {
-      fs2.writeFileSync(filePath(account), jsonString, { mode: 384 });
-    }
-    function fileLoad(account) {
-      try {
-        return JSON.parse(fs2.readFileSync(filePath(account), "utf8"));
-      } catch {
-        return null;
-      }
-    }
-    function fileClear(account) {
-      try {
-        fs2.unlinkSync(filePath(account));
-      } catch {
-      }
-    }
-    var platform = os.platform();
-    async function loadCache2(serviceName = SERVICE_NAME, accountName = "default") {
-      try {
-        let data;
-        if (platform === "darwin") {
-          data = macLoad(serviceName, accountName);
-        } else if (platform === "win32") {
-          data = winLoad(serviceName, accountName);
-        } else {
-          data = linuxLoad(serviceName, accountName);
-        }
-        return data || {};
-      } catch {
-        try {
-          const fallback = fileLoad(accountName);
-          return fallback || {};
-        } catch {
-          return {};
-        }
-      }
-    }
-    async function saveCache2(serviceName = SERVICE_NAME, accountName = "default", data = {}) {
-      const jsonString = JSON.stringify(data);
-      try {
-        if (platform === "darwin") {
-          macSave(serviceName, accountName, jsonString);
-        } else if (platform === "win32") {
-          winSave(serviceName, accountName, jsonString);
-        } else {
-          linuxSave(serviceName, accountName, jsonString);
-        }
-      } catch (e) {
-        warn(`OS credential store failed (${e.message}), using file fallback`);
-        fileSave(accountName, jsonString);
-      }
-    }
-    async function clearCache(serviceName = SERVICE_NAME, accountName = "default") {
-      try {
-        if (platform === "darwin") {
-          macClear(serviceName, accountName);
-        } else if (platform === "win32") {
-          winClear(serviceName, accountName);
-        } else {
-          linuxClear(serviceName, accountName);
-        }
-      } catch {
-      }
-      fileClear(accountName);
-    }
-    async function migrateLegacyCache2(legacyPath, serviceName = SERVICE_NAME, accountName = "default") {
-      try {
-        if (!fs2.existsSync(legacyPath)) return false;
-        const data = JSON.parse(fs2.readFileSync(legacyPath, "utf8"));
-        await saveCache2(serviceName, accountName, data);
-        fs2.unlinkSync(legacyPath);
-        warn(`Migrated ${legacyPath} to secure credential store`);
-        return true;
-      } catch (e) {
-        warn(`Migration failed: ${e.message}`);
-        return false;
-      }
-    }
-    module2.exports = { loadCache: loadCache2, saveCache: saveCache2, clearCache, migrateLegacyCache: migrateLegacyCache2 };
+    module2.exports = { createCachePlugin: createCachePlugin2 };
   }
 });
 
@@ -34627,7 +34435,7 @@ var fs = require("fs");
 var path = require("path");
 var yaml = require_js_yaml();
 var { PublicClientApplication } = require_msal_node();
-var { loadCache, saveCache, migrateLegacyCache } = require_credential_store();
+var { createCachePlugin } = require_msal_cache();
 var {
   CopilotStudioClient,
   PowerPlatformCloud
@@ -34713,24 +34521,8 @@ function loadAgentConfig(agentDir) {
   if (!agentIdentifier) die("schemaName not found in settings.mcs.yml");
   return { environmentId, tenantId, agentIdentifier };
 }
-var CHAT_SERVICE = "copilot-studio-cli";
-var CHAT_ACCOUNT = "chat";
-async function getAccessToken(tenantId, clientId, legacyCachePath) {
-  await migrateLegacyCache(legacyCachePath, CHAT_SERVICE, CHAT_ACCOUNT);
-  let cacheData = await loadCache(CHAT_SERVICE, CHAT_ACCOUNT);
-  let msalCacheStr = cacheData._msalCache || "";
-  const cachePlugin = {
-    beforeCacheAccess: async (context) => {
-      context.tokenCache.deserialize(msalCacheStr);
-    },
-    afterCacheAccess: async (context) => {
-      if (context.cacheHasChanged) {
-        msalCacheStr = context.tokenCache.serialize();
-        cacheData._msalCache = msalCacheStr;
-        await saveCache(CHAT_SERVICE, CHAT_ACCOUNT, cacheData);
-      }
-    }
-  };
+async function getAccessToken(tenantId, clientId) {
+  const cachePlugin = await createCachePlugin("chat");
   const app = new PublicClientApplication({
     auth: {
       clientId,
@@ -34830,9 +34622,8 @@ async function main() {
   log(`Agent directory: ${path.relative(process.cwd(), agentDir) || "."}`);
   const config = loadAgentConfig(agentDir);
   log(`Using agent: ${config.agentIdentifier}`);
-  const cachePath = path.join(agentDir, ".mcs", ".token_cache.json");
   log("Authenticating...");
-  const token = await getAccessToken(config.tenantId, args.clientId, cachePath);
+  const token = await getAccessToken(config.tenantId, args.clientId);
   try {
     const result = await chat(
       args.utterance,
