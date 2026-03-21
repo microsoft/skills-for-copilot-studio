@@ -239,7 +239,9 @@ async function acquireTokenInteractive(tenantId, clientId, scopes) {
 
 async function acquireTokenSilent(tenantId, clientId, scopes) {
   const app = await createMsalApp(tenantId, clientId);
-  const accounts = await app.getTokenCache().getAllAccounts();
+  const allAccounts = await app.getTokenCache().getAllAccounts();
+  // Filter to accounts matching this tenant to avoid cross-tenant errors
+  const accounts = allAccounts.filter(a => a.tenantId === tenantId);
   if (accounts.length > 0) {
     try {
       const result = await app.acquireTokenSilent({
