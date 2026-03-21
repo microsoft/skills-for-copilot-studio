@@ -33,219 +33,26 @@ var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__ge
 ));
 var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
-// src/credential-store.js
-var require_credential_store = __commonJS({
-  "src/credential-store.js"(exports2, module2) {
-    var { execFileSync: execFileSync2, execSync } = require("child_process");
-    var fs7 = require("fs");
+// src/msal-cache.js
+var require_msal_cache = __commonJS({
+  "src/msal-cache.js"(exports2, module2) {
+    var { PersistenceCreator, PersistenceCachePlugin, DataProtectionScope } = require("@azure/msal-node-extensions");
     var path3 = require("path");
     var os3 = require("os");
+    var CACHE_DIR = path3.join(os3.homedir(), ".copilot-studio-cli");
     var SERVICE_NAME = "copilot-studio-cli";
-    var STORE_DIR = path3.join(__dirname, "..");
-    function warn2(msg) {
-      process.stderr.write(`[credential-store] ${msg}
-`);
+    async function createCachePlugin2(accountName) {
+      const cachePath = path3.join(CACHE_DIR, `${accountName}.cache.json`);
+      const persistence = await PersistenceCreator.createPersistence({
+        cachePath,
+        dataProtectionScope: DataProtectionScope.CurrentUser,
+        serviceName: SERVICE_NAME,
+        accountName,
+        usePlaintextFileOnLinux: true
+      });
+      return new PersistenceCachePlugin(persistence);
     }
-    function macSave(service, account, jsonString) {
-      execFileSync2("security", [
-        "add-generic-password",
-        "-s",
-        service,
-        "-a",
-        account,
-        "-w",
-        jsonString,
-        "-U"
-        // update if exists
-      ], { stdio: "ignore" });
-    }
-    function macLoad(service, account) {
-      const result = execFileSync2("security", [
-        "find-generic-password",
-        "-s",
-        service,
-        "-a",
-        account,
-        "-w"
-      ], { stdio: ["ignore", "pipe", "ignore"] });
-      return JSON.parse(result.toString().trim());
-    }
-    function macClear(service, account) {
-      execFileSync2("security", [
-        "delete-generic-password",
-        "-s",
-        service,
-        "-a",
-        account
-      ], { stdio: "ignore" });
-    }
-    function dpapiPath(account) {
-      return path3.join(STORE_DIR, `.token_cache_${account}.dpapi`);
-    }
-    function winSave(service, account, jsonString) {
-      const encPath = dpapiPath(account);
-      execSync(
-        `powershell -NoProfile -NonInteractive -Command "$s = [System.Management.Automation.PSCredential]::new('x',(ConvertTo-SecureString -String $input -AsPlainText -Force)).Password; ConvertFrom-SecureString -SecureString $s | Set-Content -Path '${encPath}'"`,
-        { input: jsonString, stdio: ["pipe", "ignore", "ignore"] }
-      );
-    }
-    function winLoad(service, account) {
-      const encPath = dpapiPath(account);
-      if (!fs7.existsSync(encPath)) return null;
-      const result = execSync(
-        `powershell -NoProfile -NonInteractive -Command "$enc = Get-Content -Path '${encPath}' | ConvertTo-SecureString; $bstr = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($enc); [Runtime.InteropServices.Marshal]::PtrToStringAuto($bstr)"`,
-        { stdio: ["ignore", "pipe", "ignore"] }
-      );
-      return JSON.parse(result.toString().trim());
-    }
-    function winClear(service, account) {
-      const encPath = dpapiPath(account);
-      try {
-        fs7.unlinkSync(encPath);
-      } catch {
-      }
-    }
-    function hasSecretTool() {
-      try {
-        execFileSync2("which", ["secret-tool"], { stdio: "ignore" });
-        return true;
-      } catch {
-        return false;
-      }
-    }
-    function linuxSave(service, account, jsonString) {
-      if (hasSecretTool()) {
-        try {
-          execFileSync2("secret-tool", [
-            "store",
-            "--label",
-            service,
-            "service",
-            service,
-            "account",
-            account
-          ], { input: jsonString, stdio: ["pipe", "ignore", "ignore"] });
-          return;
-        } catch {
-          warn2("secret-tool store failed, falling back to file");
-        }
-      }
-      fileSave(account, jsonString);
-    }
-    function linuxLoad(service, account) {
-      if (hasSecretTool()) {
-        try {
-          const result = execFileSync2("secret-tool", [
-            "lookup",
-            "service",
-            service,
-            "account",
-            account
-          ], { stdio: ["ignore", "pipe", "ignore"] });
-          const text = result.toString().trim();
-          if (text) return JSON.parse(text);
-        } catch {
-        }
-      }
-      return fileLoad(account);
-    }
-    function linuxClear(service, account) {
-      if (hasSecretTool()) {
-        try {
-          execFileSync2("secret-tool", [
-            "clear",
-            "service",
-            service,
-            "account",
-            account
-          ], { stdio: "ignore" });
-        } catch {
-        }
-      }
-      fileClear(account);
-    }
-    function filePath(account) {
-      return path3.join(STORE_DIR, `.token_cache_${account}.json`);
-    }
-    function fileSave(account, jsonString) {
-      fs7.writeFileSync(filePath(account), jsonString, { mode: 384 });
-    }
-    function fileLoad(account) {
-      try {
-        return JSON.parse(fs7.readFileSync(filePath(account), "utf8"));
-      } catch {
-        return null;
-      }
-    }
-    function fileClear(account) {
-      try {
-        fs7.unlinkSync(filePath(account));
-      } catch {
-      }
-    }
-    var platform2 = os3.platform();
-    async function loadCache2(serviceName = SERVICE_NAME, accountName = "default") {
-      try {
-        let data;
-        if (platform2 === "darwin") {
-          data = macLoad(serviceName, accountName);
-        } else if (platform2 === "win32") {
-          data = winLoad(serviceName, accountName);
-        } else {
-          data = linuxLoad(serviceName, accountName);
-        }
-        return data || {};
-      } catch {
-        try {
-          const fallback = fileLoad(accountName);
-          return fallback || {};
-        } catch {
-          return {};
-        }
-      }
-    }
-    async function saveCache2(serviceName = SERVICE_NAME, accountName = "default", data = {}) {
-      const jsonString = JSON.stringify(data);
-      try {
-        if (platform2 === "darwin") {
-          macSave(serviceName, accountName, jsonString);
-        } else if (platform2 === "win32") {
-          winSave(serviceName, accountName, jsonString);
-        } else {
-          linuxSave(serviceName, accountName, jsonString);
-        }
-      } catch (e) {
-        warn2(`OS credential store failed (${e.message}), using file fallback`);
-        fileSave(accountName, jsonString);
-      }
-    }
-    async function clearCache2(serviceName = SERVICE_NAME, accountName = "default") {
-      try {
-        if (platform2 === "darwin") {
-          macClear(serviceName, accountName);
-        } else if (platform2 === "win32") {
-          winClear(serviceName, accountName);
-        } else {
-          linuxClear(serviceName, accountName);
-        }
-      } catch {
-      }
-      fileClear(accountName);
-    }
-    async function migrateLegacyCache2(legacyPath, serviceName = SERVICE_NAME, accountName = "default") {
-      try {
-        if (!fs7.existsSync(legacyPath)) return false;
-        const data = JSON.parse(fs7.readFileSync(legacyPath, "utf8"));
-        await saveCache2(serviceName, accountName, data);
-        fs7.unlinkSync(legacyPath);
-        warn2(`Migrated ${legacyPath} to secure credential store`);
-        return true;
-      } catch (e) {
-        warn2(`Migration failed: ${e.message}`);
-        return false;
-      }
-    }
-    module2.exports = { loadCache: loadCache2, saveCache: saveCache2, clearCache: clearCache2, migrateLegacyCache: migrateLegacyCache2 };
+    module2.exports = { createCachePlugin: createCachePlugin2 };
   }
 });
 
@@ -14433,7 +14240,7 @@ function detectPlatformBinary({ [platform]: platformBinary }, { wsl } = {}) {
   }
   return detectArchBinary(platformBinary);
 }
-var import_node_process7, import_node_path, import_node_url, import_node_child_process7, import_promises2, import_meta, fallbackAttemptSymbol, __dirname2, localXdgOpenPath, platform, arch, tryEachApp, baseOpen, open, openApp, apps, open_default;
+var import_node_process7, import_node_path, import_node_url, import_node_child_process7, import_promises2, import_meta, fallbackAttemptSymbol, __dirname, localXdgOpenPath, platform, arch, tryEachApp, baseOpen, open, openApp, apps, open_default;
 var init_open = __esm({
   "node_modules/open/index.js"() {
     import_node_process7 = __toESM(require("node:process"), 1);
@@ -14449,8 +14256,8 @@ var init_open = __esm({
     init_is_in_ssh();
     import_meta = {};
     fallbackAttemptSymbol = Symbol("fallbackAttempt");
-    __dirname2 = import_meta.url ? import_node_path.default.dirname((0, import_node_url.fileURLToPath)(import_meta.url)) : "";
-    localXdgOpenPath = import_node_path.default.join(__dirname2, "xdg-open");
+    __dirname = import_meta.url ? import_node_path.default.dirname((0, import_node_url.fileURLToPath)(import_meta.url)) : "";
+    localXdgOpenPath = import_node_path.default.join(__dirname, "xdg-open");
     ({ platform, arch } = import_node_process7.default);
     tryEachApp = async (apps2, opener) => {
       if (apps2.length === 0) {
@@ -14595,7 +14402,7 @@ var init_open = __esm({
         if (app) {
           command = app;
         } else {
-          const isBundled = !__dirname2 || __dirname2 === "/";
+          const isBundled = !__dirname || __dirname === "/";
           let exeLocalXdgOpen = false;
           try {
             await import_promises2.default.access(localXdgOpenPath, import_promises2.constants.X_OK);
@@ -14734,7 +14541,7 @@ var { randomUUID } = require("crypto");
 var path2 = require("path");
 var fs6 = require("fs");
 var os2 = require("os");
-var { loadCache, saveCache, clearCache, migrateLegacyCache } = require_credential_store();
+var { createCachePlugin } = require_msal_cache();
 function log(msg) {
   process.stderr.write(msg + "\n");
 }
@@ -14808,61 +14615,6 @@ function parseArgs() {
   }
   return parsed;
 }
-var CREDENTIAL_SERVICE = "copilot-studio-cli";
-var CREDENTIAL_ACCOUNT = "manage-agent";
-var LEGACY_CREDENTIAL_ACCOUNT = "lsp-sync";
-var LEGACY_CACHE_PATH = path2.join(__dirname, "..", ".token_cache.json");
-var _cache = null;
-async function ensureCacheLoaded() {
-  if (_cache !== null) return;
-  await migrateLegacyCache(LEGACY_CACHE_PATH, CREDENTIAL_SERVICE, CREDENTIAL_ACCOUNT);
-  await migrateAccountName();
-  _cache = await loadCache(CREDENTIAL_SERVICE, CREDENTIAL_ACCOUNT);
-}
-async function migrateAccountName() {
-  try {
-    const oldData = await loadCache(CREDENTIAL_SERVICE, LEGACY_CREDENTIAL_ACCOUNT);
-    if (oldData && Object.keys(oldData).length > 0) {
-      await saveCache(CREDENTIAL_SERVICE, CREDENTIAL_ACCOUNT, oldData);
-      await clearCache(CREDENTIAL_SERVICE, LEGACY_CREDENTIAL_ACCOUNT);
-      log(`Migrated credentials from "${LEGACY_CREDENTIAL_ACCOUNT}" to "${CREDENTIAL_ACCOUNT}"`);
-    }
-  } catch (e) {
-    log(`Account migration skipped: ${e.message}`);
-  }
-}
-async function persistCache() {
-  await saveCache(CREDENTIAL_SERVICE, CREDENTIAL_ACCOUNT, _cache);
-}
-function createMsalCachePlugin() {
-  return {
-    beforeCacheAccess: async (context) => {
-      await ensureCacheLoaded();
-      context.tokenCache.deserialize(_cache._msalCache || "");
-    },
-    afterCacheAccess: async (context) => {
-      if (context.cacheHasChanged) {
-        await ensureCacheLoaded();
-        _cache._msalCache = context.tokenCache.serialize();
-        await persistCache();
-      }
-    }
-  };
-}
-async function getCachedToken(scope) {
-  await ensureCacheLoaded();
-  const entry = _cache[scope];
-  if (!entry) return null;
-  const expiresOn = new Date(entry.expiresOn);
-  const bufferMs = 5 * 60 * 1e3;
-  if (expiresOn.getTime() - bufferMs < Date.now()) return null;
-  return entry;
-}
-async function setCachedToken(scope, tokenInfo) {
-  await ensureCacheLoaded();
-  _cache[scope] = tokenInfo;
-  await persistCache();
-}
 var VSCODE_CLIENT_ID = "51f81489-12ee-4a9e-aaae-a2591f45987d";
 var ISLAND_RESOURCE_IDS = {
   0: "a522f059-bb65-47c0-8934-7db6e5286414",
@@ -14880,14 +14632,22 @@ function getIslandResourceId(clusterCategory) {
   if (!id) throw new Error(`Unknown cluster category: ${clusterCategory}`);
   return id;
 }
-function createMsalApp(tenantId, clientId) {
+var _cachePlugin = null;
+async function getCachePlugin() {
+  if (!_cachePlugin) {
+    _cachePlugin = await createCachePlugin("manage-agent");
+  }
+  return _cachePlugin;
+}
+async function createMsalApp(tenantId, clientId) {
   const msal = require_msal_node();
+  const cachePlugin = await getCachePlugin();
   return new msal.PublicClientApplication({
     auth: {
       clientId,
       authority: `https://login.microsoftonline.com/${tenantId}`
     },
-    cache: { cachePlugin: createMsalCachePlugin() }
+    cache: { cachePlugin }
   });
 }
 function buildTokenInfo(result) {
@@ -14903,34 +14663,8 @@ function buildTokenInfo(result) {
     } : void 0
   };
 }
-async function acquireTokenDeviceCode(tenantId, clientId, scopes) {
-  const app = createMsalApp(tenantId, clientId);
-  const scopeKey = scopes[0];
-  const result = await app.acquireTokenByDeviceCode({
-    scopes,
-    deviceCodeCallback: (response) => {
-      log("");
-      log(`  ${response.message}`);
-      log("");
-      process.stdout.write(
-        JSON.stringify({
-          status: "device_code",
-          userCode: response.userCode,
-          verificationUri: response.verificationUri,
-          message: response.message,
-          expiresIn: response.expiresIn
-        }) + "\n"
-      );
-    }
-  });
-  if (!result) throw new Error("Device code flow returned no result");
-  const tokenInfo = buildTokenInfo(result);
-  await setCachedToken(scopeKey, tokenInfo);
-  return tokenInfo;
-}
 async function acquireTokenInteractive(tenantId, clientId, scopes) {
-  const app = createMsalApp(tenantId, clientId);
-  const scopeKey = scopes[0];
+  const app = await createMsalApp(tenantId, clientId);
   const result = await app.acquireTokenInteractive({
     scopes,
     openBrowser: async (url) => {
@@ -14943,15 +14677,10 @@ async function acquireTokenInteractive(tenantId, clientId, scopes) {
     successTemplate: "<html><body><h1>Login successful. You can close this tab.</h1></body></html>"
   });
   if (!result) throw new Error("Interactive flow returned no result");
-  const tokenInfo = buildTokenInfo(result);
-  await setCachedToken(scopeKey, tokenInfo);
-  return tokenInfo;
+  return buildTokenInfo(result);
 }
 async function acquireTokenSilent(tenantId, clientId, scopes) {
-  const scopeKey = scopes[0];
-  const cached = await getCachedToken(scopeKey);
-  if (cached) return cached;
-  const app = createMsalApp(tenantId, clientId);
+  const app = await createMsalApp(tenantId, clientId);
   const accounts = await app.getTokenCache().getAllAccounts();
   if (accounts.length > 0) {
     try {
@@ -14960,10 +14689,9 @@ async function acquireTokenSilent(tenantId, clientId, scopes) {
         account: accounts[0]
       });
       if (result) {
-        const tokenInfo = buildTokenInfo(result);
-        await setCachedToken(scopeKey, tokenInfo);
-        log(`${scopeKey}: silently refreshed (expires ${tokenInfo.expiresOn})`);
-        return tokenInfo;
+        const scopeKey = scopes[0];
+        log(`${scopeKey}: silently refreshed (expires ${result.expiresOn?.toISOString()})`);
+        return buildTokenInfo(result);
       }
     } catch (e) {
       log(`Silent refresh failed: ${e.message}`);
@@ -14977,21 +14705,12 @@ async function getOrAcquireToken(tenantId, clientId, scopes, label) {
     log(`${label}: using cached token (expires ${silent.expiresOn})`);
     return silent;
   }
-  log(`${label}: starting device code flow...`);
-  return acquireTokenDeviceCode(tenantId, clientId, scopes);
-}
-async function getOrAcquireTokenInteractive(tenantId, clientId, scopes, label) {
-  const silent = await acquireTokenSilent(tenantId, clientId, scopes);
-  if (silent) {
-    log(`${label}: using cached token (expires ${silent.expiresOn})`);
-    return silent;
-  }
   log(`${label}: starting interactive login...`);
   return acquireTokenInteractive(tenantId, clientId, scopes);
 }
 async function getOrAcquireIslandToken(tenantId, clusterCategory, label) {
   const resourceId = getIslandResourceId(clusterCategory);
-  return getOrAcquireTokenInteractive(
+  return getOrAcquireToken(
     tenantId,
     VSCODE_CLIENT_ID,
     [`api://${resourceId}/.default`],
@@ -15312,21 +15031,21 @@ function buildSyncRequest(args, tokens) {
 }
 async function cmdAuth(args) {
   if (!args.tenantId) die("--tenant-id (or CPS_TENANT_ID) is required");
-  if (!args.clientId) die("--client-id (or CPS_CLIENT_ID) is required");
   if (!args.environmentUrl) die("--environment-url (or CPS_ENVIRONMENT_URL) is required");
+  const clientId = args.clientId || VSCODE_CLIENT_ID;
   log("Acquiring Copilot Studio API token...");
   const cpsToken = await getOrAcquireToken(
     args.tenantId,
-    args.clientId,
-    ["https://api.powerplatform.com/.default", "offline_access"],
+    clientId,
+    ["https://api.powerplatform.com/.default"],
     "Copilot Studio API"
   );
   const envUrl = args.environmentUrl.replace(/\/+$/, "");
   log("Acquiring Dataverse API token...");
   const dvToken = await getOrAcquireToken(
     args.tenantId,
-    args.clientId,
-    [`${envUrl}/.default`, "offline_access"],
+    clientId,
+    [`${envUrl}/.default`],
     "Dataverse API"
   );
   const result = {
@@ -15352,43 +15071,27 @@ async function cmdWithLsp(args, method) {
   const conn = loadConnJson(agentDir);
   const clusterCategory = conn?.AccountInfo?.clusterCategory;
   const tenantId = conn?.AccountInfo?.TenantId || args.tenantId;
-  const clientId = args.clientId || VSCODE_CLIENT_ID;
-  const useInteractive = !args.clientId;
   const envUrl = args.environmentUrl.replace(/\/+$/, "");
   let cpsToken, dvToken;
   if (clusterCategory != null) {
     cpsToken = await getOrAcquireIslandToken(tenantId, clusterCategory, "Island API");
-    dvToken = await getOrAcquireTokenInteractive(
-      tenantId,
-      VSCODE_CLIENT_ID,
-      [`${envUrl}/.default`],
-      "Dataverse API"
-    );
-  } else if (useInteractive) {
-    cpsToken = await getOrAcquireTokenInteractive(
-      tenantId,
-      VSCODE_CLIENT_ID,
-      ["https://api.powerplatform.com/.default"],
-      "Copilot Studio API"
-    );
-    dvToken = await getOrAcquireTokenInteractive(
+    dvToken = await getOrAcquireToken(
       tenantId,
       VSCODE_CLIENT_ID,
       [`${envUrl}/.default`],
       "Dataverse API"
     );
   } else {
-    log("Warning: no cluster category in conn.json, falling back to device code flow");
     cpsToken = await getOrAcquireToken(
       tenantId,
-      clientId,
-      ["https://api.powerplatform.com/.default", "offline_access"],
+      VSCODE_CLIENT_ID,
+      ["https://api.powerplatform.com/.default"],
       "Copilot Studio API"
     );
     dvToken = await getOrAcquireToken(
       tenantId,
-      clientId,
-      [`${envUrl}/.default`, "offline_access"],
+      VSCODE_CLIENT_ID,
+      [`${envUrl}/.default`],
       "Dataverse API"
     );
   }
@@ -15440,15 +15143,11 @@ async function httpGetJson(url, accessToken) {
 async function cmdListAgents(args) {
   if (!args.tenantId) die("--tenant-id (or CPS_TENANT_ID) is required");
   if (!args.environmentUrl) die("--environment-url (or CPS_ENVIRONMENT_URL) is required");
-  const clientId = args.clientId || VSCODE_CLIENT_ID;
-  const useInteractive = !args.clientId;
-  const acquireToken = useInteractive ? getOrAcquireTokenInteractive : getOrAcquireToken;
   const envUrl = args.environmentUrl.replace(/\/+$/, "");
-  const dvScopes = useInteractive ? [`${envUrl}/.default`] : [`${envUrl}/.default`, "offline_access"];
-  const dvToken = await acquireToken(
+  const dvToken = await getOrAcquireToken(
     args.tenantId,
-    clientId,
-    dvScopes,
+    VSCODE_CLIENT_ID,
+    [`${envUrl}/.default`],
     "Dataverse API"
   );
   const ownerOnly = args.owner !== false;
@@ -15481,14 +15180,10 @@ async function cmdListAgents(args) {
 }
 async function cmdListEnvs(args) {
   if (!args.tenantId) die("--tenant-id (or CPS_TENANT_ID) is required");
-  const clientId = args.clientId || VSCODE_CLIENT_ID;
-  const useInteractive = !args.clientId;
-  const acquireToken = useInteractive ? getOrAcquireTokenInteractive : getOrAcquireToken;
-  const scopes = useInteractive ? [BAP_TOKEN_SCOPE] : [BAP_TOKEN_SCOPE, "offline_access"];
-  const bapToken = await acquireToken(
+  const bapToken = await getOrAcquireToken(
     args.tenantId,
-    clientId,
-    scopes,
+    VSCODE_CLIENT_ID,
+    [BAP_TOKEN_SCOPE],
     "Power Platform API"
   );
   const filter = encodeURIComponent("properties/environmentSku ne 'Platform'");
@@ -15520,26 +15215,11 @@ async function cmdChanges(args) {
   const conn = loadConnJson(agentDir);
   const clusterCategory = conn?.AccountInfo?.clusterCategory;
   const tenantId = conn?.AccountInfo?.TenantId || args.tenantId;
-  const clientId = args.clientId || VSCODE_CLIENT_ID;
-  const useInteractive = !args.clientId;
   const envUrl = args.environmentUrl.replace(/\/+$/, "");
   let cpsToken, dvToken;
   if (clusterCategory != null) {
     cpsToken = await getOrAcquireIslandToken(tenantId, clusterCategory, "Island API");
-    dvToken = await getOrAcquireTokenInteractive(
-      tenantId,
-      VSCODE_CLIENT_ID,
-      [`${envUrl}/.default`],
-      "Dataverse API"
-    );
-  } else if (useInteractive) {
-    cpsToken = await getOrAcquireTokenInteractive(
-      tenantId,
-      VSCODE_CLIENT_ID,
-      ["https://api.powerplatform.com/.default"],
-      "Copilot Studio API"
-    );
-    dvToken = await getOrAcquireTokenInteractive(
+    dvToken = await getOrAcquireToken(
       tenantId,
       VSCODE_CLIENT_ID,
       [`${envUrl}/.default`],
@@ -15548,14 +15228,14 @@ async function cmdChanges(args) {
   } else {
     cpsToken = await getOrAcquireToken(
       tenantId,
-      clientId,
-      ["https://api.powerplatform.com/.default", "offline_access"],
+      VSCODE_CLIENT_ID,
+      ["https://api.powerplatform.com/.default"],
       "Copilot Studio API"
     );
     dvToken = await getOrAcquireToken(
       tenantId,
-      clientId,
-      [`${envUrl}/.default`, "offline_access"],
+      VSCODE_CLIENT_ID,
+      [`${envUrl}/.default`],
       "Dataverse API"
     );
   }
@@ -15631,14 +15311,10 @@ async function cmdClone(args) {
   if (!args.environmentId) die("--environment-id (or CPS_ENVIRONMENT_ID) is required");
   if (!args.agentMgmtUrl) die("--agent-mgmt-url (or CPS_AGENT_MGMT_URL) is required");
   if (!args.agentId) die("--agent-id is required for clone");
-  const clientId = args.clientId || VSCODE_CLIENT_ID;
-  const useInteractive = !args.clientId;
-  const acquireToken = useInteractive ? getOrAcquireTokenInteractive : getOrAcquireToken;
   const envUrl = args.environmentUrl.replace(/\/+$/, "");
   const DEFAULT_CLUSTER_CATEGORY = 5;
   const cpsToken = await getOrAcquireIslandToken(args.tenantId, DEFAULT_CLUSTER_CATEGORY, "Island API");
-  const dvScopes = useInteractive ? [`${envUrl}/.default`] : [`${envUrl}/.default`, "offline_access"];
-  const dvToken = await acquireToken(args.tenantId, clientId, dvScopes, "Dataverse API");
+  const dvToken = await getOrAcquireToken(args.tenantId, VSCODE_CLIENT_ID, [`${envUrl}/.default`], "Dataverse API");
   const [agentInfo, solVersions] = await Promise.all([
     fetchAgentInfo(envUrl, args.agentId, dvToken.accessToken),
     fetchSolutionVersions(envUrl, dvToken.accessToken)
