@@ -1,7 +1,7 @@
 ---
 user-invocable: false
 name: best-practices
-description: "Best practices for Copilot Studio agents. Covers JIT glossary loading (customer acronyms, terminology), JIT user context provisioning (M365 profile, country, department), the shared OnActivity initialization pattern, dynamic topic redirects with Switch expressions, preventing child agents from responding directly to users, RAI error handling with categorized responses, deterministic MCP server tool calls, citations in Adaptive Cards for Teams, hold messages during knowledge search, channel-aware Start Over with Adaptive Cards, and line breaks in message and question nodes. USE FOR: glossary, acronyms, user context, user profile, country-aware answers, JIT initialization, OnActivity provisioning, conversation-init, personalized knowledge, dynamic redirect, Switch, BeginDialog, if/then/else replacement, child agent responses, completion setting, SendMessageTool, output variables, connected agents, RAI, responsible AI, content filtering, OpenAI errors, ContentFiltered, OnError, jailbreak, self-harm, hate, violence, sexual content, indirect attack, MCP, MCP server, MCP tool, deterministic tool call, generative actions, child agent MCP, citations, adaptive card, Teams citations, references, citation sources, collapsible references, ForAll, CitationSources, hold message, please wait, OnKnowledgeRequested, knowledge search delay, loading message, random message, start over, restart, reset conversation, channel check, msteams, messageBack, Action.Submit, debug menu, ChannelId, ClearAllVariables, ConversationHistory, ConversationScopedVariables, OnSystemRedirect, line break, br tag, paragraph spacing, SendActivity formatting, Question prompt formatting, long message, wall of text. DO NOT USE FOR: general knowledge sources (use add-knowledge), topic creation (use new-topic)."
+description: "Best practices for Copilot Studio agents. Covers JIT glossary loading (customer acronyms, terminology), JIT user context provisioning (M365 profile, country, department), the shared OnActivity initialization pattern, dynamic topic redirects with Switch expressions, preventing child agents from responding directly to users, RAI error handling with categorized responses, deterministic MCP server tool calls, citations in Adaptive Cards for Teams, hold messages during knowledge search, channel-aware Start Over with Adaptive Cards, line breaks in message and question nodes, chain of thought logging for complex orchestration, and conversation history capture as a variable. USE FOR: glossary, acronyms, user context, user profile, country-aware answers, JIT initialization, OnActivity provisioning, conversation-init, personalized knowledge, dynamic redirect, Switch, BeginDialog, if/then/else replacement, child agent responses, completion setting, SendMessageTool, output variables, connected agents, RAI, responsible AI, content filtering, OpenAI errors, ContentFiltered, OnError, jailbreak, self-harm, hate, violence, sexual content, indirect attack, MCP, MCP server, MCP tool, deterministic tool call, generative actions, child agent MCP, citations, adaptive card, Teams citations, references, citation sources, collapsible references, ForAll, CitationSources, hold message, please wait, OnKnowledgeRequested, knowledge search delay, loading message, random message, start over, restart, reset conversation, channel check, msteams, messageBack, Action.Submit, debug menu, ChannelId, ClearAllVariables, ConversationHistory, ConversationScopedVariables, OnSystemRedirect, line break, br tag, paragraph spacing, SendActivity formatting, Question prompt formatting, long message, wall of text, chain of thought, CoT, thinking, streaming, reasoning steps, tool chain, multi-step orchestration, intermediate reasoning, show your work, logger topic, conversation history, transcript, save conversation, export conversation, escalation context, Recognize intent, conversation variable, ConversationHistory, ticket context, live agent handoff. DO NOT USE FOR: general knowledge sources (use add-knowledge), topic creation (use new-topic)."
 context: fork
 agent: author
 ---
@@ -107,6 +107,30 @@ Replaces the default Start Over system topic with a channel-aware version that c
 - The user asks about `Action.Submit` not working in Teams or `messageBack` format
 
 **Important:** When implementing this pattern, both the standard **Start Over** and **Reset Conversation** system topics must be **disabled** to avoid conflicts. Both share trigger phrases or functionality with the v2 topics and will cause unpredictable intent routing if left enabled.
+
+## Chain of Thought (CoT) Logging → [chain-of-thought-logging.md](chain-of-thought-logging.md)
+
+Surfaces intermediate reasoning steps as italicized "Thinking: ..." messages during complex multi-step orchestration. Creates a lightweight logger topic that the orchestrator calls after each tool, child agent, or MCP server step. Works with GPT-4.1, GPT-5 Chat/Auto/Reasoning, and Claude (Sonnet + Opus).
+
+**Read this best-practice when:**
+- The user's agent uses many tools, MCP servers, or child agents with complex orchestration
+- Users experience long silences during multi-step reasoning or tool chains
+- The user wants to show "thinking" or "working on it" progress during agent execution
+- The user asks about chain of thought, streaming, or intermediate reasoning visibility
+
+**Do NOT use for pure knowledge agents** — use [Hold Message During Knowledge Search](knowledge-hold-message.md) instead. CoT logging is for multi-step orchestration, not simple knowledge retrieval.
+
+## Conversation History as a Variable → [conversation-history-variable.md](conversation-history-variable.md)
+
+Captures the full conversation history at runtime by having the orchestrator dump the transcript into an input variable on demand. Supports sending the history as a message, storing it as a variable for tool input, or passing it during escalation. Uses the same input-description-as-instruction pattern as CoT logging.
+
+**Read this best-practice when:**
+- The user needs to capture conversation context for escalation, ticketing, or email
+- A downstream tool or connector requires conversation history as input
+- The user asks about saving, exporting, or accessing the conversation transcript
+- The user wants to pass conversational context to another agent, flow, or Dataverse record
+
+**Do NOT use for compliance-grade transcripts** — this is a best-effort reconstruction from the orchestrator's context window. Use a dedicated logging solution for audit requirements.
 
 ## Line Breaks in Message and Question Nodes → [line-breaks-in-messages.md](line-breaks-in-messages.md)
 
