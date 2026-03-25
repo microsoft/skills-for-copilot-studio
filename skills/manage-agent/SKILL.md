@@ -1,7 +1,7 @@
 ---
 user-invocable: false
 description: Push/pull Copilot Studio agent content via the VS Code extension's LanguageServerHost LSP binary. Handles authentication (interactive browser login for push/pull, device code flow for chat token), sync push, sync pull, clone, and diff operations.
-argument-hint: <push|pull|clone|changes|publish|auth|list-agents|list-envs>
+argument-hint: <push|pull|clone|changes|validate|publish|auth|list-agents|list-envs>
 allowed-tools: Bash(node *manage-agent.bundle.js *), Read, Glob, Grep
 context: fork
 agent: copilot-studio-manage
@@ -116,7 +116,7 @@ node ${CLAUDE_SKILL_DIR}/../../scripts/manage-agent.bundle.js pull \
 
 **Important:** Always `pull` before `push` to get fresh row versions. If you push without pulling first, you'll get a `ConcurrencyVersionMismatch` error.
 
-`--client-id` is optional. When omitted, uses VS Code's 1p client with interactive browser login.
+Push automatically validates all `.mcs.yml` files before pushing and blocks if there are errors. Add `--force` to bypass validation (not recommended).
 
 ```bash
 node ${CLAUDE_SKILL_DIR}/../../scripts/manage-agent.bundle.js push \
@@ -126,6 +126,21 @@ node ${CLAUDE_SKILL_DIR}/../../scripts/manage-agent.bundle.js push \
   --environment-url "<envUrl>" \
   --agent-mgmt-url "<mgmtUrl>"
 ```
+
+### Validate (check YAML before pushing)
+
+Validates all `.mcs.yml` files in the workspace using the LSP binary's full diagnostics (YAML structure, Power Fx, schema, cross-file references).
+
+```bash
+node ${CLAUDE_SKILL_DIR}/../../scripts/manage-agent.bundle.js validate \
+  --workspace "<path-to-agent-folder>" \
+  --tenant-id "<tenantId>" \
+  --environment-id "<envId>" \
+  --environment-url "<envUrl>" \
+  --agent-mgmt-url "<mgmtUrl>"
+```
+
+Returns JSON: `{ "valid": true|false, "summary": { "errors": N, "warnings": N }, "files": [...] }`
 
 ### Clone (download agent to new local folder)
 

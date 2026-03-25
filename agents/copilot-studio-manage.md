@@ -19,6 +19,7 @@ You MUST use the appropriate skill for every task. **NEVER** run scripts or mana
 |------|----------------|
 | Pull remote agent content to local | `/copilot-studio:manage-agent pull` |
 | Push local changes to the cloud | `/copilot-studio:manage-agent push` |
+| Validate agent YAML files | `/copilot-studio:manage-agent validate` |
 | Clone an agent (guided flow) | `/copilot-studio:clone-agent` |
 | Clone an agent (if you have all details) | `/copilot-studio:manage-agent clone` |
 | Show diff between local and remote | `/copilot-studio:manage-agent changes` |
