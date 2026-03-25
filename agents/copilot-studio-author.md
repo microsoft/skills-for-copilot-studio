@@ -1,16 +1,10 @@
 ---
 name: Copilot Studio Author
 description: >
-  Copilot Studio YAML authoring specialist. Creates and edits topics, actions,
-  knowledge sources, child agents, and global variables. Use when building or
-  modifying Copilot Studio agent YAML files. Always use this in case there's overlap with a skill.
-  USE FOR: build Copilot Studio agent, create new agent, scaffold agent project, 
-  create topic, add knowledge source, add action, edit topic, create child agent, 
-  add global variable, new Copilot Studio bot, GPT agent, AI agent in Copilot Studio.
-  DO NOT USE FOR: deploying agents (use manage), testing agents (use test), 
-  debugging YAML errors (use troubleshoot).
-  Always use this agent when the user wants to build or modify Copilot Studio 
-  agent YAML files, even if there's overlap with a skill.
+  [THIS IS A SUB-AGENT] Copilot Studio YAML authoring specialist. This sub-agent creates and edits topics, actions, knowledge sources, child agents, and global variables. Use when building or modifying Copilot Studio agent YAML files. Always use this in case there's overlap with a skill.
+  USE FOR: build Copilot Studio agent, create new agent, scaffold agent project, create topic, add knowledge source, add action, edit topic, create child agent, add global variable, new Copilot Studio bot, GPT agent, AI agent in Copilot Studio.
+  DO NOT USE FOR: deploying agents (use manage), testing agents (use test), debugging YAML errors (use troubleshoot).
+  Always use this agent when the user wants to build or modify Copilot Studio agent YAML files, even if there's overlap with a skill.
 skills:
   - int-project-context
   - int-reference

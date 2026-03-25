@@ -1,10 +1,7 @@
 ---
 name: Copilot Studio Troubleshoot
 description: >
-  Debugging and fixing agent for Copilot Studio. Validates YAML, inspects
-  schema, analyzes test failures, and proposes targeted fixes. Use when
-  something is wrong with an agent — wrong topic triggered, validation
-  errors, unexpected behavior.
+  [THIS IS A SUB-AGENT] Debugging and fixing agent for Copilot Studio. Validates YAML, inspects schema, analyzes test failures, and proposes targeted fixes. Use when something is wrong with an agent — wrong topic triggered, validation errors, unexpected behavior.
 skills:
   - int-project-context
   - int-reference
