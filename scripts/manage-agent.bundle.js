@@ -15010,6 +15010,12 @@ function findMcsYmlFiles(dir, results = []) {
   return results;
 }
 function openFilesForDiagnostics(client, filePaths) {
+  const fileEvents = filePaths.map((filePath) => ({
+    uri: toFileUri(filePath),
+    type: 1
+    // FileChangeType.Created
+  }));
+  client.sendNotification("workspace/didChangeWatchedFiles", { changes: fileEvents });
   for (const filePath of filePaths) {
     const uri = toFileUri(filePath);
     let text = "";

@@ -649,6 +649,17 @@ function findMcsYmlFiles(dir, results = []) {
 }
 
 function openFilesForDiagnostics(client, filePaths) {
+  // Notify the server about all files via workspace/didChangeWatchedFiles first.
+  // This mirrors the VS Code extension's file watcher behavior and triggers
+  // workspace-wide diagnostics (PublishAllDiagnosticsAsync) which includes
+  // cross-file validation that textDocument/didOpen alone doesn't trigger.
+  const fileEvents = filePaths.map((filePath) => ({
+    uri: toFileUri(filePath),
+    type: 1, // FileChangeType.Created
+  }));
+  client.sendNotification("workspace/didChangeWatchedFiles", { changes: fileEvents });
+
+  // Then open each file for per-document diagnostics
   for (const filePath of filePaths) {
     const uri = toFileUri(filePath);
     let text = "";
