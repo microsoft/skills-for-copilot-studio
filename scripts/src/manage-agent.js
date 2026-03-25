@@ -40,6 +40,10 @@ function log(msg) {
   process.stderr.write(msg + "\n");
 }
 
+function warn(msg) {
+  process.stderr.write("[WARN] " + msg + "\n");
+}
+
 function die(msg) {
   process.stdout.write(JSON.stringify({ status: "error", error: msg }) + "\n");
   process.exit(1);
@@ -682,7 +686,6 @@ function waitForDiagnostics(client, settleMs = 500, timeoutMs = 15000) {
     }, timeoutMs);
 
     client._onDiagnosticsCallback = () => resetSettle();
-    resetSettle();
   });
 }
 
@@ -696,7 +699,7 @@ function formatValidationOutput(diagnosticsMap, agentDir) {
     if (!diags || diags.length === 0) continue;
     let filePath = uri;
     try {
-      filePath = path.relative(agentDir, decodeURIComponent(uri.replace(/^file:\/\//, "")));
+      filePath = path.relative(agentDir, decodeURIComponent(uri.replace(/^file:\/\/\//, "")));
     } catch {}
 
     const mapped = diags.map((d) => {

@@ -14545,6 +14545,9 @@ var { createCachePlugin } = require_msal_cache();
 function log(msg) {
   process.stderr.write(msg + "\n");
 }
+function warn(msg) {
+  process.stderr.write("[WARN] " + msg + "\n");
+}
 function die(msg) {
   process.stdout.write(JSON.stringify({ status: "error", error: msg }) + "\n");
   process.exit(1);
@@ -15043,7 +15046,6 @@ function waitForDiagnostics(client, settleMs = 500, timeoutMs = 15e3) {
       done();
     }, timeoutMs);
     client._onDiagnosticsCallback = () => resetSettle();
-    resetSettle();
   });
 }
 var SEVERITY_NAMES = { 1: "error", 2: "warning", 3: "information", 4: "hint" };
@@ -15054,7 +15056,7 @@ function formatValidationOutput(diagnosticsMap, agentDir) {
     if (!diags || diags.length === 0) continue;
     let filePath = uri;
     try {
-      filePath = path2.relative(agentDir, decodeURIComponent(uri.replace(/^file:\/\//, "")));
+      filePath = path2.relative(agentDir, decodeURIComponent(uri.replace(/^file:\/\/\//, "")));
     } catch {
     }
     const mapped = diags.map((d) => {
