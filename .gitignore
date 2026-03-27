@@ -15,6 +15,7 @@ scripts/package-lock.json
 
 # AI agent local settings (not part of the plugin)
 .claude/
+.copilot-tracking/
 
 # VS Code settings (optional - remove if you want to share settings)
 .vscode/
