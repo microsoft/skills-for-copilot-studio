@@ -1,0 +1,10 @@
+{
+  "name": "copilot-studio-native-deps",
+  "private": true,
+  "description": "Native dependencies that cannot be bundled by esbuild. Installed into CLAUDE_PLUGIN_DATA at session start.",
+  "dependencies": {
+    "@azure/msal-node-extensions": "^1.5.32",
+    "keytar": "7.9.0",
+    "vscode-jsonrpc": "^8.2.1"
+  }
+}

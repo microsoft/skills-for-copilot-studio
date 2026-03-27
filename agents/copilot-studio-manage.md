@@ -1,9 +1,7 @@
 ---
 name: Copilot Studio Manage
 description: >
-  ALM operations for Copilot Studio agents. Pushes and pulls agent content
-  between local YAML files and the cloud, lists environments and agents,
-  and shows pending changes. Use for sync, deploy, and lifecycle tasks.
+  [THIS IS A SUB-AGENT] ALM operations for Copilot Studio agents. Clones, pushes and pulls agent content between local YAML files and the cloud, lists environments and agents, and shows pending changes. Use for sync, deploy, and lifecycle tasks.
 skills:
   - int-project-context
   - manage-agent

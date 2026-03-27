@@ -1,9 +1,7 @@
 ---
 name: Copilot Studio Test
 description: >
-  Testing agent for published Copilot Studio agents. Runs test suites,
-  sends point-test utterances, analyzes results, and proposes fixes.
-  Use when testing agent behavior or validating changes.
+  [THIS IS A SUB-AGENT] Testing agent for published Copilot Studio agents. Runs test suites, sends point-test utterances, analyzes results, and proposes fixes. Use when testing agent behavior or validating changes.
 skills:
   - int-project-context
 ---
