@@ -1,23 +1,44 @@
-# Skills for Copilot Studio
+---
+title: Skills for Copilot Studio
+description: "Author, test, and troubleshoot Microsoft Copilot Studio agents through YAML files using a VS Code extension or Claude Code plugin"
+---
 
-A plugin for [Claude Code](https://docs.anthropic.com/en/docs/claude-code) and [GitHub Copilot CLI](https://docs.github.com/en/copilot) that enables authoring, testing, and troubleshooting [Microsoft Copilot Studio](https://aka.ms/CopilotStudio) agents through YAML files — directly from your terminal.
+A toolkit for authoring, testing, and troubleshooting [Microsoft Copilot Studio](https://aka.ms/CopilotStudio) agents through YAML files. Available as a VS Code extension for GitHub Copilot Chat and as a plugin for [Claude Code](https://docs.anthropic.com/en/docs/claude-code).
 
 ## Prerequisites
 
-- [Claude Code](https://docs.anthropic.com/en/docs/claude-code) or [GitHub Copilot CLI](https://docs.github.com/en/copilot)
-- [Node.js](https://nodejs.org/) 18+
-- [VS Code](https://code.visualstudio.com/) with the [Copilot Studio Extension](https://github.com/microsoft/vscode-copilotstudio) (required for push/pull/clone operations)
+* [Node.js](https://nodejs.org/) 18+
+* [VS Code](https://code.visualstudio.com/) with the [Copilot Studio Extension](https://github.com/microsoft/vscode-copilotstudio) (required for push/pull/clone operations)
+* One of the following:
+  * [GitHub Copilot](https://marketplace.visualstudio.com/items?itemName=GitHub.copilot) and [GitHub Copilot Chat](https://marketplace.visualstudio.com/items?itemName=GitHub.copilot-chat) extensions (for the VS Code extension)
+  * [Claude Code](https://docs.anthropic.com/en/docs/claude-code) (for the CLI plugin)
 
 ## Installation
 
-### From marketplace (recommended)
+### VS Code extension (recommended)
+
+Install directly from the VS Code Marketplace:
+
+[Install Copilot Studio Skills](https://marketplace.visualstudio.com/items?itemName=TBD.copilot-studio-skills)
+
+Or from the command line:
+
+```bash
+code --install-extension TBD.copilot-studio-skills
+```
+
+Once installed, the agents and skills are available in GitHub Copilot Chat. See [SETUP_GUIDE.md](SETUP_GUIDE.md) for a full walkthrough.
+
+### Claude Code plugin
+
+#### From marketplace
 
 ```bash
 /plugin marketplace add microsoft/skills-for-copilot-studio
 /plugin install copilot-studio@skills-for-copilot-studio
 ```
 
-### From a local clone
+#### From a local clone
 
 ```bash
 git clone https://github.com/microsoft/skills-for-copilot-studio.git
