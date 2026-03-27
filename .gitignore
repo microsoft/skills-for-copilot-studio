@@ -38,3 +38,6 @@ extension/*.vsix
 .env
 .env.local
 nul
+
+# stupid macOS things
+.DS_Store
