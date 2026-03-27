@@ -1,7 +1,10 @@
 #!/usr/bin/env bash
 # Build and locally install the Copilot Studio Skills extension for testing.
-# Usage: ./extension/test-local.sh
+# Usage: ./extension/test-local.sh [--package-only]
 set -euo pipefail
+
+PACKAGE_ONLY=false
+[[ "${1:-}" == "--package-only" ]] && PACKAGE_ONLY=true
 
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 EXT_DIR="$REPO_ROOT/extension"
@@ -130,6 +133,33 @@ fs.readdirSync(skillsDir).forEach(d => {
 console.log('   Stripped ' + stripped + ' fields across skill files');
 "
 
+# Replace ${CLAUDE_SKILL_DIR}/../../ with ../../ in staged skill files
+# In the VSIX, skills/<name>/SKILL.md is two levels deep, so ../../ resolves
+# to the extension root — the same layout as the source repo.
+echo "==> Resolving script paths in skills..."
+node -e "
+const fs = require('fs');
+const path = require('path');
+const skillsDir = '$STAGE_DIR/skills';
+let replaced = 0;
+
+fs.readdirSync(skillsDir).forEach(d => {
+  const dir = path.join(skillsDir, d);
+  if (!fs.statSync(dir).isDirectory()) return;
+
+  fs.readdirSync(dir).filter(f => f.endsWith('.md')).forEach(f => {
+    const filePath = path.join(dir, f);
+    const content = fs.readFileSync(filePath, 'utf8');
+    const updated = content.replace(/\\$\\{CLAUDE_SKILL_DIR\\}\\/\\.\\.\\/\\.\\.\\//g, '../../');
+    if (updated !== content) {
+      fs.writeFileSync(filePath, updated);
+      replaced++;
+    }
+  });
+});
+console.log('   Resolved paths in ' + replaced + ' files');
+"
+
 # Ensure a README exists for vsce
 if [ ! -f "$STAGE_DIR/README.md" ]; then
   if [ -f "$EXT_DIR/README.md" ]; then
@@ -165,6 +195,12 @@ fi
 
 # Move VSIX to extension directory
 mv "$STAGE_DIR/$VSIX" "$EXT_DIR/$VSIX"
+
+if [ "$PACKAGE_ONLY" = true ]; then
+  echo ""
+  echo "==> Done! VSIX built at extension/$VSIX"
+  exit 0
+fi
 
 echo ""
 echo "==> Installing $VSIX..."
