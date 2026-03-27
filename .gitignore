@@ -21,6 +21,11 @@ scripts/package-lock.json
 .vscode/
 .github/copilot-instructions.md
 
+# Extension build artifacts
+extension/.staging/
+extension/*.vsix
+extension/package.json
+
 # Agent tmp files (in any subfolder)
 tmpclaude-*
 

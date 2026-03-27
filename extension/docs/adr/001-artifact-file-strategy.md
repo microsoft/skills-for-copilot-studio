@@ -198,12 +198,13 @@ The key factors are:
 
 This provides the best balance of safety, simplicity, and maintainability:
 
-1. **Rename** agent files from `.md` to `.agent.md` in-repo. Test Claude Code
-   compatibility. If it breaks, fall back to copy-at-build-time for agents only.
+1. **Copy and rename** agent files from `.md` to `.agent.md` at build time into a
+   transient staging directory. Source files remain `.md` in the repository,
+   preserving Claude Code compatibility without any testing or risk.
 
-2. **Build script strips** these frontmatter fields from skill files when packaging
-   for VS Code: `allowed-tools`, `context`, `agent`, `argument-hint`,
-   `user-invocable`.
+2. **Build script strips** these frontmatter fields from skill file copies when
+   packaging for VS Code: `allowed-tools`, `context`, `agent`, `argument-hint`,
+   `user-invocable`. Source skill files are never modified.
 
 3. **Document** `${CLAUDE_SKILL_DIR}` in skill bodies as a known limitation.
    The VS Code Copilot Chat LLM will see these references but they serve as
@@ -216,7 +217,10 @@ This provides the best balance of safety, simplicity, and maintainability:
 
 ## Consequences
 
-* The build script gains a frontmatter-stripping step (~20 lines of Node.js)
+* The build script uses a transient staging directory for all transformations —
+  source files are never modified
+* Agent `.md` → `.agent.md` renaming happens only in the staging copy
+* Skill frontmatter stripping happens only in the staging copy (~20 lines of Node.js)
 * All skill and agent content is maintained in one place
 * Contributors edit files in `agents/` and `skills/` only — never in build output
 * `${CLAUDE_SKILL_DIR}` references remain in VS Code skill files until a VS Code
