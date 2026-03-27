@@ -1,0 +1,55 @@
+name: Build Extension
+
+on:
+  push:
+    branches: [main, coatsy/vscode-extension]
+    paths:
+      - 'agents/**'
+      - 'skills/**'
+      - 'scripts/**'
+      - 'templates/**'
+      - 'reference/**'
+      - 'extension/**'
+      - '.github/workflows/build-extension.yml'
+  pull_request:
+    branches: [main, coatsy/vscode-extension]
+    paths:
+      - 'agents/**'
+      - 'skills/**'
+      - 'scripts/**'
+      - 'templates/**'
+      - 'reference/**'
+      - 'extension/**'
+      - '.github/workflows/build-extension.yml'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Build extension
+        run: bash extension/test-local.sh --package-only
+        env:
+          CODE_CMD: 'true'  # Skip VS Code install in CI
+
+      - name: Verify VSIX artifact
+        run: |
+          VSIX=$(ls -t extension/*.vsix 2>/dev/null | head -1)
+          if [ -z "$VSIX" ]; then
+            echo "ERROR: No .vsix file produced"
+            exit 1
+          fi
+          echo "Built: $VSIX"
+          echo "Size: $(du -h "$VSIX" | cut -f1)"
+
+      - name: Upload VSIX
+        uses: actions/upload-artifact@v4
+        with:
+          name: copilot-studio-skills-vsix
+          path: extension/*.vsix
+          retention-days: 30
