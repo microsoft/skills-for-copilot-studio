@@ -160,14 +160,18 @@ fs.readdirSync(skillsDir).forEach(d => {
 console.log('   Resolved paths in ' + replaced + ' files');
 "
 
-# Ensure a README exists for vsce
-if [ ! -f "$STAGE_DIR/README.md" ]; then
-  if [ -f "$EXT_DIR/README.md" ]; then
-    cp "$EXT_DIR/README.md" "$STAGE_DIR/README.md"
-  else
-    echo "# Copilot Studio Skills" > "$STAGE_DIR/README.md"
-    echo "   (created placeholder README.md)"
-  fi
+# Ensure a README exists for vsce, stripping YAML frontmatter
+# (VS Code extension view renders frontmatter as visible text)
+if [ -f "$EXT_DIR/README.md" ]; then
+  node -e "
+    const fs = require('fs');
+    const content = fs.readFileSync('$EXT_DIR/README.md', 'utf8');
+    const stripped = content.replace(/^---\n[\s\S]*?\n---\n+/, '');
+    fs.writeFileSync('$STAGE_DIR/README.md', stripped);
+  "
+elif [ ! -f "$STAGE_DIR/README.md" ]; then
+  echo "# Copilot Studio Skills" > "$STAGE_DIR/README.md"
+  echo "   (created placeholder README.md)"
 fi
 
 # Remove icon field if icon.png doesn't exist
