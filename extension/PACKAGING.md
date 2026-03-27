@@ -55,7 +55,7 @@ After packaging, the staging directory contains the final extension layout:
 
 | Requirement | Version   | Installation                                       |
 |-------------|-----------|----------------------------------------------------|
-| Node.js     | 18+       | <https://nodejs.org/>                              |
+| Node.js     | 20+       | <https://nodejs.org/>                              |
 | npm         | Bundled   | Included with Node.js                              |
 | VS Code     | 1.106.1+  | <https://code.visualstudio.com/>                   |
 | Bash        | 4+        | Pre-installed on macOS/Linux; use Git Bash on Windows |
@@ -153,7 +153,7 @@ The version follows [SemVer](https://semver.org/):
 
 | Issue                           | Cause                                      | Solution                                                                 |
 |---------------------------------|--------------------------------------------|--------------------------------------------------------------------------|
-| `No .vsix file produced`       | `vsce` packaging failed                    | Check the script output for errors; verify Node.js 18+ is installed      |
+| `No .vsix file produced`       | `vsce` packaging failed                    | Check the script output for errors; verify Node.js 20+ is installed      |
 | Extension not visible in Chat   | Extension not activated after install      | Reload VS Code (`Developer: Reload Window`)                              |
 | Agents or skills missing        | Files not discovered during staging        | Verify agent files exist in `agents/` and skill folders contain `SKILL.md` |
 | `icon` field error from `vsce` | `icon.png` missing from `extension/`       | Add an `icon.png` or remove the `icon` field from the template          |

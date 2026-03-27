@@ -40,7 +40,7 @@ The extension includes 24 skills covering the full agent development lifecycle:
 * [GitHub Copilot](https://marketplace.visualstudio.com/items?itemName=GitHub.copilot) extension
 * [GitHub Copilot Chat](https://marketplace.visualstudio.com/items?itemName=GitHub.copilot-chat) extension
 * [Copilot Studio VS Code Extension](https://marketplace.visualstudio.com/items?itemName=ms-copilotstudio.vscode-copilotstudio) (required for push/pull/clone operations)
-* [Node.js](https://nodejs.org/) 18+
+* [Node.js](https://nodejs.org/) 20+
 
 ## Quick start
 

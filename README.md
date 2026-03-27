@@ -7,7 +7,7 @@ A toolkit for authoring, testing, and troubleshooting [Microsoft Copilot Studio]
 
 ## Prerequisites
 
-* [Node.js](https://nodejs.org/) 18+
+* [Node.js](https://nodejs.org/) 20+
 * [VS Code](https://code.visualstudio.com/) with the [Copilot Studio Extension](https://github.com/microsoft/vscode-copilotstudio) (required for push/pull/clone operations)
 * One of the following:
   * [GitHub Copilot](https://marketplace.visualstudio.com/items?itemName=GitHub.copilot) and [GitHub Copilot Chat](https://marketplace.visualstudio.com/items?itemName=GitHub.copilot-chat) extensions (for the VS Code extension)
