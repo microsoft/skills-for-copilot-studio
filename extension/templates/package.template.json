@@ -1,0 +1,25 @@
+{
+  "name": "copilot-studio-skills",
+  "displayName": "Copilot Studio Skills",
+  "extensionKind": [
+    "workspace",
+    "ui"
+  ],
+  "version": "0.1.0",
+  "description": "Copilot Studio YAML authoring, testing, and management skills for GitHub Copilot",
+  "publisher": "TBD",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/microsoft/skills-for-copilot-studio.git"
+  },
+  "engines": {
+    "vscode": "^1.106.1"
+  },
+  "categories": [
+    "Chat"
+  ],
+  "icon": "icon.png",
+  "contributes": {},
+  "author": "Microsoft",
+  "license": "MIT"
+}
