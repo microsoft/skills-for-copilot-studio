@@ -14563,8 +14563,10 @@ function parseArgs() {
     accountId: null,
     accountEmail: null,
     agentId: null,
-    owner: true
+    owner: true,
     // default: filter by owner
+    timeout: 3e5
+    // default: 5 minutes for publish polling
   };
   for (let i = 0; i < args.length; i++) {
     switch (args[i]) {
@@ -14601,6 +14603,11 @@ function parseArgs() {
       case "--no-owner":
         parsed.owner = false;
         break;
+      case "--timeout": {
+        const v = parseInt(args[++i], 10);
+        parsed.timeout = Number.isFinite(v) && v > 0 ? v : 3e5;
+        break;
+      }
       default:
         if (!args[i].startsWith("--") && !parsed.command) {
           parsed.command = args[i];
@@ -14610,7 +14617,7 @@ function parseArgs() {
   }
   if (!parsed.command) {
     die(
-      "Usage: manage-agent <command> [options]\nCommands: auth, push, pull, clone, changes, list-agents, list-envs"
+      "Usage: manage-agent <command> [options]\nCommands: auth, push, pull, clone, changes, validate, publish, list-agents, list-envs"
     );
   }
   return parsed;
@@ -15146,6 +15153,50 @@ async function httpGetJson(url, accessToken) {
     });
   });
 }
+async function httpPostJson(url, accessToken, body) {
+  const https = require("https");
+  const payload = body != null ? JSON.stringify(body) : "";
+  const parsed = new URL(url);
+  return new Promise((resolve, reject) => {
+    const req = https.request({
+      hostname: parsed.hostname,
+      port: parsed.port || 443,
+      path: parsed.pathname + parsed.search,
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
+        "OData-MaxVersion": "4.0",
+        "OData-Version": "4.0",
+        "Content-Length": Buffer.byteLength(payload)
+      }
+    }, (res) => {
+      let data = "";
+      res.on("error", reject);
+      res.on("data", (chunk) => data += chunk);
+      res.on("end", () => {
+        if (res.statusCode >= 400) {
+          reject(new Error(`HTTP ${res.statusCode}: ${data.substring(0, 500)}`));
+        } else if (res.statusCode === 204 || !data.trim()) {
+          resolve(null);
+        } else {
+          try {
+            resolve(JSON.parse(data));
+          } catch (e) {
+            reject(new Error(`Invalid JSON: ${e.message}`));
+          }
+        }
+      });
+    });
+    req.on("error", reject);
+    req.setTimeout(6e4, () => {
+      req.destroy();
+      reject(new Error("HTTP request timed out"));
+    });
+    req.write(payload);
+    req.end();
+  });
+}
 async function cmdListAgents(args) {
   if (!args.tenantId) die("--tenant-id (or CPS_TENANT_ID) is required");
   if (!args.environmentUrl) die("--environment-url (or CPS_ENVIRONMENT_URL) is required");
@@ -15210,6 +15261,76 @@ async function cmdListEnvs(args) {
   process.stdout.write(
     JSON.stringify({ status: "ok", environments }, null, 2) + "\n"
   );
+}
+var PUBLISH_POLL_INTERVAL_MS = 1e4;
+async function cmdPublish(args) {
+  if (!args.workspace) die("--workspace is required");
+  const agentDir = findAgentDir(args.workspace);
+  const conn = loadConnJson(agentDir);
+  const tenantId = conn?.AccountInfo?.TenantId || args.tenantId;
+  if (!tenantId) die("--tenant-id (or CPS_TENANT_ID) is required");
+  const envUrl = (args.environmentUrl || conn?.DataverseEndpoint || "").replace(/\/+$/, "");
+  if (!envUrl) die("--environment-url (or CPS_ENVIRONMENT_URL) is required");
+  const botId = args.agentId || conn && conn.AgentId;
+  if (!botId) die("Cannot determine agent ID. Provide --agent-id or ensure .mcs/conn.json exists.");
+  const dvToken = await getOrAcquireToken(
+    tenantId,
+    VSCODE_CLIENT_ID,
+    [`${envUrl}/.default`],
+    "Dataverse API"
+  );
+  log("Reading current publish timestamp...");
+  const botBefore = await httpGetJson(
+    `${envUrl}/api/data/v9.2/bots(${botId})?$select=publishedon`,
+    dvToken.accessToken
+  );
+  const previousPublishedOn = botBefore.publishedon || null;
+  log(`Current publishedon: ${previousPublishedOn || "(never published)"}`);
+  log("Calling PvaPublish...");
+  const publishUrl = `${envUrl}/api/data/v9.2/bots(${botId})/Microsoft.Dynamics.CRM.PvaPublish`;
+  let publishResponse;
+  try {
+    publishResponse = await httpPostJson(publishUrl, dvToken.accessToken, null);
+  } catch (err) {
+    die(`PvaPublish failed: ${err.message}`);
+  }
+  log("PvaPublish triggered successfully.");
+  const startTime = Date.now();
+  const timeoutMs = args.timeout || 3e5;
+  log(`Polling for publish completion (timeout: ${timeoutMs / 1e3}s)...`);
+  while (Date.now() - startTime < timeoutMs) {
+    await new Promise((resolve) => setTimeout(resolve, PUBLISH_POLL_INTERVAL_MS));
+    const elapsed = Math.round((Date.now() - startTime) / 1e3);
+    let botNow;
+    try {
+      botNow = await httpGetJson(
+        `${envUrl}/api/data/v9.2/bots(${botId})?$select=publishedon`,
+        dvToken.accessToken
+      );
+    } catch (err) {
+      log(`Poll error (${elapsed}s): ${err.message} \u2014 retrying...`);
+      continue;
+    }
+    const currentPublishedOn = botNow.publishedon || null;
+    log(`  [${elapsed}s] publishedon: ${currentPublishedOn || "(null)"}`);
+    if (currentPublishedOn && currentPublishedOn !== previousPublishedOn) {
+      const durationMs = Date.now() - startTime;
+      const result = {
+        status: "ok",
+        botId,
+        publishedOn: currentPublishedOn,
+        previousPublishedOn,
+        durationMs,
+        durationSeconds: Math.round(durationMs / 1e3)
+      };
+      if (publishResponse) {
+        result.publishResponse = publishResponse;
+      }
+      process.stdout.write(JSON.stringify(result, null, 2) + "\n");
+      return;
+    }
+  }
+  die(`Publish timed out after ${timeoutMs / 1e3}s. The publish may still be in progress \u2014 check the Copilot Studio UI.`);
 }
 async function cmdChanges(args) {
   if (!args.workspace) die("--workspace is required");
@@ -15382,6 +15503,9 @@ async function main() {
         break;
       case "changes":
         await cmdChanges(args);
+        break;
+      case "publish":
+        await cmdPublish(args);
         break;
       case "list-agents":
         await cmdListAgents(args);
