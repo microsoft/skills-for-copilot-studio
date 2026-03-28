@@ -55,7 +55,7 @@ After packaging, the staging directory contains the final extension layout:
 
 | Requirement | Version   | Installation                                       |
 |-------------|-----------|----------------------------------------------------|
-| Node.js     | 20+       | <https://nodejs.org/>                              |
+| Node.js     | 22+       | <https://nodejs.org/>                              |
 | npm         | Bundled   | Included with Node.js                              |
 | VS Code     | 1.106.1+  | <https://code.visualstudio.com/>                   |
 | Bash        | 4+        | Pre-installed on macOS/Linux; use Git Bash on Windows |
@@ -123,7 +123,7 @@ The GitHub Actions workflow at `.github/workflows/build-extension.yml` runs on e
 The pipeline:
 
 1. Checks out the repository
-2. Sets up Node.js 20
+2. Sets up Node.js 22
 3. Runs `bash extension/test-local.sh --package-only` (with `CODE_CMD=true` to skip VS Code install)
 4. Verifies a VSIX file was produced
 5. Uploads the VSIX as a build artifact (retained for 30 days)
@@ -172,7 +172,7 @@ The version follows [SemVer](https://semver.org/):
 
 | Issue                           | Cause                                      | Solution                                                                 |
 |---------------------------------|--------------------------------------------|--------------------------------------------------------------------------|
-| `No .vsix file produced`       | `vsce` packaging failed                    | Check the script output for errors; verify Node.js 20+ is installed      |
+| `No .vsix file produced`       | `vsce` packaging failed                    | Check the script output for errors; verify Node.js 22+ is installed      |
 | Extension not visible in Chat   | Extension not activated after install      | Reload VS Code (`Developer: Reload Window`)                              |
 | Agents or skills missing        | Files not discovered during staging        | Verify agent files exist in `agents/` and skill folders contain `SKILL.md` |
 | `icon` field error from `vsce` | `icon.png` missing from `extension/`       | Add an `icon.png` or remove the `icon` field from the template          |

@@ -15,7 +15,7 @@ A self-hosted build avoids cross-contamination with your primary VS Code install
 | Requirement | Version | Notes |
 |-------------|---------|-------|
 | Git         | 2.x+    | `git --version` |
-| Node.js     | 20+     | `node --version` |
+| Node.js     | 22+     | `node --version` |
 | Yarn        | 1.x     | Installed globally: `npm install --global yarn` |
 | Python      | 3.11+   | Required by native module compilation (node-gyp) |
 | C++ toolchain | Platform-specific | See [platform notes](#platform-notes) |

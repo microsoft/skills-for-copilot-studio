@@ -16,7 +16,7 @@ The toolkit is available in two forms:
 
 | Requirement                         | Version | Verification                                                                                   |
 |-------------------------------------|---------|------------------------------------------------------------------------------------------------|
-| Node.js                             | 20+     | `node --version`                                                                               |
+| Node.js                             | 22+     | `node --version`                                                                               |
 | VS Code                             | 1.106.1+| Required for the extension; also provides the LSP binary for push/pull/clone                   |
 | Copilot Studio VS Code Extension    | Latest  | [Install from marketplace](https://github.com/microsoft/vscode-copilotstudio)                  |
 | GitHub Copilot + Copilot Chat       | Latest  | Required for the VS Code extension path                                                        |
