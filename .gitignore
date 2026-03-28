@@ -26,6 +26,11 @@ extension/.staging/
 extension/*.vsix
 extension/package.json
 
+# Dev host isolation directories (created by setup-devhost.sh)
+.vscode-dev-data/
+.vscode-dev-extensions/
+vscode/
+
 # Agent tmp files (in any subfolder)
 tmpclaude-*
 
