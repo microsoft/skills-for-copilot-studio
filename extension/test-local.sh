@@ -14,6 +14,18 @@ REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 EXT_DIR="$REPO_ROOT/extension"
 STAGE_DIR="$EXT_DIR/.staging"
 
+# On Windows (Git Bash / MSYS2), convert Unix paths to Windows paths for Node.js.
+# Node on Windows cannot resolve /d/source/... and produces D:\d\source\... instead.
+# Use cygpath -m for forward-slash Windows paths (D:/source/...) which Node handles
+# correctly and which survive bash double-quote expansion in node -e strings.
+if command -v cygpath &>/dev/null; then
+  STAGE_DIR_NODE="$(cygpath -m "$STAGE_DIR")"
+  EXT_DIR_NODE="$(cygpath -m "$EXT_DIR")"
+else
+  STAGE_DIR_NODE="$STAGE_DIR"
+  EXT_DIR_NODE="$EXT_DIR"
+fi
+
 # Clean and create staging directory
 rm -rf "$STAGE_DIR"
 mkdir -p "$STAGE_DIR"
@@ -77,21 +89,21 @@ echo "==> Generating package.json with discovered agents and skills..."
 node -e "
 const fs = require('fs');
 const path = require('path');
-const pkg = JSON.parse(fs.readFileSync('$STAGE_DIR/package.json', 'utf8'));
+const pkg = JSON.parse(fs.readFileSync('$STAGE_DIR_NODE/package.json', 'utf8'));
 
-const agents = fs.readdirSync('$STAGE_DIR/agents')
+const agents = fs.readdirSync('$STAGE_DIR_NODE/agents')
   .filter(f => f.endsWith('.agent.md'))
   .map(f => ({ path: './agents/' + f }));
 
-const skills = fs.readdirSync('$STAGE_DIR/skills')
-  .filter(d => fs.existsSync(path.join('$STAGE_DIR/skills', d, 'SKILL.md')))
+const skills = fs.readdirSync('$STAGE_DIR_NODE/skills')
+  .filter(d => fs.existsSync(path.join('$STAGE_DIR_NODE/skills', d, 'SKILL.md')))
   .map(d => ({ path: './skills/' + d + '/SKILL.md' }));
 
 pkg.contributes = {};
 if (agents.length) pkg.contributes.chatAgents = agents;
 if (skills.length) pkg.contributes.chatSkills = skills;
 
-fs.writeFileSync('$STAGE_DIR/package.json', JSON.stringify(pkg, null, 2) + '\n');
+fs.writeFileSync('$STAGE_DIR_NODE/package.json', JSON.stringify(pkg, null, 2) + '\n');
 console.log('   ' + agents.length + ' agents, ' + skills.length + ' skills');
 "
 
@@ -102,7 +114,7 @@ node -e "
 const fs = require('fs');
 const path = require('path');
 const stripFields = new Set(['allowed-tools', 'context', 'agent', 'argument-hint', 'user-invocable']);
-const skillsDir = '$STAGE_DIR/skills';
+const skillsDir = '$STAGE_DIR_NODE/skills';
 let stripped = 0;
 
 fs.readdirSync(skillsDir).forEach(d => {
@@ -144,7 +156,7 @@ echo "==> Resolving script paths in skills..."
 node -e "
 const fs = require('fs');
 const path = require('path');
-const skillsDir = '$STAGE_DIR/skills';
+const skillsDir = '$STAGE_DIR_NODE/skills';
 let replaced = 0;
 
 fs.readdirSync(skillsDir).forEach(d => {
@@ -169,9 +181,9 @@ console.log('   Resolved paths in ' + replaced + ' files');
 if [ -f "$EXT_DIR/README.md" ]; then
   node -e "
     const fs = require('fs');
-    const content = fs.readFileSync('$EXT_DIR/README.md', 'utf8');
+    const content = fs.readFileSync('$EXT_DIR_NODE/README.md', 'utf8');
     const stripped = content.replace(/^---\n[\s\S]*?\n---\n+/, '');
-    fs.writeFileSync('$STAGE_DIR/README.md', stripped);
+    fs.writeFileSync('$STAGE_DIR_NODE/README.md', stripped);
   "
 elif [ ! -f "$STAGE_DIR/README.md" ]; then
   echo "# Copilot Studio Skills" > "$STAGE_DIR/README.md"
@@ -184,9 +196,9 @@ if [ -f "$EXT_DIR/icon.png" ]; then
 else
   node -e "
     const fs = require('fs');
-    const pkg = JSON.parse(fs.readFileSync('$STAGE_DIR/package.json', 'utf8'));
+    const pkg = JSON.parse(fs.readFileSync('$STAGE_DIR_NODE/package.json', 'utf8'));
     delete pkg.icon;
-    fs.writeFileSync('$STAGE_DIR/package.json', JSON.stringify(pkg, null, 2) + '\n');
+    fs.writeFileSync('$STAGE_DIR_NODE/package.json', JSON.stringify(pkg, null, 2) + '\n');
   "
   echo "   (removed icon field — no icon.png found)"
 fi

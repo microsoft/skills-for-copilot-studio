@@ -15,7 +15,8 @@ A self-hosted build avoids cross-contamination with your primary VS Code install
 | Requirement | Version | Notes |
 |-------------|---------|-------|
 | Git         | 2.x+    | `git --version` |
-| Node.js     | 22+     | `node --version` |
+| Git LFS     | 2.x+    | `git lfs version`; required by the VS Code repo for binary assets |
+| Node.js     | 22+     | `node --version`; check `vscode/.nvmrc` for the exact minor version |
 | Python      | 3.11+   | Required by native module compilation (node-gyp) |
 | C++ toolchain | Platform-specific | See [platform notes](#platform-notes) |
 | Disk space  | ~10 GB  | VS Code source, dependencies, and build output |
@@ -52,13 +53,26 @@ See the VS Code [build prerequisites wiki page](https://github.com/microsoft/vsc
 
 ### 1. Clone VS Code
 
+The VS Code repository uses Git LFS for binary assets (screenshots, test fixtures). Install Git LFS before cloning:
+
 ```bash
+# Install Git LFS (one-time setup)
+git lfs install
+
+# Clone the repo
 git clone https://github.com/microsoft/vscode.git
 cd vscode
 ```
 
 > [!TIP]
 > Use `--depth 1` for a shallow clone if you only need the latest commit and want a faster download.
+
+> [!TIP]
+> If Git LFS downloads are slow or you do not need the binary test fixtures, skip LFS during clone and pull them later if needed:
+>
+> ```bash
+> GIT_LFS_SKIP_SMUDGE=1 git clone --depth 1 https://github.com/microsoft/vscode.git
+> ```
 
 ### 2. Install dependencies
 
@@ -177,4 +191,6 @@ See [setup-devhost.sh](../setup-devhost.sh) for the full source.
 | `npm run watch` never finishes | Expected behavior | `npm run watch` runs continuously; open a new terminal for `bash scripts/code.sh` |
 | Extension not visible after install | Dev instance not using the right extensions dir | Pass `EXTENSIONS_DIR` to `test-local.sh` or use `--extensions-dir` with `code-cli.sh`; see [Loading the extension](#loading-the-extension-in-the-dev-host) |
 | Agents not visible in Copilot Chat | GitHub Copilot Chat not installed in the dev host | Install Copilot and Copilot Chat extensions in the dev host; see [required extensions](#required-extensions-for-chat-integration) |
+| `git-lfs: command not found` during clone | Git LFS not installed | Install Git LFS: `git lfs install`. On Windows, install via `winget install GitHub.GitLFS` |
+| Clone warns "checkout failed" | Git LFS filter missing from PATH | Ensure `git-lfs` is on your PATH, then run `git lfs install && git restore --source=HEAD :/` inside the clone |
 | `code-cli.sh: command not found` | Wrong path to the dev build CLI | Check that the path points to the `scripts/` directory inside the VS Code repo |

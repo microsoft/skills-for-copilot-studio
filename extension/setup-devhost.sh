@@ -80,6 +80,11 @@ check_prerequisites() {
   if ! command -v git &>/dev/null; then
     missing+=("git")
   fi
+  if ! git lfs version &>/dev/null; then
+    log "WARNING: Git LFS not found. The VS Code repo uses LFS for binary"
+    log "  assets. Clone may fail without it."
+    log "  Install: https://git-lfs.com or 'winget install GitHub.GitLFS'"
+  fi
   if ! command -v node &>/dev/null; then
     missing+=("node (Node.js 22+)")
   fi
@@ -109,11 +114,12 @@ clone_vscode() {
   fi
 
   log "Cloning VS Code into ${VSCODE_DIR}..."
+  log "  Skipping LFS binary downloads (not needed for building)."
   local clone_args=("https://github.com/microsoft/vscode.git" "${VSCODE_DIR}")
   if [[ "${SHALLOW}" == true ]]; then
-    git clone --depth 1 "${clone_args[@]}"
+    GIT_LFS_SKIP_SMUDGE=1 git clone --depth 1 "${clone_args[@]}"
   else
-    git clone "${clone_args[@]}"
+    GIT_LFS_SKIP_SMUDGE=1 git clone "${clone_args[@]}"
   fi
 }
 
