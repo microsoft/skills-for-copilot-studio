@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 # Build and locally install the Copilot Studio Skills extension for testing.
 # Usage: ./extension/test-local.sh [--package-only]
+#
+# Environment variables:
+#   CODE_CMD        Path to the VS Code CLI (default: auto-detected)
+#   EXTENSIONS_DIR  Custom extensions directory for install (optional)
 set -euo pipefail
 
 PACKAGE_ONLY=false
@@ -209,7 +213,13 @@ fi
 echo ""
 echo "==> Installing $VSIX..."
 CODE_CMD="${CODE_CMD:-$(command -v code 2>/dev/null || echo "/Applications/Visual Studio Code.app/Contents/Resources/app/bin/code")}"
-"$CODE_CMD" --install-extension "$EXT_DIR/$VSIX"
+
+INSTALL_ARGS=(--install-extension "$EXT_DIR/$VSIX")
+if [ -n "${EXTENSIONS_DIR:-}" ]; then
+  INSTALL_ARGS=(--extensions-dir "$EXTENSIONS_DIR" "${INSTALL_ARGS[@]}")
+fi
+
+"$CODE_CMD" "${INSTALL_ARGS[@]}"
 
 echo ""
 echo "==> Done! Reload VS Code to activate the extension."

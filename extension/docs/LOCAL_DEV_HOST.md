@@ -101,11 +101,12 @@ This prevents the dev instance from reading or modifying any settings, state, or
 
 ### Option A: Build and install with test-local.sh
 
-Use the `CODE_CMD` environment variable to point `test-local.sh` at the dev build's CLI:
+Use the `CODE_CMD` environment variable to point `test-local.sh` at the dev build's CLI. When using a custom `--extensions-dir`, also set `EXTENSIONS_DIR` so the extension installs into the same directory the dev host reads from:
 
 ```bash
 # From the skills-for-copilot-studio repo root
 CODE_CMD="/path/to/vscode/scripts/code-cli.sh" \
+  EXTENSIONS_DIR=".vscode-dev-extensions" \
   bash extension/test-local.sh
 ```
 
@@ -113,6 +114,7 @@ On Windows (Git Bash):
 
 ```bash
 CODE_CMD="/c/path/to/vscode/scripts/code-cli.bat" \
+  EXTENSIONS_DIR=".vscode-dev-extensions" \
   bash extension/test-local.sh
 ```
 
@@ -122,6 +124,27 @@ The dev instance's `code` CLI is located at:
 |----------------|---------------------------------|
 | macOS / Linux  | `<vscode-repo>/scripts/code-cli.sh` |
 | Windows        | `<vscode-repo>/scripts/code-cli.bat` |
+
+> [!IMPORTANT]
+> The dev build CLI resolves relative paths from the `vscode/` directory, not from your working directory. Use **absolute paths** for both `CODE_CMD` and the VSIX file, or set `EXTENSIONS_DIR` to let `test-local.sh` handle path resolution.
+>
+> Without `EXTENSIONS_DIR`, the extension installs to `~/.vscode-oss-dev/extensions/` — which is ignored when the dev host is launched with a custom `--extensions-dir`.
+
+### Required extensions for chat integration
+
+The Copilot Studio Skills extension contributes chat agents and skills that require GitHub Copilot Chat to be present. Install these extensions in the dev host before testing chat functionality:
+
+* [GitHub Copilot](https://marketplace.visualstudio.com/items?itemName=GitHub.copilot)
+* [GitHub Copilot Chat](https://marketplace.visualstudio.com/items?itemName=GitHub.copilot-chat)
+
+You can install them via the dev host CLI:
+
+```bash
+/path/to/vscode/scripts/code-cli.sh \
+  --extensions-dir .vscode-dev-extensions \
+  --install-extension GitHub.copilot \
+  --install-extension GitHub.copilot-chat
+```
 
 ### Option B: Launch via launch.json (F5)
 
@@ -152,5 +175,6 @@ See [setup-devhost.sh](../setup-devhost.sh) for the full source.
 | `node-gyp` compilation errors (macOS) | Missing Xcode tools | Run `xcode-select --install` |
 | `ENOMEM` or out-of-memory during build | Not enough RAM | Close other applications or increase swap space |
 | `npm run watch` never finishes | Expected behavior | `npm run watch` runs continuously; open a new terminal for `bash scripts/code.sh` |
-| Extension not visible after install | Dev instance not using the right extensions dir | Verify `--extensions-dir` points to where the VSIX was installed |
+| Extension not visible after install | Dev instance not using the right extensions dir | Pass `EXTENSIONS_DIR` to `test-local.sh` or use `--extensions-dir` with `code-cli.sh`; see [Loading the extension](#loading-the-extension-in-the-dev-host) |
+| Agents not visible in Copilot Chat | GitHub Copilot Chat not installed in the dev host | Install Copilot and Copilot Chat extensions in the dev host; see [required extensions](#required-extensions-for-chat-integration) |
 | `code-cli.sh: command not found` | Wrong path to the dev build CLI | Check that the path points to the `scripts/` directory inside the VS Code repo |

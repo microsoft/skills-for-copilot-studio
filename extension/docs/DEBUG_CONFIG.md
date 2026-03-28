@@ -8,6 +8,9 @@ ms.topic: reference
 
 This document provides `launch.json` configurations for debugging the Copilot Studio Skills extension using a self-hosted VS Code build. For instructions on building VS Code from source, see [LOCAL_DEV_HOST.md](LOCAL_DEV_HOST.md).
 
+> [!NOTE]
+> The Copilot Studio Skills extension contributes chat agents and skills. To test chat functionality in the Extension Development Host, install [GitHub Copilot](https://marketplace.visualstudio.com/items?itemName=GitHub.copilot) and [GitHub Copilot Chat](https://marketplace.visualstudio.com/items?itemName=GitHub.copilot-chat) in the dev host's extensions directory. See [required extensions](LOCAL_DEV_HOST.md#required-extensions-for-chat-integration) for details.
+
 ## Launch configurations
 
 Add these entries to `.vscode/launch.json` in the `skills-for-copilot-studio` repository.
