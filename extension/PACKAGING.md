@@ -126,7 +126,8 @@ The pipeline:
 2. Sets up Node.js 22
 3. Runs `bash extension/test-local.sh --package-only` (with `CODE_CMD=true` to skip VS Code install)
 4. Verifies a VSIX file was produced
-5. Uploads the VSIX as a build artifact (retained for 30 days)
+5. Validates VSIX contents (agent/skill counts, no Claude-specific fields, required directories)
+6. Uploads the VSIX as a build artifact (retained for 30 days)
 
 ## Publishing to the Marketplace
 

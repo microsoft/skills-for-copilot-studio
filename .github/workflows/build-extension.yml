@@ -81,6 +81,40 @@ jobs:
           echo "Built: $VSIX"
           echo "Size: $(du -h "$VSIX" | cut -f1)"
 
+      - name: Validate VSIX contents
+        run: |
+          STAGE_DIR="extension/.staging"
+
+          # Verify package.json has agents and skills
+          AGENTS=$(node -e "const p=require('./$STAGE_DIR/package.json'); console.log((p.contributes?.chatAgents||[]).length)")
+          SKILLS=$(node -e "const p=require('./$STAGE_DIR/package.json'); console.log((p.contributes?.chatSkills||[]).length)")
+          echo "Agents: $AGENTS, Skills: $SKILLS"
+
+          if [ "$AGENTS" -lt 1 ]; then
+            echo "ERROR: No agents discovered"
+            exit 1
+          fi
+          if [ "$SKILLS" -lt 1 ]; then
+            echo "ERROR: No skills discovered"
+            exit 1
+          fi
+
+          # Verify no Claude-specific frontmatter fields remain
+          if grep -r 'allowed-tools\|CLAUDE_SKILL_DIR\|user-invocable' "$STAGE_DIR/skills/" 2>/dev/null; then
+            echo "ERROR: Claude-specific fields found in staged skills"
+            exit 1
+          fi
+
+          # Verify essential directories exist
+          for dir in agents skills scripts templates reference; do
+            if [ ! -d "$STAGE_DIR/$dir" ]; then
+              echo "ERROR: Missing directory: $dir"
+              exit 1
+            fi
+          done
+
+          echo "VSIX validation passed: $AGENTS agents, $SKILLS skills"
+
       - name: Upload VSIX
         uses: actions/upload-artifact@v4
         with:
