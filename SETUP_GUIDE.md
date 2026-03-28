@@ -205,6 +205,14 @@ Then push, publish, and test again to verify the agent now responds with grounde
 
 ---
 
+## Advanced Debugging with a Self-Hosted VS Code Build
+
+For extension development and deep integration debugging, you can build VS Code from source and use it as an isolated debug host. This avoids cross-contamination with your primary VS Code installation and lets you step through extension host internals.
+
+See [extension/docs/LOCAL_DEV_HOST.md](extension/docs/LOCAL_DEV_HOST.md) for the full setup guide and [extension/docs/DEBUG_CONFIG.md](extension/docs/DEBUG_CONFIG.md) for sample launch.json configurations.
+
+---
+
 ## Troubleshooting
 
 | Issue                                  | Possible cause                                    | Solution                                                                        |

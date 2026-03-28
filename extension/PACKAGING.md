@@ -97,6 +97,25 @@ This packages the extension and then runs `code --install-extension` to install 
 code --uninstall-extension TBD.copilot-studio-skills
 ```
 
+## Development debugging
+
+For deeper debugging, build VS Code from source and use it as an isolated extension host. This gives you a sandboxed environment free from other extensions and user-specific settings.
+
+See [Local Dev Host Setup Guide](docs/LOCAL_DEV_HOST.md) for the full walkthrough, including:
+
+- Building VS Code from source
+- Launching with isolated `--user-data-dir` and `--extensions-dir`
+- Automated setup via `extension/setup-devhost.sh`
+
+Point `test-local.sh` at the dev build by setting `CODE_CMD` to the dev instance's CLI binary:
+
+```bash
+CODE_CMD="/path/to/vscode/scripts/code-cli.sh" \
+  bash extension/test-local.sh
+```
+
+For launch.json configurations and debugger attachment, see [Debug Configuration Reference](docs/DEBUG_CONFIG.md).
+
 ## CI/CD pipeline
 
 The GitHub Actions workflow at `.github/workflows/build-extension.yml` runs on every push and pull request that touches agent, skill, script, template, reference, or extension files.
