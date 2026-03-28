@@ -64,7 +64,7 @@ Use this configuration to attach the debugger to an already-running Extension De
 To use this, launch the dev host with the `--inspect-extensions=5870` flag:
 
 ```bash
-yarn dev --user-data-dir .vscode-dev-data \
+bash scripts/code.sh --user-data-dir .vscode-dev-data \
          --extensions-dir .vscode-dev-extensions \
          --inspect-extensions=5870
 ```

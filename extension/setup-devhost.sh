@@ -83,8 +83,8 @@ check_prerequisites() {
   if ! command -v node &>/dev/null; then
     missing+=("node (Node.js 22+)")
   fi
-  if ! command -v yarn &>/dev/null; then
-    missing+=("yarn (npm install --global yarn)")
+  if ! command -v npm &>/dev/null; then
+    missing+=("npm (bundled with Node.js)")
   fi
 
   if [[ ${#missing[@]} -gt 0 ]]; then
@@ -119,12 +119,12 @@ clone_vscode() {
 
 install_deps() {
   if [[ -d "${VSCODE_DIR}/node_modules" ]]; then
-    log "Dependencies already installed, skipping yarn install."
+    log "Dependencies already installed, skipping npm install."
     return
   fi
 
   log "Installing VS Code dependencies (this may take several minutes)..."
-  (cd "${VSCODE_DIR}" && yarn)
+  (cd "${VSCODE_DIR}" && npm install)
 }
 
 launch_dev() {
@@ -134,11 +134,11 @@ launch_dev() {
 
   if [[ "${IS_WINDOWS}" == true ]]; then
     log "  Using Windows .bat launcher"
-    (cd "${VSCODE_DIR}" && cmd //c "scripts\\code-cli.bat" \
+    (cd "${VSCODE_DIR}" && bash scripts/code.bat \
       --user-data-dir "../${USER_DATA_DIR}" \
       --extensions-dir "../${EXTENSIONS_DIR}")
   else
-    (cd "${VSCODE_DIR}" && yarn dev \
+    (cd "${VSCODE_DIR}" && bash scripts/code.sh \
       --user-data-dir "../${USER_DATA_DIR}" \
       --extensions-dir "../${EXTENSIONS_DIR}")
   fi
@@ -192,9 +192,9 @@ main() {
   if [[ "${SKIP_LAUNCH}" == true ]]; then
     log "Setup complete. Launch manually from ${VSCODE_DIR}:"
     if [[ "${IS_WINDOWS}" == true ]]; then
-      log "  scripts\\code-cli.bat \\"
+      log "  scripts\\code.bat \\"
     else
-      log "  yarn dev \\"
+      log "  bash scripts/code.sh \\"
     fi
     log "    --user-data-dir ../${USER_DATA_DIR} \\"
     log "    --extensions-dir ../${EXTENSIONS_DIR}"

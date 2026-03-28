@@ -16,7 +16,6 @@ A self-hosted build avoids cross-contamination with your primary VS Code install
 |-------------|---------|-------|
 | Git         | 2.x+    | `git --version` |
 | Node.js     | 22+     | `node --version` |
-| Yarn        | 1.x     | Installed globally: `npm install --global yarn` |
 | Python      | 3.11+   | Required by native module compilation (node-gyp) |
 | C++ toolchain | Platform-specific | See [platform notes](#platform-notes) |
 | Disk space  | ~10 GB  | VS Code source, dependencies, and build output |
@@ -64,7 +63,7 @@ cd vscode
 ### 2. Install dependencies
 
 ```bash
-yarn
+npm install
 ```
 
 This can take several minutes on first run. If native module compilation fails, check the [troubleshooting](#troubleshooting) section.
@@ -72,7 +71,7 @@ This can take several minutes on first run. If native module compilation fails, 
 ### 3. Build in watch mode
 
 ```bash
-yarn watch
+npm run watch
 ```
 
 Leave this running in a separate terminal. It recompiles automatically when VS Code source files change.
@@ -82,7 +81,7 @@ Leave this running in a separate terminal. It recompiles automatically when VS C
 Open a new terminal and run:
 
 ```bash
-yarn dev
+bash scripts/code.sh
 ```
 
 This starts a self-hosted VS Code instance built from your local source.
@@ -92,7 +91,7 @@ This starts a self-hosted VS Code instance built from your local source.
 To keep the dev instance completely separate from your primary VS Code, specify custom directories:
 
 ```bash
-yarn dev --user-data-dir .vscode-dev-data \
+bash scripts/code.sh --user-data-dir .vscode-dev-data \
          --extensions-dir .vscode-dev-extensions
 ```
 
@@ -152,6 +151,6 @@ See [setup-devhost.sh](../setup-devhost.sh) for the full source.
 | `gyp ERR! find VS` (Windows) | Missing C++ build tools | Install "Desktop development with C++" from Visual Studio Build Tools |
 | `node-gyp` compilation errors (macOS) | Missing Xcode tools | Run `xcode-select --install` |
 | `ENOMEM` or out-of-memory during build | Not enough RAM | Close other applications or increase swap space |
-| `yarn watch` never finishes | Expected behavior | `yarn watch` runs continuously; open a new terminal for `yarn dev` |
+| `npm run watch` never finishes | Expected behavior | `npm run watch` runs continuously; open a new terminal for `bash scripts/code.sh` |
 | Extension not visible after install | Dev instance not using the right extensions dir | Verify `--extensions-dir` points to where the VSIX was installed |
 | `code-cli.sh: command not found` | Wrong path to the dev build CLI | Check that the path points to the `scripts/` directory inside the VS Code repo |
