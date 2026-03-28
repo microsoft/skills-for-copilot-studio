@@ -23,8 +23,28 @@ on:
       - '.github/workflows/build-extension.yml'
 
 jobs:
+  lint-scripts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate shell script syntax
+        run: |
+          errors=0
+          for script in extension/*.sh; do
+            echo "Checking $script..."
+            if ! bash -n "$script"; then
+              errors=$((errors + 1))
+            fi
+          done
+          if [ "$errors" -gt 0 ]; then
+            echo "ERROR: $errors script(s) have syntax errors"
+            exit 1
+          fi
+
   build:
     runs-on: ubuntu-latest
+    needs: lint-scripts
     steps:
       - uses: actions/checkout@v4
 

@@ -1,0 +1,42 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Launch Extension (Dev Host)",
+      "type": "extensionHost",
+      "request": "launch",
+      "runtimeExecutable": "${env:VSCODE_DEV_PATH}/scripts/code-cli.sh",
+      "args": [
+        "--extensionDevelopmentPath=${workspaceFolder}/extension/.staging",
+        "--user-data-dir=${workspaceFolder}/.vscode-dev-data",
+        "--extensions-dir=${workspaceFolder}/.vscode-dev-extensions"
+      ],
+      "outFiles": [
+        "${workspaceFolder}/extension/.staging/**/*.js"
+      ]
+    },
+    {
+      "name": "Attach to Extension Host",
+      "type": "node",
+      "request": "attach",
+      "port": 5870,
+      "restart": true,
+      "outFiles": [
+        "${workspaceFolder}/extension/.staging/**/*.js"
+      ]
+    },
+    {
+      "name": "Launch Extension (Stable)",
+      "type": "extensionHost",
+      "request": "launch",
+      "args": [
+        "--extensionDevelopmentPath=${workspaceFolder}/extension/.staging",
+        "--user-data-dir=${workspaceFolder}/.vscode-dev-data",
+        "--extensions-dir=${workspaceFolder}/.vscode-dev-extensions"
+      ],
+      "outFiles": [
+        "${workspaceFolder}/extension/.staging/**/*.js"
+      ]
+    }
+  ]
+}
