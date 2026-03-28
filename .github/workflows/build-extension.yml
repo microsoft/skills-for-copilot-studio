@@ -42,6 +42,20 @@ jobs:
             exit 1
           fi
 
+      - name: Run ShellCheck
+        run: |
+          errors=0
+          for script in extension/*.sh; do
+            echo "Checking $script..."
+            if ! shellcheck --severity=warning "$script"; then
+              errors=$((errors + 1))
+            fi
+          done
+          if [ "$errors" -gt 0 ]; then
+            echo "ERROR: ShellCheck found issues in $errors script(s)"
+            exit 1
+          fi
+
   build:
     runs-on: ubuntu-latest
     needs: lint-scripts

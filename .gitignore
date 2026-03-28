@@ -20,6 +20,7 @@ scripts/package-lock.json
 # VS Code settings (optional - remove if you want to share settings)
 .vscode/*
 !.vscode/launch.json
+!.vscode/tasks.json
 .github/copilot-instructions.md
 
 # Extension build artifacts

@@ -13,7 +13,8 @@
       ],
       "outFiles": [
         "${workspaceFolder}/extension/.staging/**/*.js"
-      ]
+      ],
+      "preLaunchTask": "Package Extension"
     },
     {
       "name": "Attach to Extension Host",
@@ -36,7 +37,8 @@
       ],
       "outFiles": [
         "${workspaceFolder}/extension/.staging/**/*.js"
-      ]
+      ],
+      "preLaunchTask": "Package Extension"
     }
   ]
 }
