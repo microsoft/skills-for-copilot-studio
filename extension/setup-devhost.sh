@@ -123,6 +123,18 @@ install_deps() {
     return
   fi
 
+  # Check that the active Node major version matches VS Code's requirement
+  if [[ -f "${VSCODE_DIR}/.nvmrc" ]]; then
+    local required_major
+    required_major="$(sed 's/\..*//' "${VSCODE_DIR}/.nvmrc")"
+    local active_major
+    active_major="$(node --version | sed 's/v\([0-9]*\).*/\1/')"
+    if [[ "${active_major}" != "${required_major}" ]]; then
+      err "VS Code requires Node.js ${required_major}.x (found v${active_major}). \
+Switch with nvm, fnm, or brew: brew install node@${required_major}"
+    fi
+  fi
+
   log "Installing VS Code dependencies (this may take several minutes)..."
   (cd "${VSCODE_DIR}" && npm install)
 }
