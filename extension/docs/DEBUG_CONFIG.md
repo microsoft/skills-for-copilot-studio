@@ -33,7 +33,7 @@ This configuration launches the Extension Development Host using the locally bui
       "outFiles": [
         "${workspaceFolder}/extension/.staging/**/*.js"
       ],
-      "preLaunchTask": "npm: build"
+      "preLaunchTask": "Package Extension"
     }
   ]
 }
@@ -85,9 +85,12 @@ For quick testing without a self-hosted build, this configuration uses the stand
   ],
   "outFiles": [
     "${workspaceFolder}/extension/.staging/**/*.js"
-  ]
+  ],
+  "preLaunchTask": "Package Extension"
 }
 ```
+
+Both launch configurations reference the "Package Extension" task defined in `.vscode/tasks.json`, which runs `test-local.sh --package-only` to stage the extension before the debug session starts.
 
 ## Setting breakpoints
 

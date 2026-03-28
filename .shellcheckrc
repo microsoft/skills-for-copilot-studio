@@ -1,0 +1,6 @@
+# ShellCheck configuration
+# https://www.shellcheck.net/wiki/
+# Matches the CI lint-scripts job in .github/workflows/build-extension.yml
+
+shell=bash
+severity=warning
