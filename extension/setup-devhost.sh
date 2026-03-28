@@ -31,8 +31,7 @@ IS_WINDOWS=false
 # ── Functions ─────────────────────────────────────────────────────────────
 
 usage() {
-  sed -n '/^# Usage:/,/^$/p' "$0" | sed 's/^# \?//'
-  sed -n '/^# Options:/,/^[^#]/p' "$0" | sed 's/^# \?//'
+  sed -n '/^# Usage:/,/^$/p' "$0" | sed -E 's/^# ?//'
   exit 0
 }
 
@@ -82,7 +81,7 @@ check_prerequisites() {
     missing+=("git")
   fi
   if ! command -v node &>/dev/null; then
-    missing+=("node (Node.js 20+)")
+    missing+=("node (Node.js 22+)")
   fi
   if ! command -v yarn &>/dev/null; then
     missing+=("yarn (npm install --global yarn)")
@@ -95,8 +94,8 @@ See extension/docs/LOCAL_DEV_HOST.md for details."
 
   local node_major
   node_major="$(node --version | sed 's/v\([0-9]*\).*/\1/')"
-  if (( node_major < 20 )); then
-    err "Node.js 20+ required (found v${node_major}). \
+  if (( node_major < 22 )); then
+    err "Node.js 22+ required (found v${node_major}). \
 See extension/docs/LOCAL_DEV_HOST.md for details."
   fi
 
