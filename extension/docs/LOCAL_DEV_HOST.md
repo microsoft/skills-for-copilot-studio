@@ -25,12 +25,21 @@ A self-hosted build avoids cross-contamination with your primary VS Code install
 
 ### Windows
 
-Install the "Desktop development with C++" workload from Visual Studio Build Tools (or full Visual Studio). This provides `cl.exe`, `msbuild`, and the Windows SDK that node-gyp needs for native modules.
+Install Visual Studio 2022 Build Tools with the "Desktop development with C++" workload. Node-gyp v11+ (bundled with Node 22) requires VS 2022; VS 2019 is not sufficient.
 
 ```powershell
-# Optional: configure node-gyp to use the installed toolchain
-npm config set msvs_version 2022
+# Install via winget (installs the base shell only)
+winget install Microsoft.VisualStudio.2022.BuildTools
+
+# Then add the C++ workload via the VS Installer CLI (run as admin)
+& "C:\Program Files (x86)\Microsoft Visual Studio\Installer\setup.exe" modify `
+  --installPath "C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools" `
+  --add Microsoft.VisualStudio.Workload.VCTools `
+  --add Microsoft.VisualStudio.Component.VC.Spectre.x86.x64 `
+  --includeRecommended --passive
 ```
+
+Or open the Visual Studio Installer UI, select Build Tools 2022, click Modify, and check "Desktop development with C++" plus "MSVC v143 Spectre-mitigated libs" in Individual Components.
 
 ### macOS
 
@@ -185,7 +194,8 @@ See [setup-devhost.sh](../setup-devhost.sh) for the full source.
 | Issue | Possible cause | Solution |
 |-------|----------------|----------|
 | `gyp ERR! find Python` | Python not found or wrong version | Install Python 3.11+ and ensure it is on your PATH |
-| `gyp ERR! find VS` (Windows) | Missing C++ build tools | Install "Desktop development with C++" from Visual Studio Build Tools |
+| `gyp ERR! find VS` (Windows) | Missing C++ build tools | Install VS 2022 Build Tools with the "Desktop development with C++" workload. Node 22's node-gyp requires VS 2022. |
+| `error MSB8040: Spectre-mitigated libraries` | Missing Spectre libs in VS 2022 | Add `Microsoft.VisualStudio.Component.VC.Spectre.x86.x64` via the VS Installer (Individual Components tab) |
 | `node-gyp` compilation errors (macOS) | Missing Xcode tools | Run `xcode-select --install` |
 | `ENOMEM` or out-of-memory during build | Not enough RAM | Close other applications or increase swap space |
 | `npm run watch` never finishes | Expected behavior | `npm run watch` runs continuously; open a new terminal for `bash scripts/code.sh` |
