@@ -26,6 +26,7 @@ USER_DATA_DIR=".vscode-dev-data"
 EXTENSIONS_DIR=".vscode-dev-extensions"
 SKIP_LAUNCH=false
 SHALLOW=false
+IS_WINDOWS=false
 
 # ── Functions ─────────────────────────────────────────────────────────────
 
@@ -44,6 +45,34 @@ err() {
   local message="$1"
   printf "ERROR: %s\n" "$message" >&2
   exit 1
+}
+
+detect_platform() {
+  case "$(uname -s)" in
+    MINGW*|MSYS*|CYGWIN*|Windows_NT)
+      IS_WINDOWS=true
+      log "Detected Windows (Git Bash / MSYS2). Using .bat CLI scripts."
+      if ! command -v cl &>/dev/null && [[ -z "${VisualStudioVersion:-}" ]]; then
+        log "WARNING: C++ build tools not detected. VS Code native modules"
+        log "  require the 'Desktop development with C++' workload from"
+        log "  Visual Studio Build Tools. Install it if the build fails."
+        log "  See extension/docs/LOCAL_DEV_HOST.md for details."
+      fi
+      ;;
+    Darwin*)
+      log "Detected macOS."
+      if ! command -v xcodebuild &>/dev/null; then
+        log "WARNING: Xcode Command Line Tools not detected."
+        log "  Run: xcode-select --install"
+      fi
+      ;;
+    Linux*)
+      log "Detected Linux."
+      ;;
+    *)
+      log "Unknown platform: $(uname -s). Proceeding with defaults."
+      ;;
+  esac
 }
 
 check_prerequisites() {
@@ -70,6 +99,8 @@ See extension/docs/LOCAL_DEV_HOST.md for details."
     err "Node.js 20+ required (found v${node_major}). \
 See extension/docs/LOCAL_DEV_HOST.md for details."
   fi
+
+  detect_platform
 }
 
 clone_vscode() {
@@ -102,9 +133,16 @@ launch_dev() {
   log "  User data dir:  ${USER_DATA_DIR}"
   log "  Extensions dir: ${EXTENSIONS_DIR}"
 
-  (cd "${VSCODE_DIR}" && yarn dev \
-    --user-data-dir "../${USER_DATA_DIR}" \
-    --extensions-dir "../${EXTENSIONS_DIR}")
+  if [[ "${IS_WINDOWS}" == true ]]; then
+    log "  Using Windows .bat launcher"
+    (cd "${VSCODE_DIR}" && cmd //c "scripts\\code-cli.bat" \
+      --user-data-dir "../${USER_DATA_DIR}" \
+      --extensions-dir "../${EXTENSIONS_DIR}")
+  else
+    (cd "${VSCODE_DIR}" && yarn dev \
+      --user-data-dir "../${USER_DATA_DIR}" \
+      --extensions-dir "../${EXTENSIONS_DIR}")
+  fi
 }
 
 # ── Argument Parsing ──────────────────────────────────────────────────────
@@ -153,8 +191,12 @@ main() {
   install_deps
 
   if [[ "${SKIP_LAUNCH}" == true ]]; then
-    log "Setup complete. Run 'yarn dev' in ${VSCODE_DIR} to launch."
-    log "  Example: cd ${VSCODE_DIR} && yarn dev \\"
+    log "Setup complete. Launch manually from ${VSCODE_DIR}:"
+    if [[ "${IS_WINDOWS}" == true ]]; then
+      log "  scripts\\code-cli.bat \\"
+    else
+      log "  yarn dev \\"
+    fi
     log "    --user-data-dir ../${USER_DATA_DIR} \\"
     log "    --extensions-dir ../${EXTENSIONS_DIR}"
     exit 0
