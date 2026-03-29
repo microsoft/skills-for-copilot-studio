@@ -55,7 +55,7 @@ After packaging, the staging directory contains the final extension layout:
 
 | Requirement | Version   | Installation                                       |
 |-------------|-----------|----------------------------------------------------|
-| Node.js     | 20+       | <https://nodejs.org/>                              |
+| Node.js     | 22+       | <https://nodejs.org/>                              |
 | npm         | Bundled   | Included with Node.js                              |
 | VS Code     | 1.106.1+  | <https://code.visualstudio.com/>                   |
 | Bash        | 4+        | Pre-installed on macOS/Linux; use Git Bash on Windows |
@@ -97,6 +97,25 @@ This packages the extension and then runs `code --install-extension` to install 
 code --uninstall-extension TBD.copilot-studio-skills
 ```
 
+## Development debugging
+
+For deeper debugging, build VS Code from source and use it as an isolated extension host. This gives you a sandboxed environment free from other extensions and user-specific settings.
+
+See [Local Dev Host Setup Guide](docs/LOCAL_DEV_HOST.md) for the full walkthrough, including:
+
+- Building VS Code from source
+- Launching with isolated `--user-data-dir` and `--extensions-dir`
+- Automated setup via `extension/setup-devhost.sh`
+
+Point `test-local.sh` at the dev build by setting `CODE_CMD` to the dev instance's CLI binary:
+
+```bash
+CODE_CMD="/path/to/vscode/scripts/code-cli.sh" \
+  bash extension/test-local.sh
+```
+
+For launch.json configurations and debugger attachment, see [Debug Configuration Reference](docs/DEBUG_CONFIG.md).
+
 ## CI/CD pipeline
 
 The GitHub Actions workflow at `.github/workflows/build-extension.yml` runs on every push and pull request that touches agent, skill, script, template, reference, or extension files.
@@ -104,10 +123,11 @@ The GitHub Actions workflow at `.github/workflows/build-extension.yml` runs on e
 The pipeline:
 
 1. Checks out the repository
-2. Sets up Node.js 20
+2. Sets up Node.js 22
 3. Runs `bash extension/test-local.sh --package-only` (with `CODE_CMD=true` to skip VS Code install)
 4. Verifies a VSIX file was produced
-5. Uploads the VSIX as a build artifact (retained for 30 days)
+5. Validates VSIX contents (agent/skill counts, no Claude-specific fields, required directories)
+6. Uploads the VSIX as a build artifact (retained for 30 days)
 
 ## Publishing to the Marketplace
 
@@ -153,7 +173,7 @@ The version follows [SemVer](https://semver.org/):
 
 | Issue                           | Cause                                      | Solution                                                                 |
 |---------------------------------|--------------------------------------------|--------------------------------------------------------------------------|
-| `No .vsix file produced`       | `vsce` packaging failed                    | Check the script output for errors; verify Node.js 20+ is installed      |
+| `No .vsix file produced`       | `vsce` packaging failed                    | Check the script output for errors; verify Node.js 22+ is installed      |
 | Extension not visible in Chat   | Extension not activated after install      | Reload VS Code (`Developer: Reload Window`)                              |
 | Agents or skills missing        | Files not discovered during staging        | Verify agent files exist in `agents/` and skill folders contain `SKILL.md` |
 | `icon` field error from `vsce` | `icon.png` missing from `extension/`       | Add an `icon.png` or remove the `icon` field from the template          |

@@ -23,14 +23,55 @@ on:
       - '.github/workflows/build-extension.yml'
 
 jobs:
+  lint-scripts:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install ShellCheck (macOS)
+        if: runner.os == 'macOS'
+        run: brew install shellcheck
+
+      - name: Validate shell script syntax
+        run: |
+          errors=0
+          for script in extension/*.sh; do
+            echo "Checking $script..."
+            if ! bash -n "$script"; then
+              errors=$((errors + 1))
+            fi
+          done
+          if [ "$errors" -gt 0 ]; then
+            echo "ERROR: $errors script(s) have syntax errors"
+            exit 1
+          fi
+
+      - name: Run ShellCheck
+        run: |
+          errors=0
+          for script in extension/*.sh; do
+            echo "Checking $script..."
+            if ! shellcheck --severity=warning "$script"; then
+              errors=$((errors + 1))
+            fi
+          done
+          if [ "$errors" -gt 0 ]; then
+            echo "ERROR: ShellCheck found issues in $errors script(s)"
+            exit 1
+          fi
+
   build:
     runs-on: ubuntu-latest
+    needs: lint-scripts
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
 
       - name: Build extension
         run: bash extension/test-local.sh --package-only
@@ -46,6 +87,40 @@ jobs:
           fi
           echo "Built: $VSIX"
           echo "Size: $(du -h "$VSIX" | cut -f1)"
+
+      - name: Validate VSIX contents
+        run: |
+          STAGE_DIR="extension/.staging"
+
+          # Verify package.json has agents and skills
+          AGENTS=$(node -e "const p=require('./$STAGE_DIR/package.json'); console.log((p.contributes?.chatAgents||[]).length)")
+          SKILLS=$(node -e "const p=require('./$STAGE_DIR/package.json'); console.log((p.contributes?.chatSkills||[]).length)")
+          echo "Agents: $AGENTS, Skills: $SKILLS"
+
+          if [ "$AGENTS" -lt 1 ]; then
+            echo "ERROR: No agents discovered"
+            exit 1
+          fi
+          if [ "$SKILLS" -lt 1 ]; then
+            echo "ERROR: No skills discovered"
+            exit 1
+          fi
+
+          # Verify no Claude-specific frontmatter fields remain
+          if grep -r 'allowed-tools\|CLAUDE_SKILL_DIR\|user-invocable' "$STAGE_DIR/skills/" 2>/dev/null; then
+            echo "ERROR: Claude-specific fields found in staged skills"
+            exit 1
+          fi
+
+          # Verify essential directories exist
+          for dir in agents skills scripts templates reference; do
+            if [ ! -d "$STAGE_DIR/$dir" ]; then
+              echo "ERROR: Missing directory: $dir"
+              exit 1
+            fi
+          done
+
+          echo "VSIX validation passed: $AGENTS agents, $SKILLS skills"
 
       - name: Upload VSIX
         uses: actions/upload-artifact@v4

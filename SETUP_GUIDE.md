@@ -16,7 +16,7 @@ The toolkit is available in two forms:
 
 | Requirement                         | Version | Verification                                                                                   |
 |-------------------------------------|---------|------------------------------------------------------------------------------------------------|
-| Node.js                             | 20+     | `node --version`                                                                               |
+| Node.js                             | 22+     | `node --version`                                                                               |
 | VS Code                             | 1.106.1+| Required for the extension; also provides the LSP binary for push/pull/clone                   |
 | Copilot Studio VS Code Extension    | Latest  | [Install from marketplace](https://github.com/microsoft/vscode-copilotstudio)                  |
 | GitHub Copilot + Copilot Chat       | Latest  | Required for the VS Code extension path                                                        |
@@ -202,6 +202,14 @@ Add a knowledge source pointing to our product catalog at https://contoso.com/pr
 ```
 
 Then push, publish, and test again to verify the agent now responds with grounded information.
+
+---
+
+## Advanced Debugging with a Self-Hosted VS Code Build
+
+For extension development and deep integration debugging, you can build VS Code from source and use it as an isolated debug host. This avoids cross-contamination with your primary VS Code installation and lets you step through extension host internals.
+
+See [extension/docs/LOCAL_DEV_HOST.md](extension/docs/LOCAL_DEV_HOST.md) for the full setup guide and [extension/docs/DEBUG_CONFIG.md](extension/docs/DEBUG_CONFIG.md) for sample launch.json configurations.
 
 ---
 

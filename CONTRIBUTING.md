@@ -79,6 +79,30 @@ CODE_CMD="true" bash extension/test-local.sh --package-only
 
 Setting `CODE_CMD="true"` skips the VS Code install step, matching the CI environment.
 
+### Shell scripts
+
+Shell scripts under `extension/` are linted by [ShellCheck](https://www.shellcheck.net/) in CI. The repo includes a `.shellcheckrc` that sets `shell=bash` and `severity=warning` so local runs match CI.
+
+To lint locally (requires ShellCheck installed):
+
+```bash
+shellcheck extension/*.sh
+```
+
+Or install via npm:
+
+```bash
+npm install -g shellcheck
+shellcheck extension/*.sh
+```
+
+Script conventions:
+
+- Use `#!/usr/bin/env bash` and `set -euo pipefail`
+- Shell files must use LF line endings (enforced by `.gitattributes`)
+- Quote all variable expansions: `"${var}"` not `$var`
+- Use `[[ ... ]]` for conditionals, not `[ ... ]`
+
 ## Plugin management
 
 ```bash

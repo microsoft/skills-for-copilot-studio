@@ -18,13 +18,20 @@ scripts/package-lock.json
 .copilot-tracking/
 
 # VS Code settings (optional - remove if you want to share settings)
-.vscode/
+.vscode/*
+!.vscode/launch.json
+!.vscode/tasks.json
 .github/copilot-instructions.md
 
 # Extension build artifacts
 extension/.staging/
 extension/*.vsix
 extension/package.json
+
+# Dev host isolation directories (created by setup-devhost.sh)
+.vscode-dev-data/
+.vscode-dev-extensions/
+vscode/
 
 # Agent tmp files (in any subfolder)
 tmpclaude-*
