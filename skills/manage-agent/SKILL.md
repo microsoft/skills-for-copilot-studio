@@ -1,7 +1,7 @@
 ---
 user-invocable: false
 description: Push/pull Copilot Studio agent content via the VS Code extension's LanguageServerHost LSP binary. Handles authentication (interactive browser login for push/pull, device code flow for chat token), sync push, sync pull, clone, and diff operations.
-argument-hint: <push|pull|clone|changes|auth|list-agents|list-envs>
+argument-hint: <push|pull|clone|changes|publish|auth|list-agents|list-envs>
 allowed-tools: Bash(node *manage-agent.bundle.js *), Read, Glob, Grep
 context: fork
 agent: copilot-studio-manage
@@ -154,6 +154,37 @@ node ${CLAUDE_SKILL_DIR}/../../scripts/manage-agent.bundle.js changes \
   --agent-mgmt-url "<mgmtUrl>"
 ```
 
+### Publish (make draft agent live)
+
+Publishes the agent so that the current draft becomes the live version reachable by external clients (`/chat-with-agent`, `/run-tests`, Teams, etc.). Uses the Dataverse `PvaPublish` bound action directly (no LSP binary needed).
+
+**IMPORTANT — Publishing makes this version of the agent available to ALL users the agent is shared with.** If you are working in a development environment this is fine, but if the agent is shared with production users, **always confirm with the user before publishing.** Ask: "This will publish the agent and make it live for all users it's shared with. Should I proceed?"
+
+The command polls the `publishedon` field on the bot entity until the timestamp changes, confirming that publish has taken effect. Default timeout is 5 minutes.
+
+```bash
+node ${CLAUDE_SKILL_DIR}/../../scripts/manage-agent.bundle.js publish \
+  --workspace "<path-to-agent-folder>" \
+  --tenant-id "<tenantId>" \
+  --environment-url "<envUrl>" \
+  [--timeout <ms>]
+```
+
+**Timeout: 300000ms (5 minutes)** — set this on the Bash tool call.
+
+Optional: `--agent-id "<agentId>"` overrides the bot ID from `conn.json`.
+
+#### Publish output (success)
+```json
+{"status":"ok","botId":"...","publishedOn":"2026-03-27T12:00:00Z","previousPublishedOn":"2026-03-26T10:00:00Z","durationMs":45000,"durationSeconds":45}
+```
+
+#### When to publish
+
+- After a successful `push`, if the user wants changes to be testable via `/chat-with-agent` or `/run-tests`
+- In an improvement loop (edit → push → publish → test), publish is required between push and test
+- The command confirms publish completion via API — **do not use time-based waits**
+
 ### List Agents
 
 Uses Dataverse REST API directly (no LSP binary needed). `--client-id` is optional.
@@ -175,6 +206,7 @@ Uses BAP REST API directly (no LSP binary needed). `--client-id` is optional.
 node ${CLAUDE_SKILL_DIR}/../../scripts/manage-agent.bundle.js list-envs \
   --tenant-id "<tenantId>"
 ```
+
 
 ## Output Format
 
@@ -205,3 +237,5 @@ All commands output JSON to stdout with a `status` field:
 | ConcurrencyVersionMismatch | Push without fresh row versions | Pull first, then push |
 | Token expired + silent refresh failed | Refresh token expired (~90 days) | Run `auth` command for new device code flow |
 | Binary missing | Extension installed but binary not present | Reinstall the extension |
+| PvaPublish failed | Insufficient permissions or bot not found | Verify the user has publish permissions and the agent ID is correct |
+| Publish timed out | Publish still in progress after timeout | Increase `--timeout` or check the Copilot Studio UI for status |
