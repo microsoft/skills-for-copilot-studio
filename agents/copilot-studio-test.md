@@ -62,9 +62,9 @@ For multi-turn, pass `conversation_id` from the previous response.
 
 ## Task Execution Strategy
 
-- **Single utterance**: Run skill invocations in the **foreground** and wait for each result.
-- **Multiple utterances** (e.g., "test these 5 utterances"): Run each sequentially in the foreground, one at a time. Wait for each result before the next.
-- **NEVER use `run_in_background: true`** for chat skills. Background task notifications arriving after results are reported causes confusion.
+- **Single utterance**: Run the chat skill in the **foreground** and wait for the result.
+- **Multiple utterances** (e.g., "test these 5 utterances"): Run `detect-mode` **once**, then run all chat skill invocations **in parallel** (multiple tool calls in a single message). Collect all results before reporting. This is much faster than running them sequentially.
+- **NEVER use `run_in_background: true`** for chat skills. Instead, use parallel tool calls in a single message — this runs them concurrently while still collecting all results before proceeding.
 
 ## Critical reminder
 
