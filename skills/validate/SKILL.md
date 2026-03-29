@@ -1,71 +1,52 @@
 ---
 user-invocable: false
-description: Validate a Copilot Studio YAML file against the schema and best practices. Use when the user asks to check, validate, or verify a YAML file.
-argument-hint: <path-to-yaml-file>
-allowed-tools: Bash(node *schema-lookup.bundle.js *), Read, Glob
+description: Validate Copilot Studio agent YAML files using the LSP binary's full diagnostics (YAML structure, Power Fx, schema, cross-file references). Use when the user asks to check, validate, or verify YAML files.
+argument-hint: <path-to-agent-workspace>
+allowed-tools: Bash(node *manage-agent.bundle.js *), Bash(node *schema-lookup.bundle.js *), Read, Glob
 ---
 
-# Validate YAML Structure
+# Validate Agent YAML
 
-Validate a Copilot Studio YAML file against the schema and best practices.
+Validate Copilot Studio agent YAML files using the LanguageServerHost binary's full diagnostics — the same validation engine used by the VS Code Copilot Studio extension.
 
 ## Instructions
 
-1. **If a file path is provided**, use it. Otherwise, ask the user which file to validate.
+1. **Locate the agent workspace.** Find the directory containing `.mcs/conn.json`. If a specific file was requested, use the workspace that contains it.
 
-2. **Run the automated validation script first**:
+2. **Run LSP-based validation**:
    ```bash
-   node ${CLAUDE_SKILL_DIR}/../../scripts/schema-lookup.bundle.js validate $ARGUMENTS
+   node ${CLAUDE_SKILL_DIR}/../../scripts/manage-agent.bundle.js validate \
+     --workspace "<path-to-agent-folder>" \
+     --tenant-id "<tenantId>" \
+     --environment-id "<envId>" \
+     --environment-url "<envUrl>" \
+     --agent-mgmt-url "<mgmtUrl>"
    ```
-   This checks: YAML parsing, kind detection, required properties, duplicate IDs, Power Fx `=` prefix, variable scope.
+   This validates all `.mcs.yml` files in the workspace using the LSP binary's full diagnostics: YAML structure, Power Fx expressions, schema validation, cross-file references, and environment-specific checks.
 
-3. **Read the file** to perform context-aware checks the script can't do:
+   Connection details come from `.mcs/conn.json` — read it to get tenant-id, environment-id, environment-url, and agent-mgmt-url.
 
-4. **Identify the file type** by checking the `kind` property:
-   - `AdaptiveDialog` — Topic file
-   - `GptComponentMetadata` — Agent metadata
-   - `TaskDialog` — Connector action
-   - `AgentDialog` — Child agent
-   - `KnowledgeSourceConfiguration` — Knowledge source
+3. **Parse the JSON output**:
+   - `valid: true` → all files pass (may still have warnings)
+   - `valid: false` + `summary.errors > 0` → report errors as FAIL items
+   - `summary.warnings > 0` → report as WARN items
+   - Each file with diagnostics is listed with severity, message, code, and line range
 
-5. **Look up the schema** for context-aware validation:
+4. **If the user asked about a specific file**, filter the output to show only that file's diagnostics.
+
+5. **For additional context on specific errors**, use schema lookup:
    ```bash
    node ${CLAUDE_SKILL_DIR}/../../scripts/schema-lookup.bundle.js resolve <kind>
    ```
 
-6. **Perform additional manual checks**:
-
-   **Structure Validation:**
-   - `kind` property is present and valid
-   - All required properties are present
-   - Property types match schema expectations
-
-   **ID Validation:**
-   - All nodes have unique IDs
-   - IDs follow naming convention (`<nodeType>_<random>`)
-   - No `_REPLACE` placeholders remain
-
-   **Reference Validation:**
-   - Dialog references use correct fully-qualified format (`<schemaName>.topic.<TopicName>`)
-   - Variable names use correct scope prefix (Topic., System.)
-
-   **Power Fx Validation:**
-   - Expressions start with `=` prefix
-   - Parentheses are balanced
-   - String interpolation uses `{}` correctly
-
-   **Generative Orchestration (if applicable):**
-   - If `inputType`/`outputType` defined, check matching `inputs` entries
-   - If `AutomaticTaskInput` used, check `propertyName` matches `inputType.properties`
-
-7. **Report findings**:
+6. **Report findings**:
 
    ```
-   Validation Results for: <filename>
+   Validation Results for: <agent-name>
 
-   [PASS] <check description>
-   [WARN] <check description>
-   [FAIL] <check description>
+   [PASS] <filename> — no issues
+   [FAIL] <filename> — <error message> (line X)
+   [WARN] <filename> — <warning message> (line X)
 
-   Summary: X passed, Y warnings, Z failures
+   Summary: X files checked, Y errors, Z warnings
    ```

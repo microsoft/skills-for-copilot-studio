@@ -14545,6 +14545,9 @@ var { createCachePlugin } = require_msal_cache();
 function log(msg) {
   process.stderr.write(msg + "\n");
 }
+function warn(msg) {
+  process.stderr.write("[WARN] " + msg + "\n");
+}
 function die(msg) {
   process.stdout.write(JSON.stringify({ status: "error", error: msg }) + "\n");
   process.exit(1);
@@ -14565,8 +14568,9 @@ function parseArgs() {
     agentId: null,
     owner: true,
     // default: filter by owner
-    timeout: 3e5
+    timeout: 3e5,
     // default: 5 minutes for publish polling
+    force: false
   };
   for (let i = 0; i < args.length; i++) {
     switch (args[i]) {
@@ -14608,6 +14612,9 @@ function parseArgs() {
         parsed.timeout = Number.isFinite(v) && v > 0 ? v : 3e5;
         break;
       }
+      case "--force":
+        parsed.force = true;
+        break;
       default:
         if (!args[i].startsWith("--") && !parsed.command) {
           parsed.command = args[i];
@@ -14838,6 +14845,7 @@ var LspClient = class {
     this._pipeSocket = null;
     this._pipeServer = null;
     this._diagnostics = /* @__PURE__ */ new Map();
+    this._onDiagnosticsCallback = null;
   }
   async start() {
     if (this.running) return;
@@ -14903,6 +14911,7 @@ var LspClient = class {
       const { uri, diagnostics } = params;
       this._diagnostics.set(uri, diagnostics || []);
       log(`[LSP diagnostics] ${uri}: ${(diagnostics || []).length} diagnostic(s)`);
+      if (this._onDiagnosticsCallback) this._onDiagnosticsCallback(uri, diagnostics || []);
     });
     this._connection.onUnhandledNotification((msg) => {
       const detail = msg.params ? ` ${JSON.stringify(msg.params).substring(0, 300)}` : "";
@@ -14981,6 +14990,128 @@ function toFileUri(absPath) {
   }).join("/");
   const prefix = encoded.startsWith("/") ? "file://" : "file:///";
   return `${prefix}${encoded}`;
+}
+function findMcsYmlFiles(dir, results = []) {
+  let entries;
+  try {
+    entries = fs6.readdirSync(dir, { withFileTypes: true });
+  } catch {
+    return results;
+  }
+  for (const entry of entries) {
+    if (entry.name.startsWith(".")) continue;
+    const full = path2.join(dir, entry.name);
+    if (entry.isDirectory()) {
+      findMcsYmlFiles(full, results);
+    } else if (entry.isFile() && entry.name.endsWith(".mcs.yml")) {
+      results.push(full);
+    }
+  }
+  return results;
+}
+function openFilesForDiagnostics(client, filePaths) {
+  const fileEvents = filePaths.map((filePath) => ({
+    uri: toFileUri(filePath),
+    type: 1
+    // FileChangeType.Created
+  }));
+  client.sendNotification("workspace/didChangeWatchedFiles", { changes: fileEvents });
+  for (const filePath of filePaths) {
+    const uri = toFileUri(filePath);
+    let text = "";
+    try {
+      text = fs6.readFileSync(filePath, "utf8");
+    } catch (e) {
+      log(`[validate] Could not read ${filePath}: ${e.message}`);
+      continue;
+    }
+    client.sendNotification("textDocument/didOpen", {
+      textDocument: { uri, languageId: "yaml", version: 1, text }
+    });
+  }
+}
+function waitForDiagnostics(client, settleMs = 500, timeoutMs = 15e3) {
+  return new Promise((resolve) => {
+    let settleTimer = null;
+    let hardTimer = null;
+    let resolved = false;
+    function done() {
+      if (resolved) return;
+      resolved = true;
+      client._onDiagnosticsCallback = null;
+      if (settleTimer) clearTimeout(settleTimer);
+      if (hardTimer) clearTimeout(hardTimer);
+      resolve(new Map(client._diagnostics));
+    }
+    function resetSettle() {
+      if (settleTimer) clearTimeout(settleTimer);
+      settleTimer = setTimeout(done, settleMs);
+    }
+    hardTimer = setTimeout(() => {
+      log("[validate] Diagnostics wait timed out, using current results");
+      done();
+    }, timeoutMs);
+    client._onDiagnosticsCallback = () => resetSettle();
+  });
+}
+var SEVERITY_NAMES = { 1: "error", 2: "warning", 3: "information", 4: "hint" };
+function formatValidationOutput(diagnosticsMap, agentDir) {
+  let errorCount = 0, warningCount = 0, infoCount = 0;
+  const files = [];
+  for (const [uri, diags] of diagnosticsMap) {
+    if (!diags || diags.length === 0) continue;
+    let filePath = uri;
+    try {
+      filePath = path2.relative(agentDir, decodeURIComponent(uri.replace(/^file:\/\/\//, "")));
+    } catch {
+    }
+    const mapped = diags.map((d) => {
+      const sev = d.severity || 1;
+      if (sev === 1) errorCount++;
+      else if (sev === 2) warningCount++;
+      else infoCount++;
+      return {
+        severity: SEVERITY_NAMES[sev] || "error",
+        message: d.message,
+        code: d.code,
+        source: d.source,
+        range: d.range
+      };
+    });
+    files.push({ file: filePath, diagnostics: mapped });
+  }
+  return {
+    status: errorCount === 0 ? "ok" : "error",
+    valid: errorCount === 0,
+    summary: { errors: errorCount, warnings: warningCount, info: infoCount },
+    files
+  };
+}
+async function runValidation(client, args, tokens) {
+  const agentDir = findAgentDir(args.workspace);
+  try {
+    await client.sendCustomRequest("powerplatformls/getLocalChanges", buildSyncRequest(args, tokens));
+  } catch (e) {
+    log(`[validate] Context init warning: ${e.message}`);
+  }
+  const filePaths = findMcsYmlFiles(agentDir);
+  if (filePaths.length === 0) {
+    return {
+      status: "ok",
+      valid: true,
+      summary: { errors: 0, warnings: 0, info: 0 },
+      files: [],
+      fileCount: 0,
+      message: "No .mcs.yml files found"
+    };
+  }
+  log(`[validate] Found ${filePaths.length} .mcs.yml file(s)`);
+  openFilesForDiagnostics(client, filePaths);
+  log("[validate] Waiting for diagnostics...");
+  const diagnosticsMap = await waitForDiagnostics(client);
+  const output = formatValidationOutput(diagnosticsMap, agentDir);
+  output.fileCount = filePaths.length;
+  return output;
 }
 function findAgentDir(workspace) {
   const resolvedWs = path2.resolve(workspace);
@@ -15074,12 +15205,7 @@ async function cmdAuth(args) {
   };
   process.stdout.write(JSON.stringify(result, null, 2) + "\n");
 }
-async function cmdWithLsp(args, method) {
-  if (!args.workspace) die("--workspace is required");
-  if (!args.tenantId) die("--tenant-id (or CPS_TENANT_ID) is required");
-  if (!args.environmentUrl) die("--environment-url (or CPS_ENVIRONMENT_URL) is required");
-  if (!args.environmentId) die("--environment-id (or CPS_ENVIRONMENT_ID) is required");
-  if (!args.agentMgmtUrl) die("--agent-mgmt-url (or CPS_AGENT_MGMT_URL) is required");
+async function acquireLspTokens(args) {
   const agentDir = findAgentDir(args.workspace);
   const conn = loadConnJson(agentDir);
   const clusterCategory = conn?.AccountInfo?.clusterCategory;
@@ -15108,17 +15234,57 @@ async function cmdWithLsp(args, method) {
       "Dataverse API"
     );
   }
-  const tokens = { copilotStudio: cpsToken, dataverse: dvToken };
+  return { copilotStudio: cpsToken, dataverse: dvToken };
+}
+async function cmdWithLsp(args, method) {
+  if (!args.workspace) die("--workspace is required");
+  if (!args.tenantId) die("--tenant-id (or CPS_TENANT_ID) is required");
+  if (!args.environmentUrl) die("--environment-url (or CPS_ENVIRONMENT_URL) is required");
+  if (!args.environmentId) die("--environment-id (or CPS_ENVIRONMENT_ID) is required");
+  if (!args.agentMgmtUrl) die("--agent-mgmt-url (or CPS_AGENT_MGMT_URL) is required");
+  const tokens = await acquireLspTokens(args);
   const binaryInfo = findBinary();
   const client = new LspClient(binaryInfo, args.workspace);
   try {
     await client.start();
+    if (method === "powerplatformls/syncPush" && !args.force) {
+      log("[push] Running pre-push validation...");
+      const validation = await runValidation(client, args, tokens);
+      if (!validation.valid) {
+        process.stdout.write(
+          JSON.stringify({
+            status: "error",
+            error: `Push blocked: ${validation.summary.errors} validation error(s). Fix errors before pushing, or use --force to bypass.`,
+            validation
+          }, null, 2) + "\n"
+        );
+        return;
+      }
+      log(`[push] Validation passed (${validation.summary.warnings} warning(s))`);
+    }
     const request = buildSyncRequest(args, tokens);
     log(`Calling ${method}...`);
     const result = await client.sendCustomRequest(method, request);
     process.stdout.write(
       JSON.stringify({ status: "ok", method, result }, null, 2) + "\n"
     );
+  } finally {
+    await client.stop();
+  }
+}
+async function cmdValidate(args) {
+  if (!args.workspace) die("--workspace is required");
+  if (!args.tenantId) die("--tenant-id (or CPS_TENANT_ID) is required");
+  if (!args.environmentUrl) die("--environment-url (or CPS_ENVIRONMENT_URL) is required");
+  if (!args.environmentId) die("--environment-id (or CPS_ENVIRONMENT_ID) is required");
+  if (!args.agentMgmtUrl) die("--agent-mgmt-url (or CPS_AGENT_MGMT_URL) is required");
+  const tokens = await acquireLspTokens(args);
+  const binaryInfo = findBinary();
+  const client = new LspClient(binaryInfo, args.workspace);
+  try {
+    await client.start();
+    const output = await runValidation(client, args, tokens);
+    process.stdout.write(JSON.stringify(output, null, 2) + "\n");
   } finally {
     await client.stop();
   }
@@ -15506,6 +15672,9 @@ async function main() {
         break;
       case "publish":
         await cmdPublish(args);
+        break;
+      case "validate":
+        await cmdValidate(args);
         break;
       case "list-agents":
         await cmdListAgents(args);
