@@ -235,4 +235,4 @@ fi
 
 echo ""
 echo "==> Done! Reload VS Code to activate the extension."
-echo "    To uninstall: $CODE_CMD --uninstall-extension TBD.copilot-studio-skills"
+echo "    To uninstall: $CODE_CMD --uninstall-extension coatsy.copilot-studio-skills"

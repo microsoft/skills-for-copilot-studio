@@ -19,12 +19,12 @@ A toolkit for authoring, testing, and troubleshooting [Microsoft Copilot Studio]
 
 Install directly from the VS Code Marketplace:
 
-[Install Copilot Studio Skills](https://marketplace.visualstudio.com/items?itemName=TBD.copilot-studio-skills)
+[Install Copilot Studio Skills](https://marketplace.visualstudio.com/items?itemName=coatsy.copilot-studio-skills)
 
 Or from the command line:
 
 ```bash
-code --install-extension TBD.copilot-studio-skills
+code --install-extension coatsy.copilot-studio-skills
 ```
 
 Once installed, the agents and skills are available in GitHub Copilot Chat. See [SETUP_GUIDE.md](SETUP_GUIDE.md) for a full walkthrough.

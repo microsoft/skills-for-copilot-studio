@@ -94,7 +94,7 @@ This packages the extension and then runs `code --install-extension` to install 
 ### Uninstall
 
 ```bash
-code --uninstall-extension TBD.copilot-studio-skills
+code --uninstall-extension coatsy.copilot-studio-skills
 ```
 
 ## Development debugging
@@ -132,7 +132,7 @@ The pipeline:
 ## Publishing to the Marketplace
 
 > [!IMPORTANT]
-> The extension publisher is currently set to `TBD` in `extension/templates/package.template.json`. Update the `publisher` field before publishing.
+> The extension publisher is set to `coatsy` in `extension/templates/package.template.json`.
 
 ### First-time setup
 
@@ -179,4 +179,4 @@ The version follows [SemVer](https://semver.org/):
 | `icon` field error from `vsce` | `icon.png` missing from `extension/`       | Add an `icon.png` or remove the `icon` field from the template          |
 | Frontmatter visible in README   | YAML frontmatter not stripped              | Re-run `test-local.sh` to regenerate the staged README                  |
 | `command not found: code`      | VS Code CLI not on PATH                    | Set `CODE_CMD` or install the `code` command from VS Code Command Palette |
-| Publisher rejected              | `publisher` still set to `TBD`             | Update the publisher in `package.template.json` before publishing        |
+| Publisher rejected              | Publisher ID not registered or mismatched  | Verify `publisher` in `package.template.json` matches your Marketplace account |
