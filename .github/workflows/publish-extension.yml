@@ -53,7 +53,7 @@ jobs:
             exit 1
           fi
 
-      - name: Build VSIX
+      - name: Build skills extension VSIX
         run: bash extension/test-local.sh --package-only
         env:
           CODE_CMD: 'true'
@@ -101,7 +101,7 @@ jobs:
 
       - name: Dry-run notice
         if: github.event_name == 'workflow_dispatch' && inputs.dry_run == true
-        run: echo "Dry run — both VSIX files built but not published."
+        run: echo "Dry run \u2014 both VSIX files built but not published."
 
       - name: Upload skills extension VSIX
         uses: actions/upload-artifact@v4
