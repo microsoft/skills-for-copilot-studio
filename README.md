@@ -44,7 +44,7 @@ The update process depends on how you installed the plugin:
 | Interface | Update Method | Details |
 |-----------|--------------|--------|
 | **Claude Code CLI** | Auto-update (recommended) | Marketplace plugins update automatically. No action needed. |
-| **GitHub Copilot CLI** | Manual | Re-run the install command or pull the latest version manually. |
+| **GitHub Copilot CLI** | Manual | Run `/plugin update skills-for-copilot-studio` in an interactive session, or `copilot plugin update skills-for-copilot-studio` from the terminal. |
 | **VS Code** | Extension auto-update | VS Code handles updates automatically when extension auto-update is enabled in settings. |
 
 ## Usage
