@@ -1,0 +1,28 @@
+{
+  "name": "copilot-studio-development-bundle",
+  "displayName": "Copilot Studio Development Bundle",
+  "version": "0.1.0",
+  "description": "Extension pack that installs both the Copilot Studio Skills and Copilot Studio extensions for a complete agent development experience",
+  "publisher": "coatsy",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/microsoft/skills-for-copilot-studio.git"
+  },
+  "homepage": "https://github.com/microsoft/skills-for-copilot-studio#readme",
+  "bugs": {
+    "url": "https://github.com/microsoft/skills-for-copilot-studio/issues"
+  },
+  "engines": {
+    "vscode": "^1.106.1"
+  },
+  "categories": [
+    "Extension Packs"
+  ],
+  "icon": "icon.png",
+  "extensionPack": [
+    "coatsy.copilot-studio-skills",
+    "ms-copilotstudio.vscode-copilotstudio"
+  ],
+  "author": "Microsoft",
+  "license": "MIT"
+}
