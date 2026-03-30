@@ -7,7 +7,7 @@
   ],
   "version": "0.1.0",
   "description": "Copilot Studio YAML authoring, testing, and management skills for GitHub Copilot",
-  "publisher": "TBD",
+  "publisher": "coatsy",
   "repository": {
     "type": "git",
     "url": "https://github.com/microsoft/skills-for-copilot-studio.git"
