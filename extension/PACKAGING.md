@@ -54,7 +54,7 @@ After packaging, the staging directory contains the final extension layout:
 ## Prerequisites
 
 | Requirement | Version   | Installation                                       |
-|-------------|-----------|----------------------------------------------------|
+|-------------|-----------|----------------------------------------------------||
 | Node.js     | 22+       | <https://nodejs.org/>                              |
 | npm         | Bundled   | Included with Node.js                              |
 | VS Code     | 1.106.1+  | <https://code.visualstudio.com/>                   |
@@ -118,16 +118,19 @@ For launch.json configurations and debugger attachment, see [Debug Configuration
 
 ## CI/CD pipeline
 
-The GitHub Actions workflow at `.github/workflows/build-extension.yml` runs on every push and pull request that touches agent, skill, script, template, reference, or extension files.
+The GitHub Actions workflow at `.github/workflows/build-extension.yml` runs on every push and pull request that touches agent, skill, script, template, reference, or extension files. It can also be triggered manually via `workflow_dispatch` with an optional version override.
 
 The pipeline:
 
 1. Checks out the repository
 2. Sets up Node.js 22
-3. Runs `bash extension/test-local.sh --package-only` (with `CODE_CMD=true` to skip VS Code install)
-4. Verifies a VSIX file was produced
-5. Validates VSIX contents (agent/skill counts, no Claude-specific fields, required directories)
-6. Uploads the VSIX as a build artifact (retained for 30 days)
+3. Applies the version override if provided (manual dispatch only)
+4. Runs `bash extension/test-local.sh --package-only` (with `CODE_CMD=true` to skip VS Code install)
+5. Verifies a VSIX file was produced
+6. Validates VSIX contents (agent/skill counts, no Claude-specific fields, required directories)
+7. Uploads the VSIX as a build artifact (retained for 30 days)
+
+A separate publish workflow at `.github/workflows/publish-extension.yml` handles Marketplace publishing. It triggers on GitHub Release creation or manual dispatch and supports a dry-run mode for testing without publishing.
 
 ## Publishing to the Marketplace
 
@@ -137,10 +140,27 @@ The pipeline:
 ### First-time setup
 
 1. Create a publisher on the [VS Code Marketplace](https://marketplace.visualstudio.com/manage)
-2. Generate a Personal Access Token (PAT) with the **Marketplace (Manage)** scope
+2. Generate a Personal Access Token (PAT) with the **Marketplace (Manage)** scope:
+   1. Go to [Azure DevOps](https://dev.azure.com)
+   2. Open **User settings** (top-right gear) → **Personal access tokens** → **New Token**
+   3. Set the organization to **All accessible organizations**
+   4. Under **Scopes**, select **Custom defined** and check **Marketplace > Manage**
+   5. Copy the generated token
 3. Update `publisher` in `extension/templates/package.template.json` to match your publisher ID
 
-### Publish
+### Setting up `VSCE_PAT` for CI/CD
+
+The publish workflow (`.github/workflows/publish-extension.yml`) requires a `VSCE_PAT` repository secret:
+
+1. Generate a PAT using the steps above
+2. In your GitHub repository, go to **Settings** → **Secrets and variables** → **Actions**
+3. Click **New repository secret**
+4. Name: `VSCE_PAT`, Value: paste the PAT
+5. Click **Add secret**
+
+The publish workflow triggers automatically when a GitHub Release is created. Manual dispatch is also available with an optional dry-run mode.
+
+### Publish manually
 
 ```bash
 # Package first
@@ -152,6 +172,17 @@ npx @vscode/vsce publish --pat <YOUR_PAT>
 ```
 
 Alternatively, upload the VSIX manually through the [Marketplace management portal](https://marketplace.visualstudio.com/manage).
+
+### Publish via CI/CD
+
+The automated workflow handles publishing on release:
+
+1. Update the `version` in `extension/templates/package.template.json`
+2. Commit and push to the default branch
+3. Create a GitHub Release with a tag matching the version (e.g., `v0.2.0`)
+4. The workflow builds the VSIX, validates the version matches, and publishes
+
+To test without publishing, use the **Run workflow** button on the Actions tab and check the **Dry run** option.
 
 ## Version management
 
@@ -172,7 +203,7 @@ The version follows [SemVer](https://semver.org/):
 ## Troubleshooting
 
 | Issue                           | Cause                                      | Solution                                                                 |
-|---------------------------------|--------------------------------------------|--------------------------------------------------------------------------|
+|---------------------------------|--------------------------------------------|---------------------------------------------------------------------------|
 | `No .vsix file produced`       | `vsce` packaging failed                    | Check the script output for errors; verify Node.js 22+ is installed      |
 | Extension not visible in Chat   | Extension not activated after install      | Reload VS Code (`Developer: Reload Window`)                              |
 | Agents or skills missing        | Files not discovered during staging        | Verify agent files exist in `agents/` and skill folders contain `SKILL.md` |

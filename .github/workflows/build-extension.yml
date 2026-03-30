@@ -21,6 +21,12 @@ on:
       - 'reference/**'
       - 'extension/**'
       - '.github/workflows/build-extension.yml'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version override (e.g. 0.2.0). Leave empty to use package.template.json version.'
+        required: false
+        type: string
 
 jobs:
   lint-scripts:
@@ -72,6 +78,18 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+
+      - name: Override version
+        if: inputs.version != ''
+        run: |
+          cd extension/templates
+          node -e "
+            const fs = require('fs');
+            const pkg = JSON.parse(fs.readFileSync('package.template.json', 'utf8'));
+            pkg.version = '${{ inputs.version }}';
+            fs.writeFileSync('package.template.json', JSON.stringify(pkg, null, 2) + '\n');
+            console.log('Version set to: ' + pkg.version);
+          "
 
       - name: Build extension
         run: bash extension/test-local.sh --package-only

@@ -1,0 +1,80 @@
+name: Publish Extension
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Dry run \u2014 package without publishing'
+        required: false
+        type: boolean
+        default: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Resolve version from release tag
+        if: github.event_name == 'release'
+        run: |
+          TAG="${{ github.event.release.tag_name }}"
+          # Strip leading 'v' if present
+          VERSION="${TAG#v}"
+          echo "RELEASE_VERSION=$VERSION" >> "$GITHUB_ENV"
+          echo "Resolved version from tag: $VERSION"
+
+      - name: Validate version matches manifest
+        if: github.event_name == 'release'
+        run: |
+          MANIFEST_VERSION=$(node -e "
+            const pkg = require('./extension/templates/package.template.json');
+            console.log(pkg.version);
+          ")
+          echo "Manifest version: $MANIFEST_VERSION"
+          echo "Release version:  $RELEASE_VERSION"
+          if [ "$MANIFEST_VERSION" != "$RELEASE_VERSION" ]; then
+            echo "ERROR: Version mismatch \u2014 manifest ($MANIFEST_VERSION) does not match release tag ($RELEASE_VERSION)"
+            echo "Update the version in extension/templates/package.template.json before releasing."
+            exit 1
+          fi
+
+      - name: Build VSIX
+        run: bash extension/test-local.sh --package-only
+        env:
+          CODE_CMD: 'true'
+
+      - name: Verify VSIX artifact
+        run: |
+          VSIX=$(ls -t extension/*.vsix 2>/dev/null | head -1)
+          if [ -z "$VSIX" ]; then
+            echo "ERROR: No .vsix file produced"
+            exit 1
+          fi
+          echo "VSIX_PATH=$VSIX" >> "$GITHUB_ENV"
+          echo "Built: $VSIX ($(du -h "$VSIX" | cut -f1))"
+
+      - name: Publish to VS Code Marketplace
+        if: >-
+          (github.event_name == 'release' ||
+           (github.event_name == 'workflow_dispatch' && inputs.dry_run == false))
+        run: npx --yes @vscode/vsce publish --no-dependencies --packagePath "$VSIX_PATH"
+        env:
+          VSCE_PAT: ${{ secrets.VSCE_PAT }}
+
+      - name: Dry-run notice
+        if: github.event_name == 'workflow_dispatch' && inputs.dry_run == true
+        run: echo "Dry run \u2014 VSIX built but not published."
+
+      - name: Upload VSIX
+        uses: actions/upload-artifact@v4
+        with:
+          name: copilot-studio-skills-vsix
+          path: extension/*.vsix
+          retention-days: 30
