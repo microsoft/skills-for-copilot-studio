@@ -10,6 +10,7 @@ on:
       - 'templates/**'
       - 'reference/**'
       - 'extension/**'
+      - 'extension-pack/**'
       - '.github/workflows/build-extension.yml'
   pull_request:
     branches: [main, coatsy/vscode-extension]
@@ -20,7 +21,14 @@ on:
       - 'templates/**'
       - 'reference/**'
       - 'extension/**'
+      - 'extension-pack/**'
       - '.github/workflows/build-extension.yml'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version override (e.g. 0.2.0). Leave empty to use package.template.json version.'
+        required: false
+        type: string
 
 jobs:
   lint-scripts:
@@ -38,7 +46,7 @@ jobs:
       - name: Validate shell script syntax
         run: |
           errors=0
-          for script in extension/*.sh; do
+          for script in extension/*.sh extension-pack/*.sh; do
             echo "Checking $script..."
             if ! bash -n "$script"; then
               errors=$((errors + 1))
@@ -52,7 +60,7 @@ jobs:
       - name: Run ShellCheck
         run: |
           errors=0
-          for script in extension/*.sh; do
+          for script in extension/*.sh extension-pack/*.sh; do
             echo "Checking $script..."
             if ! shellcheck --severity=warning "$script"; then
               errors=$((errors + 1))
@@ -72,6 +80,18 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+
+      - name: Override version
+        if: inputs.version != ''
+        run: |
+          cd extension/templates
+          node -e "
+            const fs = require('fs');
+            const pkg = JSON.parse(fs.readFileSync('package.template.json', 'utf8'));
+            pkg.version = '${{ inputs.version }}';
+            fs.writeFileSync('package.template.json', JSON.stringify(pkg, null, 2) + '\n');
+            console.log('Version set to: ' + pkg.version);
+          "
 
       - name: Build extension
         run: bash extension/test-local.sh --package-only
@@ -122,9 +142,31 @@ jobs:
 
           echo "VSIX validation passed: $AGENTS agents, $SKILLS skills"
 
-      - name: Upload VSIX
+      - name: Upload skills extension VSIX
         uses: actions/upload-artifact@v4
         with:
           name: copilot-studio-skills-vsix
           path: extension/*.vsix
+          retention-days: 30
+
+      - name: Build extension pack
+        run: bash extension-pack/build.sh --package-only
+        env:
+          CODE_CMD: 'true'
+
+      - name: Verify extension pack VSIX
+        run: |
+          VSIX=$(ls -t extension-pack/*.vsix 2>/dev/null | head -1)
+          if [ -z "$VSIX" ]; then
+            echo "ERROR: No extension pack .vsix file produced"
+            exit 1
+          fi
+          echo "Built: $VSIX"
+          echo "Size: $(du -h "$VSIX" | cut -f1)"
+
+      - name: Upload extension pack VSIX
+        uses: actions/upload-artifact@v4
+        with:
+          name: copilot-studio-bundle-vsix
+          path: extension-pack/*.vsix
           retention-days: 30
