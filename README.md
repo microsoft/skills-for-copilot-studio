@@ -37,6 +37,16 @@ claude plugin install /path/to/skills-for-copilot-studio --scope user
 claude plugin install /path/to/skills-for-copilot-studio --scope project
 ```
 
+## Updating
+
+The update process depends on how you installed the plugin:
+
+| Interface | Update Method | Details |
+|-----------|--------------|--------|
+| **Claude Code CLI** | Auto-update (recommended) | Marketplace plugins update automatically. No action needed. |
+| **GitHub Copilot CLI** | Manual | Re-run the install command or pull the latest version manually. |
+| **VS Code** | Extension auto-update | VS Code handles updates automatically when extension auto-update is enabled in settings. |
+
 ## Usage
 
 The plugin provides four commands, each backed by a specialized agent:
@@ -69,6 +79,7 @@ The plugin provides four commands, each backed by a specialized agent:
 ```
 
 See [SETUP_GUIDE.md](SETUP_GUIDE.md) for a full end-to-end walkthrough including validation, testing options, and troubleshooting.
+
 
 ## Disclaimer
 
