@@ -8,6 +8,8 @@
  *   node manage-agent.bundle.js pull --workspace <path>       # Pull remote changes
  *   node manage-agent.bundle.js clone --workspace <path>      # Clone agent to local
  *   node manage-agent.bundle.js changes --workspace <path>    # Show local/remote diffs
+ *   node manage-agent.bundle.js publish --workspace <path>    # Publish agent (make draft live)
+ *   node manage-agent.bundle.js validate --workspace <path>   # Validate YAML via LSP
  *   node manage-agent.bundle.js list-agents                   # List agents in environment
  *   node manage-agent.bundle.js list-envs                     # List environments
  *
@@ -38,6 +40,10 @@ function log(msg) {
   process.stderr.write(msg + "\n");
 }
 
+function warn(msg) {
+  process.stderr.write("[WARN] " + msg + "\n");
+}
+
 function die(msg) {
   process.stdout.write(JSON.stringify({ status: "error", error: msg }) + "\n");
   process.exit(1);
@@ -62,6 +68,8 @@ function parseArgs() {
     accountEmail: null,
     agentId: null,
     owner: true, // default: filter by owner
+    timeout: 300000, // default: 5 minutes for publish polling
+    force: false,
   };
 
   for (let i = 0; i < args.length; i++) {
@@ -99,6 +107,14 @@ function parseArgs() {
       case "--no-owner":
         parsed.owner = false;
         break;
+      case "--timeout": {
+        const v = parseInt(args[++i], 10);
+        parsed.timeout = Number.isFinite(v) && v > 0 ? v : 300000;
+        break;
+      }
+      case "--force":
+        parsed.force = true;
+        break;
       default:
         if (!args[i].startsWith("--") && !parsed.command) {
           parsed.command = args[i];
@@ -110,7 +126,7 @@ function parseArgs() {
   if (!parsed.command) {
     die(
       "Usage: manage-agent <command> [options]\n" +
-        "Commands: auth, push, pull, clone, changes, list-agents, list-envs"
+        "Commands: auth, push, pull, clone, changes, validate, publish, list-agents, list-envs"
     );
   }
 
@@ -413,6 +429,7 @@ class LspClient {
     this._pipeSocket = null;
     this._pipeServer = null;
     this._diagnostics = new Map(); // uri → diagnostics[]
+    this._onDiagnosticsCallback = null;
   }
 
   async start() {
@@ -502,6 +519,7 @@ class LspClient {
       const { uri, diagnostics } = params;
       this._diagnostics.set(uri, diagnostics || []);
       log(`[LSP diagnostics] ${uri}: ${(diagnostics || []).length} diagnostic(s)`);
+      if (this._onDiagnosticsCallback) this._onDiagnosticsCallback(uri, diagnostics || []);
     });
 
     this._connection.onUnhandledNotification((msg) => {
@@ -608,6 +626,146 @@ function toFileUri(absPath) {
   }).join("/");
   const prefix = encoded.startsWith("/") ? "file://" : "file:///";
   return `${prefix}${encoded}`;
+}
+
+// ---------------------------------------------------------------------------
+// Validation helpers — LSP-based diagnostics
+// ---------------------------------------------------------------------------
+
+function findMcsYmlFiles(dir, results = []) {
+  let entries;
+  try { entries = fs.readdirSync(dir, { withFileTypes: true }); }
+  catch { return results; }
+  for (const entry of entries) {
+    if (entry.name.startsWith(".")) continue;
+    const full = path.join(dir, entry.name);
+    if (entry.isDirectory()) {
+      findMcsYmlFiles(full, results);
+    } else if (entry.isFile() && entry.name.endsWith(".mcs.yml")) {
+      results.push(full);
+    }
+  }
+  return results;
+}
+
+function openFilesForDiagnostics(client, filePaths) {
+  // Notify the server about all files via workspace/didChangeWatchedFiles first.
+  // This mirrors the VS Code extension's file watcher behavior and triggers
+  // workspace-wide diagnostics (PublishAllDiagnosticsAsync) which includes
+  // cross-file validation that textDocument/didOpen alone doesn't trigger.
+  const fileEvents = filePaths.map((filePath) => ({
+    uri: toFileUri(filePath),
+    type: 1, // FileChangeType.Created
+  }));
+  client.sendNotification("workspace/didChangeWatchedFiles", { changes: fileEvents });
+
+  // Then open each file for per-document diagnostics
+  for (const filePath of filePaths) {
+    const uri = toFileUri(filePath);
+    let text = "";
+    try { text = fs.readFileSync(filePath, "utf8"); }
+    catch (e) { log(`[validate] Could not read ${filePath}: ${e.message}`); continue; }
+    client.sendNotification("textDocument/didOpen", {
+      textDocument: { uri, languageId: "yaml", version: 1, text },
+    });
+  }
+}
+
+function waitForDiagnostics(client, settleMs = 500, timeoutMs = 15000) {
+  return new Promise((resolve) => {
+    let settleTimer = null;
+    let hardTimer = null;
+    let resolved = false;
+
+    function done() {
+      if (resolved) return;
+      resolved = true;
+      client._onDiagnosticsCallback = null;
+      if (settleTimer) clearTimeout(settleTimer);
+      if (hardTimer) clearTimeout(hardTimer);
+      resolve(new Map(client._diagnostics));
+    }
+
+    function resetSettle() {
+      if (settleTimer) clearTimeout(settleTimer);
+      settleTimer = setTimeout(done, settleMs);
+    }
+
+    hardTimer = setTimeout(() => {
+      log("[validate] Diagnostics wait timed out, using current results");
+      done();
+    }, timeoutMs);
+
+    client._onDiagnosticsCallback = () => resetSettle();
+  });
+}
+
+const SEVERITY_NAMES = { 1: "error", 2: "warning", 3: "information", 4: "hint" };
+
+function formatValidationOutput(diagnosticsMap, agentDir) {
+  let errorCount = 0, warningCount = 0, infoCount = 0;
+  const files = [];
+
+  for (const [uri, diags] of diagnosticsMap) {
+    if (!diags || diags.length === 0) continue;
+    let filePath = uri;
+    try {
+      filePath = path.relative(agentDir, decodeURIComponent(uri.replace(/^file:\/\/\//, "")));
+    } catch {}
+
+    const mapped = diags.map((d) => {
+      const sev = d.severity || 1;
+      if (sev === 1) errorCount++;
+      else if (sev === 2) warningCount++;
+      else infoCount++;
+      return {
+        severity: SEVERITY_NAMES[sev] || "error",
+        message: d.message,
+        code: d.code,
+        source: d.source,
+        range: d.range,
+      };
+    });
+    files.push({ file: filePath, diagnostics: mapped });
+  }
+
+  return {
+    status: errorCount === 0 ? "ok" : "error",
+    valid: errorCount === 0,
+    summary: { errors: errorCount, warnings: warningCount, info: infoCount },
+    files,
+  };
+}
+
+async function runValidation(client, args, tokens) {
+  const agentDir = findAgentDir(args.workspace);
+
+  // Send a lightweight request to initialize environment context
+  try {
+    await client.sendCustomRequest("powerplatformls/getLocalChanges", buildSyncRequest(args, tokens));
+  } catch (e) {
+    log(`[validate] Context init warning: ${e.message}`);
+  }
+
+  const filePaths = findMcsYmlFiles(agentDir);
+  if (filePaths.length === 0) {
+    return {
+      status: "ok", valid: true,
+      summary: { errors: 0, warnings: 0, info: 0 },
+      files: [], fileCount: 0,
+      message: "No .mcs.yml files found",
+    };
+  }
+
+  log(`[validate] Found ${filePaths.length} .mcs.yml file(s)`);
+  openFilesForDiagnostics(client, filePaths);
+
+  log("[validate] Waiting for diagnostics...");
+  const diagnosticsMap = await waitForDiagnostics(client);
+
+  const output = formatValidationOutput(diagnosticsMap, agentDir);
+  output.fileCount = filePaths.length;
+  return output;
 }
 
 function findAgentDir(workspace) {
@@ -723,16 +881,7 @@ async function cmdAuth(args) {
   process.stdout.write(JSON.stringify(result, null, 2) + "\n");
 }
 
-async function cmdWithLsp(args, method) {
-  if (!args.workspace) die("--workspace is required");
-  if (!args.tenantId) die("--tenant-id (or CPS_TENANT_ID) is required");
-  if (!args.environmentUrl) die("--environment-url (or CPS_ENVIRONMENT_URL) is required");
-  if (!args.environmentId) die("--environment-id (or CPS_ENVIRONMENT_ID) is required");
-  if (!args.agentMgmtUrl) die("--agent-mgmt-url (or CPS_AGENT_MGMT_URL) is required");
-
-  // Use conn.json to determine the Island API audience and tenant.
-  // The Island token uses VS Code's first-party client ID which is
-  // pre-authorized with the gateway.
+async function acquireLspTokens(args) {
   const agentDir = findAgentDir(args.workspace);
   const conn = loadConnJson(agentDir);
   const clusterCategory = conn?.AccountInfo?.clusterCategory;
@@ -761,14 +910,39 @@ async function cmdWithLsp(args, method) {
     );
   }
 
-  const tokens = { copilotStudio: cpsToken, dataverse: dvToken };
+  return { copilotStudio: cpsToken, dataverse: dvToken };
+}
 
-  // Find and start LSP binary
+async function cmdWithLsp(args, method) {
+  if (!args.workspace) die("--workspace is required");
+  if (!args.tenantId) die("--tenant-id (or CPS_TENANT_ID) is required");
+  if (!args.environmentUrl) die("--environment-url (or CPS_ENVIRONMENT_URL) is required");
+  if (!args.environmentId) die("--environment-id (or CPS_ENVIRONMENT_ID) is required");
+  if (!args.agentMgmtUrl) die("--agent-mgmt-url (or CPS_AGENT_MGMT_URL) is required");
+
+  const tokens = await acquireLspTokens(args);
   const binaryInfo = findBinary();
   const client = new LspClient(binaryInfo, args.workspace);
 
   try {
     await client.start();
+
+    // Pre-push validation: block if errors found
+    if (method === "powerplatformls/syncPush" && !args.force) {
+      log("[push] Running pre-push validation...");
+      const validation = await runValidation(client, args, tokens);
+      if (!validation.valid) {
+        process.stdout.write(
+          JSON.stringify({
+            status: "error",
+            error: `Push blocked: ${validation.summary.errors} validation error(s). Fix errors before pushing, or use --force to bypass.`,
+            validation,
+          }, null, 2) + "\n"
+        );
+        return;
+      }
+      log(`[push] Validation passed (${validation.summary.warnings} warning(s))`);
+    }
 
     const request = buildSyncRequest(args, tokens);
     log(`Calling ${method}...`);
@@ -777,6 +951,26 @@ async function cmdWithLsp(args, method) {
     process.stdout.write(
       JSON.stringify({ status: "ok", method, result }, null, 2) + "\n"
     );
+  } finally {
+    await client.stop();
+  }
+}
+
+async function cmdValidate(args) {
+  if (!args.workspace) die("--workspace is required");
+  if (!args.tenantId) die("--tenant-id (or CPS_TENANT_ID) is required");
+  if (!args.environmentUrl) die("--environment-url (or CPS_ENVIRONMENT_URL) is required");
+  if (!args.environmentId) die("--environment-id (or CPS_ENVIRONMENT_ID) is required");
+  if (!args.agentMgmtUrl) die("--agent-mgmt-url (or CPS_AGENT_MGMT_URL) is required");
+
+  const tokens = await acquireLspTokens(args);
+  const binaryInfo = findBinary();
+  const client = new LspClient(binaryInfo, args.workspace);
+
+  try {
+    await client.start();
+    const output = await runValidation(client, args, tokens);
+    process.stdout.write(JSON.stringify(output, null, 2) + "\n");
   } finally {
     await client.stop();
   }
@@ -809,6 +1003,45 @@ async function httpGetJson(url, accessToken) {
     });
     req.on("error", reject);
     req.setTimeout(30000, () => { req.destroy(); reject(new Error("HTTP request timed out")); });
+  });
+}
+
+async function httpPostJson(url, accessToken, body) {
+  const https = require("https");
+  const payload = body != null ? JSON.stringify(body) : "";
+  const parsed = new URL(url);
+  return new Promise((resolve, reject) => {
+    const req = https.request({
+      hostname: parsed.hostname,
+      port: parsed.port || 443,
+      path: parsed.pathname + parsed.search,
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
+        "OData-MaxVersion": "4.0",
+        "OData-Version": "4.0",
+        "Content-Length": Buffer.byteLength(payload),
+      },
+    }, (res) => {
+      let data = "";
+      res.on("error", reject);
+      res.on("data", (chunk) => (data += chunk));
+      res.on("end", () => {
+        if (res.statusCode >= 400) {
+          reject(new Error(`HTTP ${res.statusCode}: ${data.substring(0, 500)}`));
+        } else if (res.statusCode === 204 || !data.trim()) {
+          resolve(null);
+        } else {
+          try { resolve(JSON.parse(data)); }
+          catch (e) { reject(new Error(`Invalid JSON: ${e.message}`)); }
+        }
+      });
+    });
+    req.on("error", reject);
+    req.setTimeout(60000, () => { req.destroy(); reject(new Error("HTTP request timed out")); });
+    req.write(payload);
+    req.end();
   });
 }
 
@@ -896,6 +1129,98 @@ async function cmdListEnvs(args) {
   process.stdout.write(
     JSON.stringify({ status: "ok", environments }, null, 2) + "\n"
   );
+}
+
+// ---------------------------------------------------------------------------
+// Publish — trigger PvaPublish bound action and poll for completion
+// ---------------------------------------------------------------------------
+
+const PUBLISH_POLL_INTERVAL_MS = 10000; // 10 seconds
+
+async function cmdPublish(args) {
+  if (!args.workspace) die("--workspace is required");
+
+  const agentDir = findAgentDir(args.workspace);
+  const conn = loadConnJson(agentDir);
+
+  const tenantId = (conn?.AccountInfo?.TenantId) || args.tenantId;
+  if (!tenantId) die("--tenant-id (or CPS_TENANT_ID) is required");
+
+  const envUrl = (args.environmentUrl || conn?.DataverseEndpoint || "").replace(/\/+$/, "");
+  if (!envUrl) die("--environment-url (or CPS_ENVIRONMENT_URL) is required");
+
+  const botId = args.agentId || (conn && conn.AgentId);
+  if (!botId) die("Cannot determine agent ID. Provide --agent-id or ensure .mcs/conn.json exists.");
+
+  const dvToken = await getOrAcquireToken(
+    tenantId,
+    VSCODE_CLIENT_ID,
+    [`${envUrl}/.default`],
+    "Dataverse API"
+  );
+
+  // Read current publishedon timestamp before triggering publish
+  log("Reading current publish timestamp...");
+  const botBefore = await httpGetJson(
+    `${envUrl}/api/data/v9.2/bots(${botId})?$select=publishedon`,
+    dvToken.accessToken
+  );
+  const previousPublishedOn = botBefore.publishedon || null;
+  log(`Current publishedon: ${previousPublishedOn || "(never published)"}`);
+
+  // Trigger PvaPublish bound action
+  log("Calling PvaPublish...");
+  const publishUrl = `${envUrl}/api/data/v9.2/bots(${botId})/Microsoft.Dynamics.CRM.PvaPublish`;
+  let publishResponse;
+  try {
+    publishResponse = await httpPostJson(publishUrl, dvToken.accessToken, null);
+  } catch (err) {
+    die(`PvaPublish failed: ${err.message}`);
+  }
+  log("PvaPublish triggered successfully.");
+
+  // Poll for completion by watching the publishedon timestamp change
+  const startTime = Date.now();
+  const timeoutMs = args.timeout || 300000;
+  log(`Polling for publish completion (timeout: ${timeoutMs / 1000}s)...`);
+
+  while (Date.now() - startTime < timeoutMs) {
+    await new Promise((resolve) => setTimeout(resolve, PUBLISH_POLL_INTERVAL_MS));
+
+    const elapsed = Math.round((Date.now() - startTime) / 1000);
+    let botNow;
+    try {
+      botNow = await httpGetJson(
+        `${envUrl}/api/data/v9.2/bots(${botId})?$select=publishedon`,
+        dvToken.accessToken
+      );
+    } catch (err) {
+      log(`Poll error (${elapsed}s): ${err.message} — retrying...`);
+      continue;
+    }
+
+    const currentPublishedOn = botNow.publishedon || null;
+    log(`  [${elapsed}s] publishedon: ${currentPublishedOn || "(null)"}`);
+
+    if (currentPublishedOn && currentPublishedOn !== previousPublishedOn) {
+      const durationMs = Date.now() - startTime;
+      const result = {
+        status: "ok",
+        botId,
+        publishedOn: currentPublishedOn,
+        previousPublishedOn,
+        durationMs,
+        durationSeconds: Math.round(durationMs / 1000),
+      };
+      if (publishResponse) {
+        result.publishResponse = publishResponse;
+      }
+      process.stdout.write(JSON.stringify(result, null, 2) + "\n");
+      return;
+    }
+  }
+
+  die(`Publish timed out after ${timeoutMs / 1000}s. The publish may still be in progress — check the Copilot Studio UI.`);
 }
 
 async function cmdChanges(args) {
@@ -1108,6 +1433,12 @@ async function main() {
         break;
       case "changes":
         await cmdChanges(args);
+        break;
+      case "publish":
+        await cmdPublish(args);
+        break;
+      case "validate":
+        await cmdValidate(args);
         break;
       case "list-agents":
         await cmdListAgents(args);
