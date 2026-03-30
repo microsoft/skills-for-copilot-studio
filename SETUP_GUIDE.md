@@ -28,19 +28,19 @@ You also need access to a Power Platform environment with Copilot Studio and an 
 
 ## 1. Install the Toolkit
 
-### Option A: VS Code extension (recommended)
+### Option A: VS Code extension bundle (recommended)
 
-Install from the VS Code Marketplace:
+Install the **Copilot Studio Development Bundle** to get everything you need in one click:
 
-[Install Copilot Studio Skills](https://marketplace.visualstudio.com/items?itemName=coatsy.copilot-studio-skills)
+[Install Copilot Studio Development Bundle](https://marketplace.visualstudio.com/items?itemName=coatsy.copilot-studio-development-bundle)
 
 Or from the command line:
 
 ```bash
-code --install-extension coatsy.copilot-studio-skills
+code --install-extension coatsy.copilot-studio-development-bundle
 ```
 
-After installing, reload VS Code. The agents and skills appear in GitHub Copilot Chat.
+The bundle installs both the **Copilot Studio Skills** extension and the **Copilot Studio** extension together. After installing, reload VS Code. The agents and skills appear in GitHub Copilot Chat.
 
 ### Option B: Claude Code plugin from marketplace
 

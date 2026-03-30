@@ -17,28 +17,26 @@ A toolkit for authoring, testing, and troubleshooting [Microsoft Copilot Studio]
 
 ### VS Code extension (recommended)
 
-Install directly from the VS Code Marketplace:
+Install the **Copilot Studio Development Bundle** to get everything you need in one click:
 
-[Install Copilot Studio Skills](https://marketplace.visualstudio.com/items?itemName=coatsy.copilot-studio-skills)
+[Install Copilot Studio Development Bundle](https://marketplace.visualstudio.com/items?itemName=coatsy.copilot-studio-development-bundle)
 
 Or from the command line:
 
 ```bash
-code --install-extension coatsy.copilot-studio-skills
+code --install-extension coatsy.copilot-studio-development-bundle
 ```
 
-Once installed, the agents and skills are available in GitHub Copilot Chat. See [SETUP_GUIDE.md](SETUP_GUIDE.md) for a full walkthrough.
+The bundle installs both the **Copilot Studio Skills** extension and the **Copilot Studio** extension together. Once installed, the agents and skills are available in GitHub Copilot Chat. See [SETUP_GUIDE.md](SETUP_GUIDE.md) for a full walkthrough.
 
-### Claude Code plugin
-
-#### From marketplace
+### Claude Code plugin from marketplace
 
 ```bash
 /plugin marketplace add microsoft/skills-for-copilot-studio
 /plugin install copilot-studio@skills-for-copilot-studio
 ```
 
-#### From a local clone
+### Claude Code plugin from a local clone
 
 ```bash
 git clone https://github.com/microsoft/skills-for-copilot-studio.git
