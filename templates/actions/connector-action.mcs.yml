@@ -1,5 +1,6 @@
-# Name: <Action Name>
-# Description: <What this action does>
+mcs.metadata:
+  componentName: <Action Name>
+  description: "Description: <What this action does>"
 kind: TaskDialog
 inputs:
   - kind: ManualTaskInput
@@ -14,7 +15,6 @@ inputs:
 
 modelDisplayName: <Display name shown to AI>
 modelDescription: <Description of what this action does for AI routing>
-
 outputs:
   - propertyName: Response
 
@@ -23,6 +23,7 @@ action:
   connectionReference: <connection-reference-logical-name>
   connectionProperties:
     mode: Invoker
+
   operationId: <OperationId>
 
 outputMode: All
