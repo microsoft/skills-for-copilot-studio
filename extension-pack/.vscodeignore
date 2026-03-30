@@ -1,0 +1,12 @@
+# Exclude everything by default, then include what we need
+**
+
+# Include extension pack essentials
+!package.json
+!README.md
+!LICENSE
+!icon.png
+
+# Exclude build artifacts
+*.vsix
+build.sh
