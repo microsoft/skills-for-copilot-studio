@@ -1,21 +1,26 @@
 # Skills for Copilot Studio
 
-A plugin for [Claude Code](https://docs.anthropic.com/en/docs/claude-code) and [GitHub Copilot CLI](https://docs.github.com/en/copilot) that enables authoring, testing, and troubleshooting [Microsoft Copilot Studio](https://aka.ms/CopilotStudio) agents through YAML files — directly from your terminal.
+A plugin for [Claude Code](https://docs.anthropic.com/en/docs/claude-code), [GitHub Copilot CLI](https://docs.github.com/en/copilot), and [VS Code](https://code.visualstudio.com/) that enables authoring, testing, and troubleshooting [Microsoft Copilot Studio](https://aka.ms/CopilotStudio) agents through YAML files — directly from your terminal or editor.
 
 ## Prerequisites
 
-- [Claude Code](https://docs.anthropic.com/en/docs/claude-code) or [GitHub Copilot CLI](https://docs.github.com/en/copilot)
+- [Claude Code](https://docs.anthropic.com/en/docs/claude-code), [GitHub Copilot CLI](https://docs.github.com/en/copilot), or [VS Code](https://code.visualstudio.com/)
 - [Node.js](https://nodejs.org/) 18+
 - [VS Code](https://code.visualstudio.com/) with the [Copilot Studio Extension](https://github.com/microsoft/vscode-copilotstudio) (required for push/pull/clone operations)
 
 ## Installation
 
-### From marketplace (recommended)
+### From marketplace (Claude Code / GitHub Copilot CLI)
 
 ```bash
 /plugin marketplace add microsoft/skills-for-copilot-studio
 /plugin install copilot-studio@skills-for-copilot-studio
 ```
+### From VS Code Extensions Store (GitHub Copilot)
+
+Search for **Skills for Copilot Studio** in the VS Code Extensions using the **@agentPlugins** filter to view and click **Install**.
+
+![VS Code Extensions Store](./img/VSCodeStore.png)
 
 ### From a local clone
 
@@ -31,6 +36,16 @@ claude plugin install /path/to/skills-for-copilot-studio --scope user
 # Or install for a specific project
 claude plugin install /path/to/skills-for-copilot-studio --scope project
 ```
+
+## Updating
+
+The update process depends on how you installed the plugin:
+
+| Interface | Update Method | Details |
+|-----------|--------------|--------|
+| **Claude Code CLI** | Auto-update (recommended) | Marketplace plugins update automatically. No action needed. |
+| **GitHub Copilot CLI** | Manual | Re-run the install command or pull the latest version manually. |
+| **VS Code** | Extension auto-update | VS Code handles updates automatically when extension auto-update is enabled in settings. |
 
 ## Usage
 
@@ -64,6 +79,7 @@ The plugin provides four commands, each backed by a specialized agent:
 ```
 
 See [SETUP_GUIDE.md](SETUP_GUIDE.md) for a full end-to-end walkthrough including validation, testing options, and troubleshooting.
+
 
 ## Disclaimer
 
