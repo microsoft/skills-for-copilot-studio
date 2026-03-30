@@ -30,51 +30,89 @@ jobs:
           echo "RELEASE_VERSION=$VERSION" >> "$GITHUB_ENV"
           echo "Resolved version from tag: $VERSION"
 
-      - name: Validate version matches manifest
+      - name: Validate version matches manifests
         if: github.event_name == 'release'
         run: |
-          MANIFEST_VERSION=$(node -e "
+          SKILLS_VERSION=$(node -e "
             const pkg = require('./extension/templates/package.template.json');
             console.log(pkg.version);
           ")
-          echo "Manifest version: $MANIFEST_VERSION"
-          echo "Release version:  $RELEASE_VERSION"
-          if [ "$MANIFEST_VERSION" != "$RELEASE_VERSION" ]; then
-            echo "ERROR: Version mismatch \u2014 manifest ($MANIFEST_VERSION) does not match release tag ($RELEASE_VERSION)"
-            echo "Update the version in extension/templates/package.template.json before releasing."
+          BUNDLE_VERSION=$(node -e "
+            const pkg = require('./extension-pack/package.json');
+            console.log(pkg.version);
+          ")
+          echo "Skills extension version: $SKILLS_VERSION"
+          echo "Extension pack version:   $BUNDLE_VERSION"
+          echo "Release version:          $RELEASE_VERSION"
+          if [ "$SKILLS_VERSION" != "$RELEASE_VERSION" ]; then
+            echo "ERROR: Skills extension version ($SKILLS_VERSION) does not match release tag ($RELEASE_VERSION)"
+            exit 1
+          fi
+          if [ "$BUNDLE_VERSION" != "$RELEASE_VERSION" ]; then
+            echo "ERROR: Extension pack version ($BUNDLE_VERSION) does not match release tag ($RELEASE_VERSION)"
             exit 1
           fi
 
-      - name: Build VSIX
+      - name: Build skills extension VSIX
         run: bash extension/test-local.sh --package-only
         env:
           CODE_CMD: 'true'
 
-      - name: Verify VSIX artifact
+      - name: Verify skills extension VSIX
         run: |
           VSIX=$(ls -t extension/*.vsix 2>/dev/null | head -1)
           if [ -z "$VSIX" ]; then
-            echo "ERROR: No .vsix file produced"
+            echo "ERROR: No skills extension .vsix file produced"
             exit 1
           fi
-          echo "VSIX_PATH=$VSIX" >> "$GITHUB_ENV"
+          echo "SKILLS_VSIX=$VSIX" >> "$GITHUB_ENV"
           echo "Built: $VSIX ($(du -h "$VSIX" | cut -f1))"
 
-      - name: Publish to VS Code Marketplace
+      - name: Build extension pack
+        run: bash extension-pack/build.sh --package-only
+        env:
+          CODE_CMD: 'true'
+
+      - name: Verify extension pack VSIX
+        run: |
+          VSIX=$(ls -t extension-pack/*.vsix 2>/dev/null | head -1)
+          if [ -z "$VSIX" ]; then
+            echo "ERROR: No extension pack .vsix file produced"
+            exit 1
+          fi
+          echo "BUNDLE_VSIX=$VSIX" >> "$GITHUB_ENV"
+          echo "Built: $VSIX ($(du -h "$VSIX" | cut -f1))"
+
+      - name: Publish skills extension to Marketplace
         if: >-
           (github.event_name == 'release' ||
            (github.event_name == 'workflow_dispatch' && inputs.dry_run == false))
-        run: npx --yes @vscode/vsce publish --no-dependencies --packagePath "$VSIX_PATH"
+        run: npx --yes @vscode/vsce publish --no-dependencies --packagePath "$SKILLS_VSIX"
+        env:
+          VSCE_PAT: ${{ secrets.VSCE_PAT }}
+
+      - name: Publish extension pack to Marketplace
+        if: >-
+          (github.event_name == 'release' ||
+           (github.event_name == 'workflow_dispatch' && inputs.dry_run == false))
+        run: npx --yes @vscode/vsce publish --no-dependencies --packagePath "$BUNDLE_VSIX"
         env:
           VSCE_PAT: ${{ secrets.VSCE_PAT }}
 
       - name: Dry-run notice
         if: github.event_name == 'workflow_dispatch' && inputs.dry_run == true
-        run: echo "Dry run \u2014 VSIX built but not published."
+        run: echo "Dry run \u2014 both VSIX files built but not published."
 
-      - name: Upload VSIX
+      - name: Upload skills extension VSIX
         uses: actions/upload-artifact@v4
         with:
           name: copilot-studio-skills-vsix
           path: extension/*.vsix
+          retention-days: 30
+
+      - name: Upload extension pack VSIX
+        uses: actions/upload-artifact@v4
+        with:
+          name: copilot-studio-bundle-vsix
+          path: extension-pack/*.vsix
           retention-days: 30
