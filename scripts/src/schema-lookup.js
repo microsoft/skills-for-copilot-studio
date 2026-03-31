@@ -134,6 +134,30 @@ function resolveObject(obj, definitions, visited, depth, maxDepth) {
   return resolved;
 }
 
+// --- Model reference ---
+
+/**
+ * Outputs model configuration data extracted purely from the schema.
+ * Resolves the agent-level model type and its referenced definitions.
+ */
+function printModelReference(definitions) {
+  const result = {};
+
+  // Resolve the model structure used at agent level (no kind property)
+  const noKind = resolveDefinition("CurrentModelsNoKind", definitions);
+  if (noKind) result.CurrentModelsNoKind = noKind;
+
+  // Resolve valid providers
+  const providerDef = resolveDefinition("ModelProvider", definitions);
+  if (providerDef) result.ModelProvider = providerDef;
+
+  // Resolve valid API types
+  const apiTypeDef = resolveDefinition("ModelApiType", definitions);
+  if (apiTypeDef) result.ModelApiType = apiTypeDef;
+
+  console.log(JSON.stringify(result, null, 2));
+}
+
 // --- Kind extraction ---
 
 function findKindValues(definitions) {
@@ -535,6 +559,7 @@ Copilot Studio schema:
     node schema-lookup.js resolve <definition-name>
     node schema-lookup.js kinds
     node schema-lookup.js summary <definition-name>
+    node schema-lookup.js models
     node schema-lookup.js validate <path-to-yaml-file>
 
 Adaptive Cards schema:
@@ -643,6 +668,11 @@ function main() {
       } else {
         console.log(`Definition '${name}' not found.`);
       }
+      break;
+    }
+
+    case "models": {
+      printModelReference(definitions);
       break;
     }
 
