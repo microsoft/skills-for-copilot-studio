@@ -51,6 +51,16 @@ claude plugin install /path/to/skills-for-copilot-studio --scope user
 claude plugin install /path/to/skills-for-copilot-studio --scope project
 ```
 
+## Updating
+
+The update process depends on how you installed the plugin:
+
+| Interface | Update Method | Details |
+|-----------|--------------|--------|
+| **Claude Code CLI** | Auto-update (recommended) | Marketplace plugins update automatically. No action needed. |
+| **GitHub Copilot CLI** | Manual | Run `/plugin update skills-for-copilot-studio` in an interactive session, or `copilot plugin update skills-for-copilot-studio` from the terminal. |
+| **VS Code** | Extension auto-update | VS Code handles updates automatically when extension auto-update is enabled in settings. |
+
 ## Usage
 
 The plugin provides four commands, each backed by a specialized agent:
@@ -84,6 +94,7 @@ The plugin provides four commands, each backed by a specialized agent:
 
 See [SETUP_GUIDE.md](SETUP_GUIDE.md) for a full end-to-end walkthrough including validation, testing options, and troubleshooting.
 
+
 ## Disclaimer
 
 This plugin is an experimental research project, not an officially supported Microsoft product. The Copilot Studio YAML schema may change without notice. Always review and validate generated YAML before pushing to your environment — AI-generated output may contain errors or unsupported patterns.
@@ -91,3 +102,30 @@ This plugin is an experimental research project, not an officially supported Mic
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for local development setup, building bundled scripts, and project structure.
+
+## Appendix: Alternative installation methods
+
+### From VS Code Extensions Store (GitHub Copilot)
+
+You can also install directly from the VS Code Extensions view. Search for **Skills for Copilot Studio** using the **@agentPlugins** filter and click **Install**.
+
+![VS Code Extensions Store](./img/VSCodeStore.png)
+
+### GitHub Copilot CLI
+
+If you use [GitHub Copilot CLI](https://docs.github.com/en/copilot), you can install from the marketplace:
+
+```bash
+/plugin marketplace add microsoft/skills-for-copilot-studio
+/plugin install copilot-studio@skills-for-copilot-studio
+```
+
+To update:
+
+```bash
+# In an interactive session
+/plugin update skills-for-copilot-studio
+
+# Or from the terminal
+copilot plugin update skills-for-copilot-studio
+```
