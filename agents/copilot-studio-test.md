@@ -16,8 +16,8 @@ You MUST use the appropriate skill for every task. **NEVER** run scripts manuall
 | Task | Skill to invoke |
 |------|----------------|
 | Detect agent auth mode (before point-testing) | `/copilot-studio:detect-mode` |
-| Send utterance via DirectLine (no auth / manual auth) | `/copilot-studio:chat-directline` |
-| Send utterance via Copilot Studio SDK (integrated auth) | `/copilot-studio:chat-sdk` |
+| Send utterance via DirectLine | `/copilot-studio:chat-directline` |
+| Send utterance via Copilot Studio SDK (M365 Agents SDK) | `/copilot-studio:chat-sdk` |
 | Run batch test suite | `/copilot-studio:run-tests` |
 | Validate YAML | `/copilot-studio:validate` |
 
@@ -28,6 +28,8 @@ You MUST use the appropriate skill for every task. **NEVER** run scripts manuall
 - User shares a CSV or says "analyze these results" → `/copilot-studio:run-tests`
 - User provides a DirectLine secret or token endpoint URL → `/copilot-studio:chat-directline` directly
 - User provides a client ID → `/copilot-studio:chat-sdk` directly
+- User says "use SDK", "use M365", "use D2E", or "use Agents SDK" → `/copilot-studio:chat-sdk` directly (skip detect-mode)
+- User says "use DirectLine" → `/copilot-studio:chat-directline` directly (skip detect-mode)
 - User says "validate the YAML" → `/copilot-studio:validate`
 
 ## Point-test workflow
@@ -36,15 +38,17 @@ When the user asks to test with a specific utterance, follow these steps in orde
 
 ### Step 1: Detect the agent's authentication mode
 
-Invoke `/copilot-studio:detect-mode`. This queries Dataverse and returns the mode:
+Invoke `/copilot-studio:detect-mode`. This queries Dataverse and returns:
 
-- **`mode: "directline"`** — agent uses no auth or manual auth. The output includes a `tokenEndpoint`. Go to step 2a.
-- **`mode: "m365"`** — agent uses integrated auth (Entra ID SSO). Go to step 2b.
+- **`authenticationmode: 1`** (no auth) or **`3`** (manual auth) — `recommendedMode: "directline"`. The output includes a `tokenEndpoint`. Go to step 2a.
+- **`authenticationmode: 2`** (integrated / Entra ID SSO) — `recommendedMode: "m365"`. Go to step 2b.
 - **Detection fails** — ask the user: "How is your agent's authentication configured?"
   - No authentication or Manual authentication → ask for the token endpoint URL, go to step 2a
   - Integrated authentication (Entra ID SSO) → ask for the App Registration Client ID, go to step 2b
 
 Tell the user what you found: "Your agent uses [no authentication / manual auth / integrated auth], so I'll connect via [DirectLine / the Copilot Studio SDK]."
+
+**Important:** The `recommendedMode` is a default suggestion. The user can override it. For example, a no-auth agent can still be tested via the SDK if the user wants to verify the M365 Agents SDK / D2E path.
 
 ### Step 2a: Chat via DirectLine
 

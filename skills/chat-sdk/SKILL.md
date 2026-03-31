@@ -1,14 +1,14 @@
 ---
 user-invocable: false
-description: Send a message to a Copilot Studio agent via the Copilot Studio Client SDK (M365). Use for agents with integrated auth (Entra ID SSO). Requires an App Registration Client ID.
+description: Send a message to a Copilot Studio agent via the Copilot Studio Client SDK (M365 Agents SDK). Works with any authentication mode. Requires an App Registration Client ID with CopilotStudio.Copilots.Invoke permission.
 argument-hint: <utterance>
-allowed-tools: Bash(node *chat-with-agent.bundle.js *), Read, Glob
+allowed-tools: Bash(node *chat-sdk.bundle.js *), Read, Glob
 agent: copilot-studio-test
 ---
 
 # Chat via Copilot Studio SDK
 
-Send a single utterance to a published agent via the Copilot Studio Client SDK. Use this for agents with **integrated authentication / Entra ID SSO** (authenticationmode 2).
+Send a single utterance to a published agent via the Copilot Studio Client SDK (M365 Agents SDK). This skill works with **any authentication mode** — the protocol choice is made by the caller, not the script.
 
 ## Prerequisites
 
@@ -22,7 +22,7 @@ An **Azure App Registration** configured as:
 1. Run the script with `--client-id` and the utterance from `$ARGUMENTS`:
 
    ```bash
-   node ${CLAUDE_SKILL_DIR}/../../scripts/chat-with-agent.bundle.js \
+   node ${CLAUDE_SKILL_DIR}/../../scripts/chat-sdk.bundle.js \
      --client-id "<clientId>" "<utterance>" [--agent-dir <path>]
    ```
 
@@ -68,7 +68,7 @@ Display the agent's response from the `activities` array:
 Pass `--conversation-id` from the previous response:
 
 ```bash
-node ${CLAUDE_SKILL_DIR}/../../scripts/chat-with-agent.bundle.js \
+node ${CLAUDE_SKILL_DIR}/../../scripts/chat-sdk.bundle.js \
   --client-id "<id>" "<follow-up>" --conversation-id "<id>"
 ```
 
