@@ -699,6 +699,9 @@
           "$ref": "#/definitions/VoiceInputSettings"
         },
         {
+          "$ref": "#/definitions/DialogExpression"
+        },
+        {
           "$ref": "#/definitions/DoNotHoldSettings"
         },
         {
@@ -721,9 +724,6 @@
         },
         {
           "$ref": "#/definitions/DisconnectedNodeContainer"
-        },
-        {
-          "$ref": "#/definitions/DialogExpression"
         },
         {
           "$ref": "#/definitions/BeginDialog"
@@ -1110,6 +1110,9 @@
           "$ref": "#/definitions/VoiceTypeBase"
         },
         {
+          "$ref": "#/definitions/DigitalVoiceSettings"
+        },
+        {
           "$ref": "#/definitions/RealTimeVoiceBotSettings"
         },
         {
@@ -1167,6 +1170,18 @@
           "$ref": "#/definitions/ContainsAnyAssertion"
         },
         {
+          "$ref": "#/definitions/EvaluationRunDefinition"
+        },
+        {
+          "$ref": "#/definitions/AgentEvaluationTarget"
+        },
+        {
+          "$ref": "#/definitions/PromptEvaluationTarget"
+        },
+        {
+          "$ref": "#/definitions/FlowEvaluationTarget"
+        },
+        {
           "$ref": "#/definitions/EvaluationSet"
         },
         {
@@ -1222,6 +1237,15 @@
         },
         {
           "$ref": "#/definitions/LegacyOrUnknownComponent"
+        },
+        {
+          "$ref": "#/definitions/CustomMetricDefinitionComponent"
+        },
+        {
+          "$ref": "#/definitions/CustomMetricDefinition"
+        },
+        {
+          "$ref": "#/definitions/CustomMetricCategory"
         },
         {
           "$ref": "#/definitions/AIPluginOperationComponent"
@@ -2398,6 +2422,9 @@
           "$ref": "#/definitions/IvrBotSettings"
         },
         {
+          "$ref": "#/definitions/DigitalVoiceSettings"
+        },
+        {
           "$ref": "#/definitions/RealTimeVoiceBotSettings"
         },
         {
@@ -2441,6 +2468,9 @@
         },
         {
           "$ref": "#/definitions/TestCaseDefinition"
+        },
+        {
+          "$ref": "#/definitions/EvaluationRunDefinition"
         },
         {
           "$ref": "#/definitions/EvaluationSet"
@@ -2488,6 +2518,19 @@
         },
         {
           "$ref": "#/definitions/ContainsAnyAssertion"
+        }
+      ]
+    },
+    "EvaluationTargetBase": {
+      "oneOf": [
+        {
+          "$ref": "#/definitions/AgentEvaluationTarget"
+        },
+        {
+          "$ref": "#/definitions/PromptEvaluationTarget"
+        },
+        {
+          "$ref": "#/definitions/FlowEvaluationTarget"
         }
       ]
     },
@@ -2572,6 +2615,9 @@
         },
         {
           "$ref": "#/definitions/LegacyOrUnknownComponent"
+        },
+        {
+          "$ref": "#/definitions/CustomMetricDefinitionComponent"
         }
       ]
     },
@@ -2730,6 +2776,9 @@
         },
         {
           "$ref": "#/definitions/LegacyOrUnknownComponent"
+        },
+        {
+          "$ref": "#/definitions/CustomMetricDefinitionComponent"
         },
         {
           "$ref": "#/definitions/AIPluginOperationComponent"
@@ -3841,6 +3890,12 @@
               "default": false,
               "type": "boolean"
             },
+            "allowMultipleValues": {
+              "title": "BotSchema:$$EntityReferenceWithMetadata_allowMultipleValues_title$$",
+              "description": "BotSchema:$$EntityReferenceWithMetadata_allowMultipleValues_description$$",
+              "default": false,
+              "type": "boolean"
+            },
             "entities": {
               "title": "Entities",
               "type": "array",
@@ -3916,6 +3971,12 @@
             "includeMetadata": {
               "title": "BotSchema:$$EntityReferenceWithMetadata_includeMetadata_title$$",
               "description": "BotSchema:$$EntityReferenceWithMetadata_includeMetadata_description$$",
+              "default": false,
+              "type": "boolean"
+            },
+            "allowMultipleValues": {
+              "title": "BotSchema:$$EntityReferenceWithMetadata_allowMultipleValues_title$$",
+              "description": "BotSchema:$$EntityReferenceWithMetadata_allowMultipleValues_description$$",
               "default": false,
               "type": "boolean"
             },
@@ -4119,6 +4180,12 @@
           "default": false,
           "type": "boolean"
         },
+        "allowMultipleValues": {
+          "title": "BotSchema:$$EntityReferenceWithMetadata_allowMultipleValues_title$$",
+          "description": "BotSchema:$$EntityReferenceWithMetadata_allowMultipleValues_description$$",
+          "default": false,
+          "type": "boolean"
+        },
         "entityId": {
           "title": "BotSchema:$$ClosedListEntityReference_entityId_title$$",
           "type": "string"
@@ -4311,6 +4378,12 @@
               "default": false,
               "type": "boolean"
             },
+            "allowMultipleValues": {
+              "title": "BotSchema:$$EntityReferenceWithMetadata_allowMultipleValues_title$$",
+              "description": "BotSchema:$$EntityReferenceWithMetadata_allowMultipleValues_description$$",
+              "default": false,
+              "type": "boolean"
+            },
             "items": {
               "title": "BotSchema:$$DynamicClosedListEntityReference_items_title$$",
               "type": "string",
@@ -4425,6 +4498,12 @@
               "default": false,
               "type": "boolean"
             },
+            "allowMultipleValues": {
+              "title": "BotSchema:$$EntityReferenceWithMetadata_allowMultipleValues_title$$",
+              "description": "BotSchema:$$EntityReferenceWithMetadata_allowMultipleValues_description$$",
+              "default": false,
+              "type": "boolean"
+            },
             "dtmfMultipleChoiceOptions": {
               "title": "BotSchema:$$MultipleChoiceOptionsEntity_dtmfMultipleChoiceOptions_title$$",
               "$ref": "#/definitions/DtmfMultipleChoiceOptionsNoKind"
@@ -4458,6 +4537,12 @@
             "includeMetadata": {
               "title": "BotSchema:$$EntityReferenceWithMetadata_includeMetadata_title$$",
               "description": "BotSchema:$$EntityReferenceWithMetadata_includeMetadata_description$$",
+              "default": false,
+              "type": "boolean"
+            },
+            "allowMultipleValues": {
+              "title": "BotSchema:$$EntityReferenceWithMetadata_allowMultipleValues_title$$",
+              "description": "BotSchema:$$EntityReferenceWithMetadata_allowMultipleValues_description$$",
               "default": false,
               "type": "boolean"
             },
@@ -4503,6 +4588,12 @@
               "default": false,
               "type": "boolean"
             },
+            "allowMultipleValues": {
+              "title": "BotSchema:$$EntityReferenceWithMetadata_allowMultipleValues_title$$",
+              "description": "BotSchema:$$EntityReferenceWithMetadata_allowMultipleValues_description$$",
+              "default": false,
+              "type": "boolean"
+            },
             "dtmfOptions": {
               "title": "BotSchema:$$MultiDigitEntity_dtmfOptions_title$$",
               "$ref": "#/definitions/DtmfTerminationOptions"
@@ -4536,6 +4627,12 @@
             "includeMetadata": {
               "title": "BotSchema:$$EntityReferenceWithMetadata_includeMetadata_title$$",
               "description": "BotSchema:$$EntityReferenceWithMetadata_includeMetadata_description$$",
+              "default": false,
+              "type": "boolean"
+            },
+            "allowMultipleValues": {
+              "title": "BotSchema:$$EntityReferenceWithMetadata_allowMultipleValues_title$$",
+              "description": "BotSchema:$$EntityReferenceWithMetadata_allowMultipleValues_description$$",
               "default": false,
               "type": "boolean"
             },
@@ -4581,6 +4678,12 @@
               "default": false,
               "type": "boolean"
             },
+            "allowMultipleValues": {
+              "title": "BotSchema:$$EntityReferenceWithMetadata_allowMultipleValues_title$$",
+              "description": "BotSchema:$$EntityReferenceWithMetadata_allowMultipleValues_description$$",
+              "default": false,
+              "type": "boolean"
+            },
             "dtmfOptions": {
               "title": "BotSchema:$$MultiDigitEntity_dtmfOptions_title$$",
               "$ref": "#/definitions/DtmfTerminationOptions"
@@ -4614,6 +4717,12 @@
             "includeMetadata": {
               "title": "BotSchema:$$EntityReferenceWithMetadata_includeMetadata_title$$",
               "description": "BotSchema:$$EntityReferenceWithMetadata_includeMetadata_description$$",
+              "default": false,
+              "type": "boolean"
+            },
+            "allowMultipleValues": {
+              "title": "BotSchema:$$EntityReferenceWithMetadata_allowMultipleValues_title$$",
+              "description": "BotSchema:$$EntityReferenceWithMetadata_allowMultipleValues_description$$",
               "default": false,
               "type": "boolean"
             },
@@ -4653,6 +4762,12 @@
               "default": false,
               "type": "boolean"
             },
+            "allowMultipleValues": {
+              "title": "BotSchema:$$EntityReferenceWithMetadata_allowMultipleValues_title$$",
+              "description": "BotSchema:$$EntityReferenceWithMetadata_allowMultipleValues_description$$",
+              "default": false,
+              "type": "boolean"
+            },
             "dtmfOptions": {
               "title": "BotSchema:$$MultiDigitEntity_dtmfOptions_title$$",
               "$ref": "#/definitions/DtmfTerminationOptions"
@@ -4686,6 +4801,12 @@
             "includeMetadata": {
               "title": "BotSchema:$$EntityReferenceWithMetadata_includeMetadata_title$$",
               "description": "BotSchema:$$EntityReferenceWithMetadata_includeMetadata_description$$",
+              "default": false,
+              "type": "boolean"
+            },
+            "allowMultipleValues": {
+              "title": "BotSchema:$$EntityReferenceWithMetadata_allowMultipleValues_title$$",
+              "description": "BotSchema:$$EntityReferenceWithMetadata_allowMultipleValues_description$$",
               "default": false,
               "type": "boolean"
             },
@@ -4725,6 +4846,12 @@
               "default": false,
               "type": "boolean"
             },
+            "allowMultipleValues": {
+              "title": "BotSchema:$$EntityReferenceWithMetadata_allowMultipleValues_title$$",
+              "description": "BotSchema:$$EntityReferenceWithMetadata_allowMultipleValues_description$$",
+              "default": false,
+              "type": "boolean"
+            },
             "dtmfOptions": {
               "title": "BotSchema:$$MultiDigitEntity_dtmfOptions_title$$",
               "$ref": "#/definitions/DtmfTerminationOptions"
@@ -4758,6 +4885,12 @@
             "includeMetadata": {
               "title": "BotSchema:$$EntityReferenceWithMetadata_includeMetadata_title$$",
               "description": "BotSchema:$$EntityReferenceWithMetadata_includeMetadata_description$$",
+              "default": false,
+              "type": "boolean"
+            },
+            "allowMultipleValues": {
+              "title": "BotSchema:$$EntityReferenceWithMetadata_allowMultipleValues_title$$",
+              "description": "BotSchema:$$EntityReferenceWithMetadata_allowMultipleValues_description$$",
               "default": false,
               "type": "boolean"
             },
@@ -4797,6 +4930,12 @@
               "default": false,
               "type": "boolean"
             },
+            "allowMultipleValues": {
+              "title": "BotSchema:$$EntityReferenceWithMetadata_allowMultipleValues_title$$",
+              "description": "BotSchema:$$EntityReferenceWithMetadata_allowMultipleValues_description$$",
+              "default": false,
+              "type": "boolean"
+            },
             "dtmfOptions": {
               "title": "BotSchema:$$MultiDigitEntity_dtmfOptions_title$$",
               "$ref": "#/definitions/DtmfTerminationOptions"
@@ -4830,6 +4969,12 @@
             "includeMetadata": {
               "title": "BotSchema:$$EntityReferenceWithMetadata_includeMetadata_title$$",
               "description": "BotSchema:$$EntityReferenceWithMetadata_includeMetadata_description$$",
+              "default": false,
+              "type": "boolean"
+            },
+            "allowMultipleValues": {
+              "title": "BotSchema:$$EntityReferenceWithMetadata_allowMultipleValues_title$$",
+              "description": "BotSchema:$$EntityReferenceWithMetadata_allowMultipleValues_description$$",
               "default": false,
               "type": "boolean"
             },
@@ -4869,6 +5014,12 @@
               "default": false,
               "type": "boolean"
             },
+            "allowMultipleValues": {
+              "title": "BotSchema:$$EntityReferenceWithMetadata_allowMultipleValues_title$$",
+              "description": "BotSchema:$$EntityReferenceWithMetadata_allowMultipleValues_description$$",
+              "default": false,
+              "type": "boolean"
+            },
             "dtmfOptions": {
               "title": "BotSchema:$$MultiDigitEntity_dtmfOptions_title$$",
               "$ref": "#/definitions/DtmfTerminationOptions"
@@ -4904,6 +5055,12 @@
               "description": "BotSchema:$$EntityReferenceWithMetadata_includeMetadata_description$$",
               "default": false,
               "type": "boolean"
+            },
+            "allowMultipleValues": {
+              "title": "BotSchema:$$EntityReferenceWithMetadata_allowMultipleValues_title$$",
+              "description": "BotSchema:$$EntityReferenceWithMetadata_allowMultipleValues_description$$",
+              "default": false,
+              "type": "boolean"
             }
           },
           "required": [
@@ -4934,6 +5091,12 @@
             "includeMetadata": {
               "title": "BotSchema:$$EntityReferenceWithMetadata_includeMetadata_title$$",
               "description": "BotSchema:$$EntityReferenceWithMetadata_includeMetadata_description$$",
+              "default": false,
+              "type": "boolean"
+            },
+            "allowMultipleValues": {
+              "title": "BotSchema:$$EntityReferenceWithMetadata_allowMultipleValues_title$$",
+              "description": "BotSchema:$$EntityReferenceWithMetadata_allowMultipleValues_description$$",
               "default": false,
               "type": "boolean"
             }
@@ -4968,6 +5131,12 @@
               "description": "BotSchema:$$EntityReferenceWithMetadata_includeMetadata_description$$",
               "default": false,
               "type": "boolean"
+            },
+            "allowMultipleValues": {
+              "title": "BotSchema:$$EntityReferenceWithMetadata_allowMultipleValues_title$$",
+              "description": "BotSchema:$$EntityReferenceWithMetadata_allowMultipleValues_description$$",
+              "default": false,
+              "type": "boolean"
             }
           },
           "required": [
@@ -5000,6 +5169,12 @@
               "description": "BotSchema:$$EntityReferenceWithMetadata_includeMetadata_description$$",
               "default": false,
               "type": "boolean"
+            },
+            "allowMultipleValues": {
+              "title": "BotSchema:$$EntityReferenceWithMetadata_allowMultipleValues_title$$",
+              "description": "BotSchema:$$EntityReferenceWithMetadata_allowMultipleValues_description$$",
+              "default": false,
+              "type": "boolean"
             }
           },
           "required": [
@@ -5030,6 +5205,12 @@
             "includeMetadata": {
               "title": "BotSchema:$$EntityReferenceWithMetadata_includeMetadata_title$$",
               "description": "BotSchema:$$EntityReferenceWithMetadata_includeMetadata_description$$",
+              "default": false,
+              "type": "boolean"
+            },
+            "allowMultipleValues": {
+              "title": "BotSchema:$$EntityReferenceWithMetadata_allowMultipleValues_title$$",
+              "description": "BotSchema:$$EntityReferenceWithMetadata_allowMultipleValues_description$$",
               "default": false,
               "type": "boolean"
             },
@@ -5071,6 +5252,12 @@
               "default": false,
               "type": "boolean"
             },
+            "allowMultipleValues": {
+              "title": "BotSchema:$$EntityReferenceWithMetadata_allowMultipleValues_title$$",
+              "description": "BotSchema:$$EntityReferenceWithMetadata_allowMultipleValues_description$$",
+              "default": false,
+              "type": "boolean"
+            },
             "ambiguousResolutionBehavior": {
               "title": "BotSchema:$$DateTimeNoTimeZonePrebuiltEntity_ambiguousResolutionBehavior_title$$",
               "description": "BotSchema:$$DateTimeNoTimeZonePrebuiltEntity_ambiguousResolutionBehavior_description$$",
@@ -5108,6 +5295,12 @@
               "description": "BotSchema:$$EntityReferenceWithMetadata_includeMetadata_description$$",
               "default": false,
               "type": "boolean"
+            },
+            "allowMultipleValues": {
+              "title": "BotSchema:$$EntityReferenceWithMetadata_allowMultipleValues_title$$",
+              "description": "BotSchema:$$EntityReferenceWithMetadata_allowMultipleValues_description$$",
+              "default": false,
+              "type": "boolean"
             }
           },
           "required": [
@@ -5138,6 +5331,12 @@
             "includeMetadata": {
               "title": "BotSchema:$$EntityReferenceWithMetadata_includeMetadata_title$$",
               "description": "BotSchema:$$EntityReferenceWithMetadata_includeMetadata_description$$",
+              "default": false,
+              "type": "boolean"
+            },
+            "allowMultipleValues": {
+              "title": "BotSchema:$$EntityReferenceWithMetadata_allowMultipleValues_title$$",
+              "description": "BotSchema:$$EntityReferenceWithMetadata_allowMultipleValues_description$$",
               "default": false,
               "type": "boolean"
             }
@@ -5172,6 +5371,12 @@
               "description": "BotSchema:$$EntityReferenceWithMetadata_includeMetadata_description$$",
               "default": false,
               "type": "boolean"
+            },
+            "allowMultipleValues": {
+              "title": "BotSchema:$$EntityReferenceWithMetadata_allowMultipleValues_title$$",
+              "description": "BotSchema:$$EntityReferenceWithMetadata_allowMultipleValues_description$$",
+              "default": false,
+              "type": "boolean"
             }
           },
           "required": [
@@ -5202,6 +5407,12 @@
             "includeMetadata": {
               "title": "BotSchema:$$EntityReferenceWithMetadata_includeMetadata_title$$",
               "description": "BotSchema:$$EntityReferenceWithMetadata_includeMetadata_description$$",
+              "default": false,
+              "type": "boolean"
+            },
+            "allowMultipleValues": {
+              "title": "BotSchema:$$EntityReferenceWithMetadata_allowMultipleValues_title$$",
+              "description": "BotSchema:$$EntityReferenceWithMetadata_allowMultipleValues_description$$",
               "default": false,
               "type": "boolean"
             },
@@ -5242,6 +5453,12 @@
               "description": "BotSchema:$$EntityReferenceWithMetadata_includeMetadata_description$$",
               "default": false,
               "type": "boolean"
+            },
+            "allowMultipleValues": {
+              "title": "BotSchema:$$EntityReferenceWithMetadata_allowMultipleValues_title$$",
+              "description": "BotSchema:$$EntityReferenceWithMetadata_allowMultipleValues_description$$",
+              "default": false,
+              "type": "boolean"
             }
           },
           "required": [
@@ -5272,6 +5489,12 @@
             "includeMetadata": {
               "title": "BotSchema:$$EntityReferenceWithMetadata_includeMetadata_title$$",
               "description": "BotSchema:$$EntityReferenceWithMetadata_includeMetadata_description$$",
+              "default": false,
+              "type": "boolean"
+            },
+            "allowMultipleValues": {
+              "title": "BotSchema:$$EntityReferenceWithMetadata_allowMultipleValues_title$$",
+              "description": "BotSchema:$$EntityReferenceWithMetadata_allowMultipleValues_description$$",
               "default": false,
               "type": "boolean"
             }
@@ -5306,6 +5529,12 @@
               "description": "BotSchema:$$EntityReferenceWithMetadata_includeMetadata_description$$",
               "default": false,
               "type": "boolean"
+            },
+            "allowMultipleValues": {
+              "title": "BotSchema:$$EntityReferenceWithMetadata_allowMultipleValues_title$$",
+              "description": "BotSchema:$$EntityReferenceWithMetadata_allowMultipleValues_description$$",
+              "default": false,
+              "type": "boolean"
             }
           },
           "required": [
@@ -5336,6 +5565,12 @@
             "includeMetadata": {
               "title": "BotSchema:$$EntityReferenceWithMetadata_includeMetadata_title$$",
               "description": "BotSchema:$$EntityReferenceWithMetadata_includeMetadata_description$$",
+              "default": false,
+              "type": "boolean"
+            },
+            "allowMultipleValues": {
+              "title": "BotSchema:$$EntityReferenceWithMetadata_allowMultipleValues_title$$",
+              "description": "BotSchema:$$EntityReferenceWithMetadata_allowMultipleValues_description$$",
               "default": false,
               "type": "boolean"
             }
@@ -5370,6 +5605,12 @@
               "description": "BotSchema:$$EntityReferenceWithMetadata_includeMetadata_description$$",
               "default": false,
               "type": "boolean"
+            },
+            "allowMultipleValues": {
+              "title": "BotSchema:$$EntityReferenceWithMetadata_allowMultipleValues_title$$",
+              "description": "BotSchema:$$EntityReferenceWithMetadata_allowMultipleValues_description$$",
+              "default": false,
+              "type": "boolean"
             }
           },
           "required": [
@@ -5402,6 +5643,12 @@
               "description": "BotSchema:$$EntityReferenceWithMetadata_includeMetadata_description$$",
               "default": false,
               "type": "boolean"
+            },
+            "allowMultipleValues": {
+              "title": "BotSchema:$$EntityReferenceWithMetadata_allowMultipleValues_title$$",
+              "description": "BotSchema:$$EntityReferenceWithMetadata_allowMultipleValues_description$$",
+              "default": false,
+              "type": "boolean"
             }
           },
           "required": [
@@ -5432,6 +5679,12 @@
             "includeMetadata": {
               "title": "BotSchema:$$EntityReferenceWithMetadata_includeMetadata_title$$",
               "description": "BotSchema:$$EntityReferenceWithMetadata_includeMetadata_description$$",
+              "default": false,
+              "type": "boolean"
+            },
+            "allowMultipleValues": {
+              "title": "BotSchema:$$EntityReferenceWithMetadata_allowMultipleValues_title$$",
+              "description": "BotSchema:$$EntityReferenceWithMetadata_allowMultipleValues_description$$",
               "default": false,
               "type": "boolean"
             }
@@ -7428,6 +7681,10 @@
         "kind": {
           "const": "TeamsApplicationDetails"
         },
+        "lobDisplayName": {
+          "title": "LobDisplayName",
+          "type": "string"
+        },
         "version": {
           "title": "Version",
           "type": "string"
@@ -7527,6 +7784,10 @@
       "type": "object",
       "additionalProperties": false,
       "properties": {
+        "lobDisplayName": {
+          "title": "LobDisplayName",
+          "type": "string"
+        },
         "version": {
           "title": "Version",
           "type": "string"
@@ -10592,6 +10853,10 @@
         "sharedConnectionParameters": {
           "title": "SharedConnectionParameters",
           "type": "string"
+        },
+        "allowSharing": {
+          "title": "AllowSharing",
+          "type": "boolean"
         }
       },
       "required": [
@@ -10644,6 +10909,10 @@
         "sharedConnectionParameters": {
           "title": "SharedConnectionParameters",
           "type": "string"
+        },
+        "allowSharing": {
+          "title": "AllowSharing",
+          "type": "boolean"
         }
       },
       "required": [
@@ -14393,6 +14662,12 @@
           "title": "BotSchema:$$Question_holdSettings_title$$",
           "description": "BotSchema:$$Question_holdSettings_description$$",
           "$ref": "#/definitions/HoldSettings"
+        },
+        "fallbackDialogOnInvalidEntity": {
+          "title": "BotSchema:$$Question_fallbackDialogOnInvalidEntity_title$$",
+          "description": "BotSchema:$$Question_fallbackDialogOnInvalidEntity_description$$",
+          "$role": "expression",
+          "$ref": "#/definitions/DialogExpression"
         }
       },
       "required": [
@@ -14466,6 +14741,12 @@
           "title": "BotSchema:$$VoiceInputSettings_inputTimeoutResponse_title$$",
           "description": "BotSchema:$$VoiceInputSettings_inputTimeoutResponse_description$$",
           "$ref": "#/definitions/ActivityTemplateBase"
+        },
+        "fallbackDialogOnSilence": {
+          "title": "BotSchema:$$VoiceInputSettings_fallbackDialogOnSilence_title$$",
+          "description": "BotSchema:$$VoiceInputSettings_fallbackDialogOnSilence_description$$",
+          "$role": "expression",
+          "$ref": "#/definitions/DialogExpression"
         },
         "defaultValueMissingAction": {
           "title": "BotSchema:$$VoiceInputSettings_defaultValueMissingAction_title$$",
@@ -14571,6 +14852,12 @@
           "title": "BotSchema:$$VoiceInputSettings_inputTimeoutResponse_title$$",
           "description": "BotSchema:$$VoiceInputSettings_inputTimeoutResponse_description$$",
           "$ref": "#/definitions/ActivityTemplateBase"
+        },
+        "fallbackDialogOnSilence": {
+          "title": "BotSchema:$$VoiceInputSettings_fallbackDialogOnSilence_title$$",
+          "description": "BotSchema:$$VoiceInputSettings_fallbackDialogOnSilence_description$$",
+          "$role": "expression",
+          "$ref": "#/definitions/DialogExpression"
         },
         "defaultValueMissingAction": {
           "title": "BotSchema:$$VoiceInputSettings_defaultValueMissingAction_title$$",
@@ -16915,6 +17202,11 @@
             "$ref": "#/definitions/ConversationStarterNoKind"
           }
         },
+        "defaultResponseMode": {
+          "title": "BotSchema:$$GptComponentMetadata_defaultResponseMode_title$$",
+          "description": "BotSchema:$$GptComponentMetadata_defaultResponseMode_description$$",
+          "$ref": "#/definitions/DefaultResponseMode"
+        },
         "aISettings": {
           "title": "AISettings",
           "$ref": "#/definitions/AISettingsNoKind"
@@ -16985,6 +17277,11 @@
             "$ref": "#/definitions/ConversationStarterNoKind"
           }
         },
+        "defaultResponseMode": {
+          "title": "BotSchema:$$GptComponentMetadata_defaultResponseMode_title$$",
+          "description": "BotSchema:$$GptComponentMetadata_defaultResponseMode_description$$",
+          "$ref": "#/definitions/DefaultResponseMode"
+        },
         "aISettings": {
           "title": "AISettings",
           "$ref": "#/definitions/AISettingsNoKind"
@@ -17052,6 +17349,17 @@
           "description": "BotSchema:$$GptCapabilities_searchPeople_description$$",
           "default": false,
           "type": "boolean"
+        },
+        "searchPeopleIncludeRelatedContent": {
+          "title": "BotSchema:$$GptCapabilities_searchPeopleIncludeRelatedContent_title$$",
+          "description": "BotSchema:$$GptCapabilities_searchPeopleIncludeRelatedContent_description$$",
+          "default": false,
+          "type": "boolean"
+        },
+        "customExperience": {
+          "title": "BotSchema:$$GptCapabilities_customExperience_title$$",
+          "description": "BotSchema:$$GptCapabilities_customExperience_description$$",
+          "type": "string"
         }
       },
       "required": [
@@ -17116,6 +17424,17 @@
           "description": "BotSchema:$$GptCapabilities_searchPeople_description$$",
           "default": false,
           "type": "boolean"
+        },
+        "searchPeopleIncludeRelatedContent": {
+          "title": "BotSchema:$$GptCapabilities_searchPeopleIncludeRelatedContent_title$$",
+          "description": "BotSchema:$$GptCapabilities_searchPeopleIncludeRelatedContent_description$$",
+          "default": false,
+          "type": "boolean"
+        },
+        "customExperience": {
+          "title": "BotSchema:$$GptCapabilities_customExperience_title$$",
+          "description": "BotSchema:$$GptCapabilities_customExperience_description$$",
+          "type": "string"
         }
       }
     },
@@ -21252,6 +21571,98 @@
         }
       }
     },
+    "DigitalVoiceSettings": {
+      "title": "BotSchema:$$DigitalVoiceSettings_title$$",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "DigitalVoiceSettings"
+        },
+        "voiceFont": {
+          "title": "VoiceFont",
+          "$ref": "#/definitions/VoiceTypeBaseNoKind"
+        },
+        "turnDetection": {
+          "title": "BotSchema:$$DigitalVoiceSettings_turnDetection_title$$",
+          "description": "BotSchema:$$DigitalVoiceSettings_turnDetection_description$$",
+          "default": "SemanticVoiceActivityDetection",
+          "$role": "expression",
+          "oneOf": [
+            {
+              "type": "string",
+              "pattern": "=.*"
+            },
+            {
+              "$ref": "#/definitions/DigitalTurnDetectionType"
+            }
+          ]
+        },
+        "prefixPaddingInMilliseconds": {
+          "title": "BotSchema:$$DigitalVoiceSettings_prefixPaddingInMilliseconds_title$$",
+          "description": "BotSchema:$$DigitalVoiceSettings_prefixPaddingInMilliseconds_description$$",
+          "default": 300,
+          "type": "number"
+        },
+        "silenceDurationInMilliseconds": {
+          "title": "BotSchema:$$DigitalVoiceSettings_silenceDurationInMilliseconds_title$$",
+          "description": "BotSchema:$$DigitalVoiceSettings_silenceDurationInMilliseconds_description$$",
+          "default": 500,
+          "type": "number"
+        },
+        "threshold": {
+          "title": "BotSchema:$$DigitalVoiceSettings_threshold_title$$",
+          "description": "BotSchema:$$DigitalVoiceSettings_threshold_description$$",
+          "default": 0.5,
+          "type": "number"
+        },
+        "removeFillerWords": {
+          "title": "BotSchema:$$DigitalVoiceSettings_removeFillerWords_title$$",
+          "description": "BotSchema:$$DigitalVoiceSettings_removeFillerWords_description$$",
+          "default": true,
+          "type": "boolean"
+        },
+        "noiseReduction": {
+          "title": "BotSchema:$$DigitalVoiceSettings_noiseReduction_title$$",
+          "description": "BotSchema:$$DigitalVoiceSettings_noiseReduction_description$$",
+          "default": "DeepNoiseSuppression",
+          "$role": "expression",
+          "oneOf": [
+            {
+              "type": "string",
+              "pattern": "=.*"
+            },
+            {
+              "$ref": "#/definitions/DigitalNoiseReductionMode"
+            }
+          ]
+        },
+        "echoCancellation": {
+          "title": "BotSchema:$$DigitalVoiceSettings_echoCancellation_title$$",
+          "description": "BotSchema:$$DigitalVoiceSettings_echoCancellation_description$$",
+          "default": true,
+          "type": "boolean"
+        },
+        "listeningMode": {
+          "title": "BotSchema:$$DigitalVoiceSettings_listeningMode_title$$",
+          "description": "BotSchema:$$DigitalVoiceSettings_listeningMode_description$$",
+          "default": "AlwaysListening",
+          "$role": "expression",
+          "oneOf": [
+            {
+              "type": "string",
+              "pattern": "=.*"
+            },
+            {
+              "$ref": "#/definitions/DigitalListeningMode"
+            }
+          ]
+        }
+      },
+      "required": [
+        "kind"
+      ]
+    },
     "RealTimeVoiceBotSettings": {
       "title": "BotSchema:$$RealTimeVoiceBotSettings_title$$",
       "type": "object",
@@ -21729,6 +22140,92 @@
         "kind"
       ]
     },
+    "EvaluationRunDefinition": {
+      "title": "EvaluationRunDefinition",
+      "description": "BotSchema:$$EvaluationRunDefinition_description$$",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "EvaluationRunDefinition"
+        },
+        "target": {
+          "title": "Target",
+          "description": "BotSchema:$$EvaluationRunDefinition_target_description$$",
+          "$ref": "#/definitions/EvaluationTargetBase"
+        },
+        "evaluationSetSchemaName": {
+          "title": "EvaluationSetSchemaName",
+          "description": "BotSchema:$$EvaluationRunDefinition_evaluationSetSchemaName_description$$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "target",
+        "evaluationSetSchemaName"
+      ]
+    },
+    "AgentEvaluationTarget": {
+      "title": "AgentEvaluationTarget",
+      "description": "BotSchema:$$AgentEvaluationTarget_description$$",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "AgentEvaluationTarget"
+        },
+        "agentSchemaName": {
+          "title": "AgentSchemaName",
+          "description": "BotSchema:$$AgentEvaluationTarget_agentSchemaName_description$$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "agentSchemaName"
+      ]
+    },
+    "PromptEvaluationTarget": {
+      "title": "PromptEvaluationTarget",
+      "description": "BotSchema:$$PromptEvaluationTarget_description$$",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "PromptEvaluationTarget"
+        },
+        "aIModelId": {
+          "title": "AIModelId",
+          "description": "BotSchema:$$PromptEvaluationTarget_aIModelId_description$$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "aIModelId"
+      ]
+    },
+    "FlowEvaluationTarget": {
+      "title": "FlowEvaluationTarget",
+      "description": "BotSchema:$$FlowEvaluationTarget_description$$",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "FlowEvaluationTarget"
+        },
+        "flowId": {
+          "title": "FlowId",
+          "description": "BotSchema:$$FlowEvaluationTarget_flowId_description$$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "flowId"
+      ]
+    },
     "EvaluationSet": {
       "title": "BotSchema:$$EvaluationSet_title$$",
       "description": "BotSchema:$$EvaluationSet_description$$",
@@ -21745,6 +22242,11 @@
           "items": {
             "$ref": "#/definitions/GraderBase"
           }
+        },
+        "inputType": {
+          "title": "InputType",
+          "description": "BotSchema:$$EvaluationSet_inputType_description$$",
+          "$ref": "#/definitions/DataType"
         }
       },
       "required": [
@@ -22039,7 +22541,7 @@
         },
         "input": {
           "title": "Input",
-          "type": "string"
+          "$ref": "#/definitions/DataValue"
         }
       },
       "required": [
@@ -22078,7 +22580,7 @@
         },
         "input": {
           "title": "Input",
-          "type": "string"
+          "$ref": "#/definitions/DataValue"
         }
       },
       "required": [
@@ -22297,6 +22799,182 @@
         "kind",
         "schemaName"
       ]
+    },
+    "CustomMetricDefinitionComponent": {
+      "title": "CustomMetricDefinitionComponent",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "CustomMetricDefinitionComponent"
+        },
+        "version": {
+          "title": "Version",
+          "type": "number"
+        },
+        "managedProperties": {
+          "title": "ManagedProperties",
+          "$ref": "#/definitions/ManagedPropertiesNoKind"
+        },
+        "auditInfo": {
+          "title": "AuditInfo",
+          "$ref": "#/definitions/AuditInfoNoKind"
+        },
+        "displayName": {
+          "title": "DisplayName",
+          "type": "string"
+        },
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "parentBotComponentId": {
+          "title": "ParentBotComponentId",
+          "type": "string"
+        },
+        "parentBotId": {
+          "title": "ParentBotId",
+          "type": "string"
+        },
+        "parentBotComponentCollectionId": {
+          "title": "ParentBotComponentCollectionId",
+          "type": "string"
+        },
+        "description": {
+          "title": "Description",
+          "type": "string"
+        },
+        "shareContext": {
+          "title": "ShareContext",
+          "$ref": "#/definitions/ContentShareContextNoKind"
+        },
+        "category": {
+          "title": "Category",
+          "type": "string"
+        },
+        "state": {
+          "title": "State",
+          "default": "Active",
+          "$ref": "#/definitions/StateCode"
+        },
+        "status": {
+          "title": "Status",
+          "$ref": "#/definitions/BotComponentStatusReason"
+        },
+        "publisherUniqueName": {
+          "title": "PublisherUniqueName",
+          "type": "string"
+        },
+        "schemaName": {
+          "title": "SchemaName",
+          "type": "string"
+        },
+        "definition": {
+          "title": "Definition",
+          "$ref": "#/definitions/CustomMetricDefinitionNoKind"
+        }
+      },
+      "required": [
+        "kind",
+        "schemaName",
+        "definition"
+      ]
+    },
+    "CustomMetricDefinition": {
+      "title": "BotSchema:$$CustomMetricDefinition_title$$",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "CustomMetricDefinition"
+        },
+        "evaluationPrompt": {
+          "title": "BotSchema:$$CustomMetricDefinition_evaluationPrompt_title$$",
+          "description": "BotSchema:$$CustomMetricDefinition_evaluationPrompt_description$$",
+          "type": "string"
+        },
+        "categories": {
+          "title": "BotSchema:$$CustomMetricDefinition_categories_title$$",
+          "description": "BotSchema:$$CustomMetricDefinition_categories_description$$",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/CustomMetricCategoryNoKind"
+          }
+        },
+        "fallbackCategory": {
+          "title": "BotSchema:$$CustomMetricDefinition_fallbackCategory_title$$",
+          "description": "BotSchema:$$CustomMetricDefinition_fallbackCategory_description$$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind"
+      ]
+    },
+    "CustomMetricDefinitionNoKind": {
+      "title": "BotSchema:$$CustomMetricDefinition_title$$",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "evaluationPrompt": {
+          "title": "BotSchema:$$CustomMetricDefinition_evaluationPrompt_title$$",
+          "description": "BotSchema:$$CustomMetricDefinition_evaluationPrompt_description$$",
+          "type": "string"
+        },
+        "categories": {
+          "title": "BotSchema:$$CustomMetricDefinition_categories_title$$",
+          "description": "BotSchema:$$CustomMetricDefinition_categories_description$$",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/CustomMetricCategoryNoKind"
+          }
+        },
+        "fallbackCategory": {
+          "title": "BotSchema:$$CustomMetricDefinition_fallbackCategory_title$$",
+          "description": "BotSchema:$$CustomMetricDefinition_fallbackCategory_description$$",
+          "type": "string"
+        }
+      }
+    },
+    "CustomMetricCategory": {
+      "title": "BotSchema:$$CustomMetricCategory_title$$",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "CustomMetricCategory"
+        },
+        "label": {
+          "title": "BotSchema:$$CustomMetricCategory_label_title$$",
+          "description": "BotSchema:$$CustomMetricCategory_label_description$$",
+          "type": "string"
+        },
+        "description": {
+          "title": "BotSchema:$$CustomMetricCategory_description_title$$",
+          "description": "BotSchema:$$CustomMetricCategory_description_description$$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind"
+      ]
+    },
+    "CustomMetricCategoryNoKind": {
+      "title": "BotSchema:$$CustomMetricCategory_title$$",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "label": {
+          "title": "BotSchema:$$CustomMetricCategory_label_title$$",
+          "description": "BotSchema:$$CustomMetricCategory_label_description$$",
+          "type": "string"
+        },
+        "description": {
+          "title": "BotSchema:$$CustomMetricCategory_description_title$$",
+          "description": "BotSchema:$$CustomMetricCategory_description_description$$",
+          "type": "string"
+        }
+      }
     },
     "AIPluginOperationComponent": {
       "title": "AIPluginOperationComponent",
@@ -24878,6 +25556,26 @@
         }
       ]
     },
+    "DefaultResponseMode": {
+      "type": "string",
+      "oneOf": [
+        {
+          "title": "BotSchema:$$enum_DefaultResponseMode_Auto_title$$",
+          "description": "BotSchema:$$enum_DefaultResponseMode_Auto_description$$",
+          "const": "Auto"
+        },
+        {
+          "title": "BotSchema:$$enum_DefaultResponseMode_ThinkDeeper_title$$",
+          "description": "BotSchema:$$enum_DefaultResponseMode_ThinkDeeper_description$$",
+          "const": "ThinkDeeper"
+        },
+        {
+          "title": "BotSchema:$$enum_DefaultResponseMode_QuickResponse_title$$",
+          "description": "BotSchema:$$enum_DefaultResponseMode_QuickResponse_description$$",
+          "const": "QuickResponse"
+        }
+      ]
+    },
     "SharePointIndexBehavior": {
       "type": "string",
       "oneOf": [
@@ -25231,6 +25929,10 @@
         {
           "title": "BotSchema:$$enum_Language_Portuguese_Portugal_title$$",
           "const": 2070
+        },
+        {
+          "title": "BotSchema:$$enum_Language_Spanish_PR_title$$",
+          "const": 20490
         }
       ]
     },
@@ -25326,6 +26028,55 @@
         }
       ]
     },
+    "DigitalTurnDetectionType": {
+      "type": "string",
+      "oneOf": [
+        {
+          "title": "BotSchema:$$enum_DigitalTurnDetectionType_None_title$$",
+          "description": "BotSchema:$$enum_DigitalTurnDetectionType_None_description$$",
+          "const": "None"
+        },
+        {
+          "title": "BotSchema:$$enum_DigitalTurnDetectionType_SilenceBasedVoiceActivityDetection_title$$",
+          "description": "BotSchema:$$enum_DigitalTurnDetectionType_SilenceBasedVoiceActivityDetection_description$$",
+          "const": "SilenceBasedVoiceActivityDetection"
+        },
+        {
+          "title": "BotSchema:$$enum_DigitalTurnDetectionType_SemanticVoiceActivityDetection_title$$",
+          "description": "BotSchema:$$enum_DigitalTurnDetectionType_SemanticVoiceActivityDetection_description$$",
+          "const": "SemanticVoiceActivityDetection"
+        }
+      ]
+    },
+    "DigitalNoiseReductionMode": {
+      "type": "string",
+      "oneOf": [
+        {
+          "title": "BotSchema:$$enum_DigitalNoiseReductionMode_None_title$$",
+          "const": "None"
+        },
+        {
+          "title": "BotSchema:$$enum_DigitalNoiseReductionMode_DeepNoiseSuppression_title$$",
+          "description": "BotSchema:$$enum_DigitalNoiseReductionMode_DeepNoiseSuppression_description$$",
+          "const": "DeepNoiseSuppression"
+        }
+      ]
+    },
+    "DigitalListeningMode": {
+      "type": "string",
+      "oneOf": [
+        {
+          "title": "BotSchema:$$enum_DigitalListeningMode_AlwaysListening_title$$",
+          "description": "BotSchema:$$enum_DigitalListeningMode_AlwaysListening_description$$",
+          "const": "AlwaysListening"
+        },
+        {
+          "title": "BotSchema:$$enum_DigitalListeningMode_PushToTalk_title$$",
+          "description": "BotSchema:$$enum_DigitalListeningMode_PushToTalk_description$$",
+          "const": "PushToTalk"
+        }
+      ]
+    },
     "TableSearchType": {
       "type": "string",
       "oneOf": [
@@ -25357,6 +26108,10 @@
         {
           "title": "BotSchema:$$enum_DefaultValueMissingAction_SetEmpty_title$$",
           "const": "SetEmpty"
+        },
+        {
+          "title": "BotSchema:$$enum_DefaultValueMissingAction_GoToDialog_title$$",
+          "const": "GoToDialog"
         }
       ]
     },
@@ -25642,10 +26397,6 @@
         {
           "title": "BotSchema:$$enum_ChannelId_Microsoft365Copilot_title$$",
           "const": "Microsoft365Copilot"
-        },
-        {
-          "title": "BotSchema:$$enum_ChannelId_Agent365_title$$",
-          "const": "Agent365"
         },
         {
           "title": "BotSchema:$$enum_ChannelId_Agents_title$$",
@@ -26003,6 +26754,10 @@
         {
           "title": "BotSchema:$$enum_ValidationErrorCode_EmptyActions_title$$",
           "const": "EmptyActions"
+        },
+        {
+          "title": "BotSchema:$$enum_ValidationErrorCode_SignInRequiredWithManualAuthentication_title$$",
+          "const": "SignInRequiredWithManualAuthentication"
         },
         {
           "title": "BotSchema:$$enum_ValidationErrorCode_SynonymsNotUnique_title$$",
@@ -26717,6 +27472,21 @@
         {
           "title": "BotSchema:$$enum_SystemOptionSetName_TurnDetectionType_title$$",
           "const": "TurnDetectionType"
+        },
+        {
+          "title": "BotSchema:$$enum_SystemOptionSetName_DigitalTurnDetectionType_title$$",
+          "description": "BotSchema:$$enum_SystemOptionSetName_DigitalTurnDetectionType_description$$",
+          "const": "DigitalTurnDetectionType"
+        },
+        {
+          "title": "BotSchema:$$enum_SystemOptionSetName_DigitalNoiseReductionMode_title$$",
+          "description": "BotSchema:$$enum_SystemOptionSetName_DigitalNoiseReductionMode_description$$",
+          "const": "DigitalNoiseReductionMode"
+        },
+        {
+          "title": "BotSchema:$$enum_SystemOptionSetName_DigitalListeningMode_title$$",
+          "description": "BotSchema:$$enum_SystemOptionSetName_DigitalListeningMode_description$$",
+          "const": "DigitalListeningMode"
         },
         {
           "title": "BotSchema:$$enum_SystemOptionSetName_DefaultValueMissingAction_title$$",
