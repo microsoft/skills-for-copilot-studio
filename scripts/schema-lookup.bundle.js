@@ -2883,6 +2883,16 @@ function resolveObject(obj, definitions, visited, depth, maxDepth) {
   }
   return resolved;
 }
+function printModelReference(definitions) {
+  const result = {};
+  const noKind = resolveDefinition("CurrentModelsNoKind", definitions);
+  if (noKind) result.CurrentModelsNoKind = noKind;
+  const providerDef = resolveDefinition("ModelProvider", definitions);
+  if (providerDef) result.ModelProvider = providerDef;
+  const apiTypeDef = resolveDefinition("ModelApiType", definitions);
+  if (apiTypeDef) result.ModelApiType = apiTypeDef;
+  console.log(JSON.stringify(result, null, 2));
+}
 function findKindValues(definitions) {
   const kinds = /* @__PURE__ */ new Set();
   function extractKinds(obj) {
@@ -3212,6 +3222,7 @@ Copilot Studio schema:
     node schema-lookup.js resolve <definition-name>
     node schema-lookup.js kinds
     node schema-lookup.js summary <definition-name>
+    node schema-lookup.js models
     node schema-lookup.js validate <path-to-yaml-file>
 
 Adaptive Cards schema:
@@ -3308,6 +3319,10 @@ function main() {
       } else {
         console.log(`Definition '${name}' not found.`);
       }
+      break;
+    }
+    case "models": {
+      printModelReference(definitions);
       break;
     }
     case "validate": {
