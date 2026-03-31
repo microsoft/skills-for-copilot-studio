@@ -10,12 +10,12 @@
   "publisher": "coatsy",
   "repository": {
     "type": "git",
-    "url": "https://github.com/microsoft/skills-for-copilot-studio.git"
+    "url": "https://github.com/coatsy/skills-for-copilot-studio.git"
   },
   "bugs": {
-    "url": "https://github.com/microsoft/skills-for-copilot-studio/issues"
+    "url": "https://github.com/coatsy/skills-for-copilot-studio/issues"
   },
-  "homepage": "https://github.com/microsoft/skills-for-copilot-studio#readme",
+  "homepage": "https://github.com/coatsy/skills-for-copilot-studio#readme",
   "engines": {
     "vscode": "^1.106.1"
   },

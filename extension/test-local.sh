@@ -85,19 +85,52 @@ IGNORE
 
 echo "==> Generating package.json with discovered agents and skills..."
 
-# Populate contributes with discovered agents and skills
+# Populate contributes with discovered agents and skills (including name/description)
 node -e "
 const fs = require('fs');
 const path = require('path');
 const pkg = JSON.parse(fs.readFileSync('$STAGE_DIR_NODE/package.json', 'utf8'));
 
+// Extract name and description from YAML frontmatter
+function parseFrontmatter(filePath) {
+  const content = fs.readFileSync(filePath, 'utf8');
+  const m = content.match(/^---\r?\n([\s\S]*?)\r?\n---/);
+  if (!m) return {};
+  const fm = {};
+  let currentKey = null;
+  for (const line of m[1].split(/\r?\n/)) {
+    const kv = line.match(/^([a-z][a-z0-9-]*):\s*(.*)$/i);
+    if (kv) {
+      currentKey = kv[1];
+      const val = kv[2].replace(/^>/, '').trim();
+      if (val) fm[currentKey] = val;
+      else fm[currentKey] = '';
+    } else if (currentKey && line.match(/^\s+\S/)) {
+      fm[currentKey] = ((fm[currentKey] || '') + ' ' + line.trim()).trim();
+    }
+  }
+  return fm;
+}
+
 const agents = fs.readdirSync('$STAGE_DIR_NODE/agents')
   .filter(f => f.endsWith('.agent.md'))
-  .map(f => ({ path: './agents/' + f }));
+  .map(f => {
+    const fm = parseFrontmatter(path.join('$STAGE_DIR_NODE/agents', f));
+    const entry = { path: './agents/' + f };
+    if (fm.name) entry.name = fm.name;
+    if (fm.description) entry.description = fm.description;
+    return entry;
+  });
 
 const skills = fs.readdirSync('$STAGE_DIR_NODE/skills')
   .filter(d => fs.existsSync(path.join('$STAGE_DIR_NODE/skills', d, 'SKILL.md')))
-  .map(d => ({ path: './skills/' + d + '/SKILL.md' }));
+  .map(d => {
+    const fm = parseFrontmatter(path.join('$STAGE_DIR_NODE/skills', d, 'SKILL.md'));
+    const entry = { path: './skills/' + d + '/SKILL.md' };
+    entry.name = d;
+    if (fm.description) entry.description = fm.description;
+    return entry;
+  });
 
 pkg.contributes = {};
 if (agents.length) pkg.contributes.chatAgents = agents;
@@ -182,7 +215,7 @@ if [ -f "$EXT_DIR/README.md" ]; then
   node -e "
     const fs = require('fs');
     const content = fs.readFileSync('$EXT_DIR_NODE/README.md', 'utf8');
-    const stripped = content.replace(/^---\n[\s\S]*?\n---\n+/, '');
+    const stripped = content.replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n+/, '');
     fs.writeFileSync('$STAGE_DIR_NODE/README.md', stripped);
   "
 elif [ ! -f "$STAGE_DIR/README.md" ]; then
