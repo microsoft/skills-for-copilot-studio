@@ -198,6 +198,65 @@ function findKindValues(definitions) {
   return [...kinds].sort();
 }
 
+// --- Schema-driven structural helpers ---
+
+/**
+ * Extracts valid kind values from a oneOf definition in the schema.
+ * For example, DialogAction.oneOf contains refs to all valid action kinds.
+ */
+function getValidKindsFromOneOf(definitionName, definitions) {
+  const def = definitions[definitionName];
+  if (!def || !def.oneOf) return [];
+
+  const kinds = [];
+  for (const entry of def.oneOf) {
+    const ref = entry.$ref;
+    if (ref && ref.startsWith("#/definitions/")) {
+      const refName = ref.slice("#/definitions/".length);
+      const refDef = definitions[refName];
+      if (refDef && refDef.properties && refDef.properties.kind) {
+        const kindProp = refDef.properties.kind;
+        if (kindProp.const) kinds.push(kindProp.const);
+        if (kindProp.enum) kinds.push(...kindProp.enum);
+      }
+    }
+  }
+  return kinds;
+}
+
+/**
+ * Gets the set of valid property names for a definition (resolving oneOf refs).
+ * For union types (oneOf), returns the union of all properties across all variants.
+ */
+function getValidProperties(definitionName, definitions) {
+  const def = definitions[definitionName];
+  if (!def) return new Set();
+
+  if (def.properties) {
+    return new Set(Object.keys(def.properties));
+  }
+
+  if (def.oneOf) {
+    const allProps = new Set();
+    for (const entry of def.oneOf) {
+      const ref = entry.$ref;
+      if (ref && ref.startsWith("#/definitions/")) {
+        const refName = ref.slice("#/definitions/".length);
+        const refDef = definitions[refName];
+        if (refDef && refDef.properties) {
+          Object.keys(refDef.properties).forEach((p) => allProps.add(p));
+        }
+      }
+      if (entry.properties) {
+        Object.keys(entry.properties).forEach((p) => allProps.add(p));
+      }
+    }
+    return allProps;
+  }
+
+  return new Set();
+}
+
 // --- Formatting ---
 
 function formatDefinition(name, definition, compact) {
@@ -372,6 +431,52 @@ function validateYamlFile(filepath, definitions) {
     } else {
       console.log("[WARN] Missing settings.instructions — child agents need instructions for generative orchestration");
       warnings++;
+    }
+  }
+
+  // 3b. Schema-driven structural validation
+  if (kind && data.beginDialog && typeof data.beginDialog === "object") {
+    const bd = data.beginDialog;
+    const triggerKind = bd.kind;
+
+    // Check action kinds against valid DialogAction kinds from schema
+    if (Array.isArray(bd.actions)) {
+      const validActionKinds = getValidKindsFromOneOf("DialogAction", definitions);
+      if (validActionKinds.length > 0) {
+        for (const action of bd.actions) {
+          if (action && typeof action === "object" && action.kind) {
+            if (validActionKinds.includes(action.kind)) {
+              passes++;
+            } else {
+              console.log(
+                `[FAIL] '${action.kind}' is not a valid action kind inside beginDialog.actions ` +
+                `(not found in DialogAction schema definition). ` +
+                `Use 'schema-lookup.bundle.js resolve DialogAction' to see valid action kinds.`
+              );
+              failures++;
+            }
+          }
+        }
+      }
+    }
+
+    // Check for properties in beginDialog that belong at the root level instead
+    if (triggerKind) {
+      const triggerProps = getValidProperties(triggerKind, definitions);
+      const rootDef = definitions[kind];
+      const rootProps = rootDef && rootDef.properties ? new Set(Object.keys(rootDef.properties)) : new Set();
+
+      for (const key of Object.keys(bd)) {
+        if (key === "kind" || key === "id") continue;
+        if (!triggerProps.has(key) && rootProps.has(key)) {
+          console.log(
+            `[FAIL] '${key}' is inside beginDialog but belongs at the ${kind} root level ` +
+            `(not a valid property of ${triggerKind}, but is a property of ${kind}). ` +
+            `Move '${key}' to the top level of the YAML.`
+          );
+          failures++;
+        }
+      }
     }
   }
 
