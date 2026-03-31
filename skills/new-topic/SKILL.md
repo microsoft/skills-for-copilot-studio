@@ -2,7 +2,7 @@
 user-invocable: false
 description: Create a new Copilot Studio topic YAML file. Use when the user asks to create a new topic, conversation flow, or dialog for their agent.
 argument-hint: <topic description>
-allowed-tools: Bash(node *schema-lookup.bundle.js *), Read, Write, Glob
+allowed-tools: Bash(node *schema-lookup.bundle.js *), Bash(node *manage-agent.bundle.js *), Read, Write, Glob
 context: fork
 agent: copilot-studio-author
 ---
@@ -58,30 +58,63 @@ Generate a new Copilot Studio topic YAML file based on user requirements.
 7. **Save** to the agent's `topics/<topic-name>.topic.mcs.yml` directory
 
 8. **MANDATORY: Validate the generated file** after saving:
+
+   **Step A: Schema validation** — always run this first:
    ```bash
    node ${CLAUDE_SKILL_DIR}/../../scripts/schema-lookup.bundle.js validate <saved-file.yml>
    ```
-   If validation fails, fix the issues before reporting success to the user.
+
+   **Step B: LSP-based validation** — also run this if the agent has `.mcs/conn.json`:
+   Read `.mcs/conn.json` to get connection details, then:
+   ```bash
+   node ${CLAUDE_SKILL_DIR}/../../scripts/manage-agent.bundle.js validate \
+     --workspace "<path-to-agent-folder>" \
+     --tenant-id "<tenantId>" \
+     --environment-id "<envId>" \
+     --environment-url "<envUrl>" \
+     --agent-mgmt-url "<mgmtUrl>"
+   ```
+
+   Both validations are complementary: schema validation checks structural correctness (action kinds, property placement), while LSP validation checks Power Fx expressions, cross-file references, and environment-specific rules. If either fails, fix the issues before reporting success to the user.
 
 ## Generative Orchestration Guidelines
 
 When the agent has `GenerativeActionsEnabled: true` in settings:
 
-**Use Topic Inputs** (AutomaticTaskInput) instead of Question nodes to auto-collect user info:
+**Use Topic Inputs** (AutomaticTaskInput) instead of Question nodes to auto-collect user info.
+Place `inputs` at the **AdaptiveDialog root level** (NOT inside `beginDialog`):
 ```yaml
-inputs:
+kind: AdaptiveDialog
+inputs:                    # <-- at AdaptiveDialog root, NOT inside beginDialog
   - kind: AutomaticTaskInput
     propertyName: userName
     description: "The user's name"
     entity: StringPrebuiltEntity
     shouldPromptUser: true
+beginDialog:
+  kind: OnRecognizedIntent
+  id: main
+  actions:
+    - ...
 ```
 - The orchestrator auto-collects inputs based on the description — no explicit Question node needed.
 - Still use Question nodes when: conditional asks (ask X only if Y), or end-of-flow confirmations.
 
-**Use Topic Outputs** instead of SendActivity for final results:
+**Use Topic Outputs** instead of SendActivity for final results.
+Use `outputType` at the root level and `SetVariable` to set output values — do NOT use `TaskOutput` (which is only valid in `TaskDialog` connector actions):
 ```yaml
-outputType:
+kind: AdaptiveDialog
+inputs:
+  - ...
+beginDialog:
+  kind: OnRecognizedIntent
+  id: main
+  actions:
+    - kind: SetVariable
+      id: setVar_abc123
+      variable: Topic.result
+      value: ="computed value"
+outputType:                # <-- at AdaptiveDialog root
   properties:
     result:
       displayName: result
@@ -91,7 +124,7 @@ outputType:
 - The orchestrator generates the user-facing message from outputs.
 - Do NOT use SendActivity to show final outputs (rare exceptions: precise mid-flow messages).
 
-**Include inputType/outputType schemas** when using inputs/outputs:
+**Include inputType/outputType schemas** at the AdaptiveDialog root level when using inputs/outputs:
 ```yaml
 inputType:
   properties:
