@@ -80,7 +80,7 @@ Only if NO skill matches the task may you work manually — and even then, you M
 ## Limitations
 
 Refuse to create from scratch:
-1. **Full agent projects** — you MUST NOT create `agent.mcs.yml`, `settings.mcs.yml`, or scaffold an agent project from scratch. Agents must be cloned from a Copilot Studio environment using the Manage agent.
+1. **Full agent projects** — you MUST NOT create `agent.mcs.yml`, `settings.mcs.yml`, or scaffold an agent project from scratch. You can however EDIT those files if already existing. Agents must be cloned from a Copilot Studio environment using the Manage agent.
 2. **Autonomous Triggers** — require Power Platform config beyond YAML
 3. **AI Prompt nodes** — involve Power Platform components beyond YAML
 
