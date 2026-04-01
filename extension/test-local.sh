@@ -42,6 +42,101 @@ done
 # Copy skills (will strip frontmatter below)
 cp -R "$REPO_ROOT/skills" "$STAGE_DIR/skills"
 
+# Auto-discover skill references in agent body text and add them to frontmatter.
+# Agents reference skills as /copilot-studio:<skill-name> in their body but may
+# not declare them in the skills: frontmatter array. VS Code requires skills to
+# be listed in frontmatter, so we scan and inject missing ones automatically.
+echo "==> Auto-discovering skill references in agents..."
+node -e "
+const fs = require('fs');
+const path = require('path');
+const agentsDir = path.join('$STAGE_DIR_NODE', 'agents');
+const skillsDir = path.join('$STAGE_DIR_NODE', 'skills');
+
+// Build set of valid skill names (directories with SKILL.md)
+const validSkills = new Set(
+  fs.readdirSync(skillsDir).filter(d =>
+    fs.existsSync(path.join(skillsDir, d, 'SKILL.md'))
+  )
+);
+
+let totalAdded = 0;
+
+fs.readdirSync(agentsDir)
+  .filter(f => f.endsWith('.agent.md'))
+  .forEach(f => {
+    const filePath = path.join(agentsDir, f);
+    const content = fs.readFileSync(filePath, 'utf8');
+
+    // Split frontmatter from body
+    const fmMatch = content.match(/^---\r?\n([\s\S]*?)\r?\n---\r?\n([\s\S]*)$/);
+    if (!fmMatch) return;
+
+    const fmText = fmMatch[1];
+    const body = fmMatch[2];
+
+    // Parse existing skills from frontmatter
+    const existingSkills = new Set();
+    const skillsLineMatch = fmText.match(/^skills:\s*$/m);
+    if (skillsLineMatch) {
+      const afterSkills = fmText.slice(fmText.indexOf(skillsLineMatch[0]) + skillsLineMatch[0].length);
+      for (const line of afterSkills.split(/\r?\n/)) {
+        const itemMatch = line.match(/^\s+-\s+(.+)$/);
+        if (itemMatch) existingSkills.add(itemMatch[1].trim());
+        else if (line.match(/^\S/)) break; // next top-level key
+      }
+    }
+
+    // Scan body for /copilot-studio:<skill-name> references
+    const refPattern = /\/copilot-studio:([a-z][a-z0-9-]*)/g;
+    const referencedSkills = new Set();
+    let match;
+    while ((match = refPattern.exec(body)) !== null) {
+      const skillName = match[1];
+      if (validSkills.has(skillName) && !existingSkills.has(skillName)) {
+        referencedSkills.add(skillName);
+      }
+    }
+
+    if (referencedSkills.size === 0) return;
+
+    // Rebuild frontmatter with merged skills list
+    const allSkills = [...existingSkills, ...referencedSkills];
+    const skillsYaml = 'skills:\n' + allSkills.map(s => '  - ' + s).join('\n');
+
+    let newFm;
+    if (skillsLineMatch) {
+      // Replace existing skills block
+      const lines = fmText.split(/\r?\n/);
+      const newLines = [];
+      let inSkills = false;
+      for (const line of lines) {
+        if (line.match(/^skills:\s*$/)) {
+          inSkills = true;
+          newLines.push(skillsYaml);
+          continue;
+        }
+        if (inSkills) {
+          if (line.match(/^\s+-\s+/)) continue; // skip old items
+          inSkills = false;
+        }
+        newLines.push(line);
+      }
+      newFm = newLines.join('\n');
+    } else {
+      // No skills key yet — append before closing ---
+      newFm = fmText + '\n' + skillsYaml;
+    }
+
+    const newContent = '---\n' + newFm + '\n---\n' + body;
+    fs.writeFileSync(filePath, newContent);
+    totalAdded += referencedSkills.size;
+    console.log('   ' + f + ': added ' + referencedSkills.size + ' skills (' + [...referencedSkills].join(', ') + ')');
+  });
+
+console.log('   Total: ' + totalAdded + ' skill declarations added');
+"
+
 # Copy scripts, templates, and reference files
 cp -R "$REPO_ROOT/scripts" "$STAGE_DIR/scripts"
 cp -R "$REPO_ROOT/templates" "$STAGE_DIR/templates"
