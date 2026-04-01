@@ -5,7 +5,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node -e \"var r=process.env.CLAUDE_PLUGIN_ROOT;if(r){var f=require('fs'),p=require('path');process.stdout.write(f.readFileSync(p.join(r,'hooks','system-prompt.md'),'utf8'))}\"",
+            "command": "node -e \"var r=process.env.CLAUDE_PLUGIN_ROOT;if(r){var f=require('fs'),p=require('path');var t=f.readFileSync(p.join(r,'hooks','system-prompt.md'),'utf8');process.stdout.write(JSON.stringify({hookSpecificOutput:{hookEventName:'SessionStart',additionalContext:t}}))}\"",
             "bash": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/print-prompt.js\"",
             "powershell": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/print-prompt.js\""
           },
