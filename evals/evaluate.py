@@ -371,7 +371,10 @@ def run_eval(eval_item: dict, cli: str, verbose: bool, artifacts_dir: Path | Non
 
     if verbose:
         print(f"\n--- Eval {eval_id}: {eval_name or prompt[:80]} ---", file=sys.stderr)
+        print(f"Prompt: {prompt}", file=sys.stderr)
         print(f"Fixture: {fixture}", file=sys.stderr)
+        checks_summary = ", ".join(k for k, v in checks.items() if v)
+        print(f"Checks: {checks_summary}", file=sys.stderr)
 
     # Setup workspace
     workspace = setup_workspace(fixture)
