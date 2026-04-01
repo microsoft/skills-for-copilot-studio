@@ -1,0 +1,77 @@
+{
+  "skill_name": "lookup-schema",
+  "evals": [
+    {
+      "id": 1,
+      "name": "Lookup known definition — SendActivity",
+      "prompt": "Use the lookup-schema skill to look up the SendActivity definition. Explain its properties and how to use it in YAML.",
+      "fixture": "basic-agent",
+      "mock_scripts": [],
+      "checks": {
+        "stdout_contains": ["SendActivity", "text", "kind"],
+        "stdout_not_contains": ["not found", "ENOENT"],
+        "exit_code": 0
+      }
+    },
+    {
+      "id": 2,
+      "name": "Lookup trigger kind — OnRecognizedIntent",
+      "prompt": "Use the lookup-schema skill to look up the OnRecognizedIntent definition. Explain what it does and its required properties.",
+      "fixture": "basic-agent",
+      "mock_scripts": [],
+      "checks": {
+        "stdout_contains": ["OnRecognizedIntent", "intent", "trigger"],
+        "stdout_not_contains": ["not found", "ENOENT"],
+        "exit_code": 0
+      }
+    },
+    {
+      "id": 3,
+      "name": "Lookup top-level kind — AdaptiveDialog",
+      "prompt": "Use the lookup-schema skill to look up the AdaptiveDialog definition. Describe its structure including triggers and beginDialog.",
+      "fixture": "basic-agent",
+      "mock_scripts": [],
+      "checks": {
+        "stdout_contains": ["AdaptiveDialog", "beginDialog", "trigger"],
+        "stdout_not_contains": ["not found", "ENOENT"],
+        "exit_code": 0
+      }
+    },
+    {
+      "id": 4,
+      "name": "Search for model-related definitions",
+      "prompt": "Use the lookup-schema skill to search for definitions related to 'model'. List what model-related schema elements are available.",
+      "fixture": "basic-agent",
+      "mock_scripts": [],
+      "checks": {
+        "stdout_contains": ["modelDescription", "properties"],
+        "stdout_not_contains": ["ENOENT"],
+        "exit_code": 0
+      }
+    },
+    {
+      "id": 5,
+      "name": "Resolve $ref references in a definition",
+      "prompt": "Use the lookup-schema skill to resolve the QuestionWithOptions definition. Show the fully resolved schema including any referenced sub-definitions.",
+      "fixture": "basic-agent",
+      "mock_scripts": [],
+      "checks": {
+        "stdout_contains": ["QuestionWithOptions", "properties"],
+        "stdout_not_contains": ["not found", "ENOENT"],
+        "exit_code": 0
+      }
+    },
+    {
+      "id": 6,
+      "name": "Lookup non-existent definition — graceful fallback",
+      "prompt": "Use the lookup-schema skill to look up the definition for 'FakeNonExistentKind'. Report what you find.",
+      "fixture": "basic-agent",
+      "mock_scripts": [],
+      "checks": {
+        "stdout_contains": ["not found"],
+        "stdout_not_contains": ["ENOENT", "stack trace", "FATAL"],
+        "exit_code": 0
+      }
+    }
+  ]
+}
