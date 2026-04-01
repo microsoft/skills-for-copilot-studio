@@ -74,11 +74,18 @@ for (const name of skillNames) {
 
   // Read results
   if (fs.existsSync(outputFile)) {
-    const results = JSON.parse(fs.readFileSync(outputFile, "utf8"));
-    const { total_checks_passed: passed, total_checks_failed: failed, total_checks: total } = results.summary;
-    console.log(`  ${passed}/${total} checks passed`);
-    totalPass += passed;
-    totalFail += failed;
+    try {
+      const results = JSON.parse(fs.readFileSync(outputFile, "utf8"));
+      const summary = results.summary ?? {};
+      const passed = summary.total_checks_passed ?? 0;
+      const failed = summary.total_checks_failed ?? 0;
+      const total = summary.total_checks ?? 0;
+      console.log(`  ${passed}/${total} checks passed`);
+      totalPass += passed;
+      totalFail += failed;
+    } catch {
+      console.error(`  Warning: could not read results from ${outputFile}`);
+    }
   }
 }
 

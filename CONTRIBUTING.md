@@ -144,7 +144,7 @@ python3 evals/report.py evals/results/<timestamp>/
 /create-eval <skill-name>
 ```
 
-This walks you through the process — reads your skill, suggests test cases, and writes the `evals.json` file.
+This walks you through the process — reads your skill, suggests test cases, and writes `evals/skills/<skill-name>.json`.
 
 **Option 2: Create manually**
 
