@@ -3,6 +3,7 @@
   "evals": [
     {
       "id": 1,
+      "name": "Change agent instructions",
       "prompt": "Use the edit-agent skill to change the agent's instructions to: 'You are a customer support agent for Contoso Electronics. Be friendly, concise, and always offer to escalate to a human agent if the customer is frustrated.'",
       "fixture": "basic-agent",
       "mock_scripts": [],
@@ -20,6 +21,7 @@
     },
     {
       "id": 2,
+      "name": "Update display name and conversation starters",
       "prompt": "Use the edit-agent skill to change the agent's display name to 'Contoso Support Bot' and update the conversation starters to: 'Track my order', 'Return a product', and 'Speak to an agent'.",
       "fixture": "basic-agent",
       "mock_scripts": [],
@@ -38,6 +40,7 @@
     },
     {
       "id": 3,
+      "name": "Enable generative actions in settings",
       "prompt": "Use the edit-agent skill to enable generative actions on the agent (set GenerativeActionsEnabled to true in settings.mcs.yml).",
       "fixture": "basic-agent",
       "mock_scripts": [],

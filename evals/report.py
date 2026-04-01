@@ -202,6 +202,7 @@ def build_skill_card(skill_name: str, skill_data: dict, results_dir: Path) -> st
 def build_eval_row(skill_name: str, ev: dict, results_dir: Path) -> str:
     """Build HTML for a single eval within a skill card."""
     eval_id = ev["eval_id"]
+    eval_name = ev.get("name", "")
     prompt = ev["prompt"]
     s = ev["summary"]
     all_passed = s["failed"] == 0
@@ -278,7 +279,7 @@ def build_eval_row(skill_name: str, ev: dict, results_dir: Path) -> str:
           <div class="eval-info">
             <span class="status-dot {'dot-pass' if all_passed else 'dot-fail'}"></span>
             <span class="eval-id">#{eval_id}</span>
-            <span class="eval-prompt">{html.escape(prompt[:140])}{'&hellip;' if len(prompt) > 140 else ''}</span>
+            <span class="eval-name">{html.escape(eval_name) if eval_name else html.escape(prompt[:100]) + ('&hellip;' if len(prompt) > 100 else '')}</span>
           </div>
           <div class="eval-stats">
             <span class="checks-badge-sm {'badge-pass' if all_passed else 'badge-fail'}">{s['passed']}/{s['total']}</span>
@@ -469,7 +470,7 @@ kbd {
 .dot-fail { background: #f85149; }
 
 .eval-id { font-weight: 600; color: #c9d1d9; font-size: 0.82rem; white-space: nowrap; }
-.eval-prompt { color: #7d8590; font-size: 0.78rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.eval-name { color: #c9d1d9; font-size: 0.82rem; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 .eval-body {
   max-height: 0; overflow: hidden;

@@ -356,14 +356,14 @@ def run_checks(
 def run_eval(eval_item: dict, cli: str, verbose: bool, artifacts_dir: Path | None = None) -> dict:
     """Run a single eval and return results."""
     eval_id = eval_item["id"]
+    eval_name = eval_item.get("name", "")
     prompt = eval_item["prompt"]
     fixture = eval_item.get("fixture", "basic-agent")
     mock_scripts = eval_item.get("mock_scripts", [])
     checks = eval_item.get("checks", {})
 
     if verbose:
-        print(f"\n--- Eval {eval_id} ---", file=sys.stderr)
-        print(f"Prompt: {prompt[:100]}...", file=sys.stderr)
+        print(f"\n--- Eval {eval_id}: {eval_name or prompt[:80]} ---", file=sys.stderr)
         print(f"Fixture: {fixture}", file=sys.stderr)
 
     # Setup workspace
@@ -419,6 +419,7 @@ def run_eval(eval_item: dict, cli: str, verbose: bool, artifacts_dir: Path | Non
 
         return {
             "eval_id": eval_id,
+            "name": eval_name,
             "prompt": prompt,
             "fixture": fixture,
             "response_text": response_text[:1000],
