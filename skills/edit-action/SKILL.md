@@ -1,15 +1,15 @@
 ---
 user-invocable: false
-description: Edit an existing connector action (TaskDialog) in a Copilot Studio agent. Modify inputs, outputs, descriptions, connection mode, and other properties using connector definitions as reference.
+description: Edit an existing action (TaskDialog) in a Copilot Studio agent. Supports connector actions and MCP server actions. Modify inputs, outputs, descriptions, connection mode, and other properties.
 argument-hint: <what to change, e.g. "add description to SharePoint inputs">
 allowed-tools: Bash(node *connector-lookup.bundle.js *), Bash(node *schema-lookup.bundle.js *), Read, Edit, Glob
 context: fork
 agent: copilot-studio-author
 ---
 
-# Edit Connector Action
+# Edit Action
 
-Edit an existing connector action (`kind: TaskDialog`) in a Copilot Studio agent. Uses connector definitions to understand the full operation schema (inputs, outputs, types) and the generic action template as structural reference.
+Edit an existing action (`kind: TaskDialog`) in a Copilot Studio agent. Supports both regular connector actions (`InvokeConnectorTaskAction`) and MCP server actions (`InvokeExternalAgentTaskAction`). Uses connector definitions to understand the full operation schema (inputs, outputs, types) and action templates as structural reference.
 
 ## Connector Lookup
 
@@ -24,11 +24,13 @@ node ${CLAUDE_SKILL_DIR}/../../scripts/connector-lookup.bundle.js operation <con
 node ${CLAUDE_SKILL_DIR}/../../scripts/connector-lookup.bundle.js search <keyword>                  # Search operations
 ```
 
-Use schema lookup for structural properties of TaskDialog and InvokeConnectorTaskAction:
+Use schema lookup for structural properties:
 
 ```bash
 node ${CLAUDE_SKILL_DIR}/../../scripts/schema-lookup.bundle.js summary TaskDialog
 node ${CLAUDE_SKILL_DIR}/../../scripts/schema-lookup.bundle.js summary InvokeConnectorTaskAction
+node ${CLAUDE_SKILL_DIR}/../../scripts/schema-lookup.bundle.js summary InvokeExternalAgentTaskAction
+node ${CLAUDE_SKILL_DIR}/../../scripts/schema-lookup.bundle.js summary ModelContextProtocolMetadata
 ```
 
 ## Instructions
@@ -54,13 +56,22 @@ node ${CLAUDE_SKILL_DIR}/../../scripts/schema-lookup.bundle.js summary InvokeCon
    - This gives you the complete list of available inputs and outputs for the operation
    - If the connector is not found, try broader terms. If still not found, inform the user and proceed with edits based on the existing action YAML and schema-lookup only
 
-4. **Read the generic action template** for structural reference:
-   ```
-   Read: ${CLAUDE_SKILL_DIR}/../../templates/actions/connector-action.mcs.yml
-   ```
+4. **Determine the action type** from the YAML:
+   - If `action.kind` is `InvokeConnectorTaskAction` → regular connector action
+   - If `action.kind` is `InvokeExternalAgentTaskAction` → MCP server action
+
+5. **Read the appropriate template** for structural reference:
+   - Connector actions:
+     ```
+     Read: ${CLAUDE_SKILL_DIR}/../../templates/actions/connector-action.mcs.yml
+     ```
+   - MCP actions:
+     ```
+     Read: ${CLAUDE_SKILL_DIR}/../../templates/actions/mcp-action.mcs.yml
+     ```
    Use this alongside the connector-lookup output from step 3 to understand the YAML structure and available inputs/outputs.
 
-5. **Make the requested edits** using the Edit tool. Common modifications:
+6. **Make the requested edits** using the Edit tool. Common modifications:
 
    ### Modify Input Descriptions
    Update `description` on `AutomaticTaskInput` entries to improve how the orchestrator fills them:
@@ -114,20 +125,50 @@ node ${CLAUDE_SKILL_DIR}/../../scripts/schema-lookup.bundle.js summary InvokeCon
    - `Maker`: Uses the developer's credentials (shared connection)
    - `Invoker`: Each end user authenticates with their own credentials
 
-6. **Validate the edited file**:
+   ### MCP Actions — Editable Fields
+
+   MCP actions (`InvokeExternalAgentTaskAction` with `ModelContextProtocolMetadata`) have a simpler structure than connector actions. The MCP protocol handles tool discovery, so there are no explicit inputs/outputs.
+
+   Safe to edit:
+   ```yaml
+   modelDisplayName: Microsoft Learn Docs MCP Server   # display name for the orchestrator
+   modelDescription: MCP Server to search Microsoft Learn content   # routing description
+   action:
+     connectionProperties:
+       mode: Invoker    # or Maker
+   ```
+
+   MCP actions may also have `ManualTaskInput` entries for passing context to the MCP server (e.g., user identity as a header):
+   ```yaml
+   inputs:
+     - kind: ManualTaskInput
+       propertyName: userid
+       value: =System.User.Email
+   ```
+   This is fine — `ManualTaskInput` with Power Fx expressions can pass user context. But do NOT add `AutomaticTaskInput` entries — MCP handles tool parameter discovery dynamically.
+
+   **Do NOT edit on MCP actions:**
+   - `action.operationDetails.operationId` — identifies the MCP operation
+   - `action.connectionReference` — links to the authenticated connection
+   - Do NOT add `AutomaticTaskInput` entries — MCP handles tool discovery dynamically
+   - Be cautious with `modelDescription` — keep it on a single line; multi-line descriptions have been reported to break MCP tool registration after push (see [#91](https://github.com/microsoft/skills-for-copilot-studio/issues/91))
+
+7. **Validate the edited file**:
    ```bash
    node ${CLAUDE_SKILL_DIR}/../../scripts/schema-lookup.bundle.js validate <action-file-path>
    ```
 
-7. **Inform the user** about next steps:
+8. **Inform the user** about next steps:
    - The action has been edited
    - Push changes via the Copilot Studio VS Code Extension
    - If connection mode was changed, the user may need to reconfigure the connection in the portal
 
 ## Important Rules
 
-- **Never change `action.operationId`** — this identifies which connector operation runs. Changing it breaks the action.
+- **Never change `action.operationId`** (connector) or **`action.operationDetails.operationId`** (MCP) — this identifies which operation runs. Changing it breaks the action.
 - **Never change `action.connectionReference`** — this links to the authenticated connection. Changing it breaks the action.
 - **Property names must match the connector definition** — use `connector-lookup operation` to verify exact property names.
 - **ManualTaskInput values are strings only** — if the value needs to be a number, enum, or complex type, warn the user that it may need UI configuration.
 - **Output propertyName values must match the connector definition's output schema** — use `connector-lookup operation` to see available output properties.
+- **MCP actions must not have `AutomaticTaskInput` entries** — the MCP protocol handles tool parameter discovery dynamically. `ManualTaskInput` entries are OK for passing context (e.g., user identity via Power Fx expressions like `=System.User.Email`).
+- **MCP modelDescription should be single-line** — multi-line descriptions have been reported to break MCP tool registration after push.

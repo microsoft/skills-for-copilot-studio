@@ -84,19 +84,22 @@ def setup_mocks(workspace: Path, mock_scripts: list[str]) -> None:
         shutil.copy2(mock_src, mock_dst)
 
 
-def run_cli(cli: str, prompt: str, cwd: Path, timeout: int = 600) -> tuple[str, int]:
-    """Run claude/copilot in non-interactive mode and return (response_text, exit_code).
+def run_cli(cli: str, prompt: str, cwd: Path, timeout: int = 600) -> tuple[str, int, list[str]]:
+    """Run claude/copilot in non-interactive mode and return (response_text, exit_code, skills_invoked).
 
     Supports both Claude Code and GitHub Copilot CLI JSON output formats.
+    Uses stream-json with verbose for Claude Code to capture skill invocations.
     """
-    cmd = [cli, "-p", prompt, "--output-format", "json"]
+    cmd = [cli, "-p", prompt]
 
     # Grant tool permissions — different flags per CLI
     if cli == "copilot":
+        cmd.extend(["--output-format", "json"])
         cmd.extend(["--allow-tool", "shell(node *)", "--allow-tool", "read",
                      "--allow-tool", "write", "--allow-tool", "edit",
                      "--allow-tool", "glob"])
     else:
+        cmd.extend(["--output-format", "stream-json", "--verbose"])
         cmd.extend(["--allowedTools", "Bash(node *) Read Write Glob Edit"])
 
     # Remove CLAUDECODE env var to allow nesting (same as skill-creator)
@@ -112,10 +115,11 @@ def run_cli(cli: str, prompt: str, cwd: Path, timeout: int = 600) -> tuple[str, 
             timeout=timeout,
         )
     except subprocess.TimeoutExpired:
-        return "[TIMEOUT]", 1
+        return "[TIMEOUT]", 1, []
 
     response_text = ""
     exit_code = result.returncode
+    skills_invoked = []
 
     # Parse JSON lines from stdout
     for line in result.stdout.strip().split("\n"):
@@ -129,9 +133,18 @@ def run_cli(cli: str, prompt: str, cwd: Path, timeout: int = 600) -> tuple[str, 
 
         event_type = event.get("type", "")
 
-        # Claude Code: single result event with response text
+        # Claude Code: result event with response text
         if event_type == "result" and "result" in event:
             response_text = event["result"]
+
+        # Claude Code stream-json: assistant messages with tool_use for skills
+        elif event_type == "assistant":
+            message = event.get("message", {})
+            for content in message.get("content", []):
+                if content.get("type") == "tool_use" and content.get("name") == "Skill":
+                    skill_name = content.get("input", {}).get("skill", "")
+                    if skill_name:
+                        skills_invoked.append(skill_name)
 
         # Copilot CLI: assistant.message with full content
         elif event_type == "assistant.message":
@@ -140,7 +153,7 @@ def run_cli(cli: str, prompt: str, cwd: Path, timeout: int = 600) -> tuple[str, 
             if content:
                 response_text = content.strip()
 
-    return response_text, exit_code
+    return response_text, exit_code, skills_invoked
 
 
 # --- Check functions ---
@@ -152,11 +165,15 @@ def check_files_created(workspace: Path, changed_files: list[Path], spec: list[d
     for item in spec:
         pattern = item["pattern"]
         min_count = item.get("min_count", 1)
+        max_count = item.get("max_count", None)
         # Only match against new/modified files, not pre-existing fixture files
         matches = [f for f in changed_files if f.is_relative_to(agent_dir) and fnmatch.fnmatch(str(f.relative_to(agent_dir)), pattern)]
         passed = len(matches) >= min_count
+        if max_count is not None:
+            passed = passed and len(matches) <= max_count
+        label = f"files_created: {pattern} (min {min_count})" if max_count is None else f"files_created: {pattern} (min {min_count}, max {max_count})"
         results.append({
-            "check": f"files_created: {pattern} (min {min_count})",
+            "check": label,
             "passed": passed,
             "evidence": f"Found {len(matches)} new/modified files: {[str(m.relative_to(agent_dir)) for m in matches]}" if matches else "No matching new/modified files found",
         })
@@ -327,9 +344,28 @@ def run_checks(
     response_text: str,
     exit_code: int,
     checks: dict,
+    skills_invoked: list[str] | None = None,
 ) -> list[dict]:
     """Run all configured checks and return results."""
     all_results = []
+
+    # skill_invoked is a gate check — if it fails, skip all other checks
+    if "skill_invoked" in checks:
+        expected = checks["skill_invoked"]
+        found = expected in (skills_invoked or [])
+        if found:
+            evidence = f"Correct — {expected} was invoked"
+        elif skills_invoked:
+            evidence = f"Wrong skill routed: expected {expected}, got {', '.join(skills_invoked)}"
+        else:
+            evidence = f"No skills were invoked — expected {expected}"
+        all_results.append({
+            "check": f"skill_invoked: {expected}",
+            "passed": found,
+            "evidence": evidence,
+        })
+        if not found:
+            return all_results  # skip remaining checks — test is invalid
 
     if "files_created" in checks:
         all_results.extend(check_files_created(workspace, changed_files, checks["files_created"]))
@@ -395,10 +431,12 @@ def run_eval(eval_item: dict, cli: str, verbose: bool, artifacts_dir: Path | Non
         if verbose:
             print(f"Running: {cli} -p ...", file=sys.stderr)
 
-        response_text, exit_code = run_cli(cli, prompt, cwd=agent_dir)
+        response_text, exit_code, skills_invoked = run_cli(cli, prompt, cwd=agent_dir)
 
         if verbose:
             print(f"Exit code: {exit_code}", file=sys.stderr)
+            if skills_invoked:
+                print(f"Skills invoked: {skills_invoked}", file=sys.stderr)
             print(f"Response: {response_text[:200]}...", file=sys.stderr)
 
         # Find changed files
@@ -411,16 +449,33 @@ def run_eval(eval_item: dict, cli: str, verbose: bool, artifacts_dir: Path | Non
             print(f"Changed files: {[str(f.relative_to(agent_dir)) for f in changed_files]}", file=sys.stderr)
 
         # Run checks
-        check_results = run_checks(workspace, changed_files, response_text, exit_code, checks)
+        check_results = run_checks(workspace, changed_files, response_text, exit_code, checks, skills_invoked)
 
         passed = sum(1 for r in check_results if r["passed"])
         total = len(check_results)
+        failed = total - passed
+
+        # Determine eval status
+        # If skill_invoked was checked and failed, the test is invalid (routing failed)
+        skill_check_failed = any(
+            not r["passed"] and r["check"].startswith("skill_invoked:")
+            for r in check_results
+        )
+        if skill_check_failed:
+            eval_status = "invalid"
+        elif failed == 0:
+            eval_status = "passed"
+        else:
+            eval_status = "failed"
 
         if verbose:
             for r in check_results:
-                status = "PASS" if r["passed"] else "FAIL"
-                print(f"  [{status}] {r['check']}: {r['evidence']}", file=sys.stderr)
-            print(f"Result: {passed}/{total} checks passed", file=sys.stderr)
+                label = "PASS" if r["passed"] else "FAIL"
+                print(f"  [{label}] {r['check']}: {r['evidence']}", file=sys.stderr)
+            if eval_status == "invalid":
+                print(f"Result: INVALID — wrong skill invoked, {total - 1} check(s) skipped", file=sys.stderr)
+            else:
+                print(f"Result: {passed}/{total} checks passed", file=sys.stderr)
 
         # Save generated files as artifacts
         saved_artifacts = []
@@ -449,10 +504,11 @@ def run_eval(eval_item: dict, cli: str, verbose: bool, artifacts_dir: Path | Non
             "fixture": fixture,
             "response_text": response_text[:5000] + ("[...truncated]" if len(response_text) > 5000 else ""),
             "exit_code": exit_code,
+            "skills_invoked": skills_invoked,
             "changed_files": [str(f.relative_to(agent_dir)) for f in changed_files],
             "artifacts": saved_artifacts,
             "checks": check_results,
-            "summary": {"passed": passed, "failed": total - passed, "total": total},
+            "summary": {"passed": passed, "failed": failed, "total": total, "status": eval_status},
         }
     finally:
         shutil.rmtree(workspace, ignore_errors=True)
@@ -503,6 +559,7 @@ def main():
             "total_checks_passed": sum(r["summary"]["passed"] for r in results),
             "total_checks_failed": sum(r["summary"]["failed"] for r in results),
             "total_checks": sum(r["summary"]["total"] for r in results),
+            "evals_invalid": sum(1 for r in results if r["summary"].get("status") == "invalid"),
         },
     }
 
