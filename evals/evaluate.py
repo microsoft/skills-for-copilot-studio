@@ -353,10 +353,16 @@ def run_checks(
     if "skill_invoked" in checks:
         expected = checks["skill_invoked"]
         found = expected in (skills_invoked or [])
+        if found:
+            evidence = f"Correct — {expected} was invoked"
+        elif skills_invoked:
+            evidence = f"Wrong skill routed: expected {expected}, got {', '.join(skills_invoked)}"
+        else:
+            evidence = f"No skills were invoked — expected {expected}"
         all_results.append({
             "check": f"skill_invoked: {expected}",
             "passed": found,
-            "evidence": f"Skills invoked: {skills_invoked}" if skills_invoked else "No skills invoked (skill routing failed)",
+            "evidence": evidence,
         })
         if not found:
             return all_results  # skip remaining checks — test is invalid
