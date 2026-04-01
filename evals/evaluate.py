@@ -150,7 +150,7 @@ def check_files_created(workspace: Path, changed_files: list[Path], spec: list[d
         pattern = item["pattern"]
         min_count = item.get("min_count", 1)
         # Only match against new/modified files, not pre-existing fixture files
-        matches = [f for f in changed_files if fnmatch.fnmatch(str(f.relative_to(agent_dir)), pattern)]
+        matches = [f for f in changed_files if f.is_relative_to(agent_dir) and fnmatch.fnmatch(str(f.relative_to(agent_dir)), pattern)]
         passed = len(matches) >= min_count
         results.append({
             "check": f"files_created: {pattern} (min {min_count})",
@@ -398,6 +398,9 @@ def run_eval(eval_item: dict, cli: str, verbose: bool, artifacts_dir: Path | Non
         # Find changed files
         changed_files = find_new_or_modified_files(agent_dir, before)
 
+        # Filter to files within agent_dir only
+        changed_files = [f for f in changed_files if f.is_relative_to(agent_dir)]
+
         if verbose:
             print(f"Changed files: {[str(f.relative_to(agent_dir)) for f in changed_files]}", file=sys.stderr)
 
@@ -419,17 +422,26 @@ def run_eval(eval_item: dict, cli: str, verbose: bool, artifacts_dir: Path | Non
             eval_artifacts = artifacts_dir / f"eval-{eval_id}"
             eval_artifacts.mkdir(parents=True, exist_ok=True)
             for f in changed_files:
-                dest = eval_artifacts / f.relative_to(agent_dir)
+                if not f.is_relative_to(agent_dir):
+                    continue
+                rel = f.relative_to(agent_dir)
+                # Prevent path traversal (e.g., symlinks or ".." components)
+                if ".." in rel.parts:
+                    continue
+                dest = eval_artifacts / rel
+                if not dest.resolve().is_relative_to(eval_artifacts.resolve()):
+                    continue
                 dest.parent.mkdir(parents=True, exist_ok=True)
                 shutil.copy2(f, dest)
-                saved_artifacts.append(str(dest.relative_to(artifacts_dir)))
+                # Use posix paths for cross-platform HTML href compatibility
+                saved_artifacts.append(dest.relative_to(artifacts_dir).as_posix())
 
         return {
             "eval_id": eval_id,
             "name": eval_name,
             "prompt": prompt,
             "fixture": fixture,
-            "response_text": response_text[:1000],
+            "response_text": response_text[:5000] + ("[...truncated]" if len(response_text) > 5000 else ""),
             "exit_code": exit_code,
             "changed_files": [str(f.relative_to(agent_dir)) for f in changed_files],
             "artifacts": saved_artifacts,

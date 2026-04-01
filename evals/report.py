@@ -16,6 +16,7 @@ Usage:
 import argparse
 import html
 import json
+import re
 import sys
 from datetime import datetime
 from pathlib import Path
@@ -32,6 +33,11 @@ def load_results(results_dir: Path) -> list[dict]:
         except (json.JSONDecodeError, KeyError):
             continue
     return results
+
+
+def sanitize_id(name: str) -> str:
+    """Sanitize a string for use as an HTML id attribute."""
+    return re.sub(r'[^a-zA-Z0-9_-]', '-', name)
 
 
 def generate_html(results: list[dict], results_dir: Path) -> str:
@@ -69,7 +75,7 @@ def generate_html(results: list[dict], results_dir: Path) -> str:
         sf = skill_data["summary"]["total_checks_failed"]
         nav_class = "nav-fail" if sf > 0 else "nav-pass"
         skill_nav_items.append(
-            f'<a href="#skill-{html.escape(sn)}" class="nav-item {nav_class}" data-skill="{html.escape(sn)}">{html.escape(sn)}</a>'
+            f'<a href="#skill-{sanitize_id(sn)}" class="nav-item {nav_class}" data-skill="{sanitize_id(sn)}">{html.escape(sn)}</a>'
         )
 
     return f"""<!DOCTYPE html>
@@ -179,7 +185,7 @@ def build_skill_card(skill_name: str, skill_data: dict, results_dir: Path) -> st
         eval_rows.append(build_eval_row(skill_name, ev, results_dir))
 
     return f"""
-    <div class="skill-card {status_class}" data-status="{'passed' if all_passed else 'failed'}" id="skill-{html.escape(skill_name)}">
+    <div class="skill-card {status_class}" data-status="{'passed' if all_passed else 'failed'}" id="skill-{sanitize_id(skill_name)}">
       <div class="skill-header" onclick="toggleSkill(this)">
         <div class="skill-info">
           <span class="skill-accent {'accent-pass' if all_passed else 'accent-fail'}"></span>
@@ -448,6 +454,7 @@ kbd {
   padding: 0 18px;
 }
 .skill-card.open .skill-body { max-height: 5000px; padding: 0 18px 14px; }
+.skill-card.open.settled .skill-body { max-height: none; }
 
 /* ── Eval rows (level 2) ── */
 .eval-row {
@@ -480,6 +487,7 @@ kbd {
 .eval-row.open .eval-body {
   max-height: 3000px; padding: 12px 14px 14px; border-top: 1px solid #1c2028;
 }
+.eval-row.open.settled .eval-body { max-height: none; }
 
 /* ── Prompt ── */
 .prompt-box { margin-bottom: 12px; }
@@ -580,14 +588,24 @@ JS = """
 /* ── Toggle functions ── */
 function toggleSkill(header) {
   const card = header.closest('.skill-card');
+  const opening = !card.classList.contains('open');
+  card.classList.remove('settled');
   card.classList.toggle('open');
   header.classList.toggle('expanded');
+  if (!opening) return;
+  const body = card.querySelector('.skill-body');
+  body.addEventListener('transitionend', () => card.classList.add('settled'), { once: true });
 }
 
 function toggleEval(header) {
   const row = header.closest('.eval-row');
+  const opening = !row.classList.contains('open');
+  row.classList.remove('settled');
   row.classList.toggle('open');
   header.classList.toggle('expanded');
+  if (!opening) return;
+  const body = row.querySelector('.eval-body');
+  body.addEventListener('transitionend', () => row.classList.add('settled'), { once: true });
 }
 
 function toggleSidebar() {
@@ -596,22 +614,22 @@ function toggleSidebar() {
 
 function expandAll() {
   document.querySelectorAll('.skill-card').forEach(c => {
-    c.classList.add('open');
+    c.classList.add('open', 'settled');
     c.querySelector('.skill-header').classList.add('expanded');
   });
   document.querySelectorAll('.eval-row').forEach(r => {
-    r.classList.add('open');
+    r.classList.add('open', 'settled');
     r.querySelector('.eval-header').classList.add('expanded');
   });
 }
 
 function collapseAll() {
   document.querySelectorAll('.skill-card').forEach(c => {
-    c.classList.remove('open');
+    c.classList.remove('open', 'settled');
     c.querySelector('.skill-header').classList.remove('expanded');
   });
   document.querySelectorAll('.eval-row').forEach(r => {
-    r.classList.remove('open');
+    r.classList.remove('open', 'settled');
     r.querySelector('.eval-header').classList.remove('expanded');
   });
 }

@@ -10,7 +10,7 @@
  *   node evals/run.js --verbose                # Verbose output
  */
 
-const { execSync } = require("child_process");
+const { execFileSync } = require("child_process");
 const fs = require("fs");
 const path = require("path");
 
@@ -49,26 +49,27 @@ if (skillDirs.length === 0) {
 
 let totalPass = 0;
 let totalFail = 0;
+let totalErrors = 0;
 
 for (const name of skillDirs) {
   console.log(`=== ${name} ===`);
   const outputFile = path.join(runDir, `${name}.json`);
-  const evalCmd = [
-    "python3",
+  const evalArgs = [
     path.join(REPO_ROOT, "evals", "evaluate.py"),
     "--skill", name,
     "--cli", cli,
     "--output", outputFile,
   ];
-  if (verbose) evalCmd.push("--verbose");
+  if (verbose) evalArgs.push("--verbose");
 
   try {
-    execSync(evalCmd.join(" "), {
+    execFileSync("python3", evalArgs, {
       stdio: verbose ? "inherit" : ["pipe", "pipe", "pipe"],
       cwd: REPO_ROOT,
     });
   } catch (e) {
     console.error(`  Error running evals for ${name}: ${e.message}`);
+    totalErrors++;
     continue;
   }
 
@@ -86,7 +87,7 @@ for (const name of skillDirs) {
 console.log("");
 console.log("Generating report...");
 try {
-  execSync(`python3 ${path.join(REPO_ROOT, "evals", "report.py")} "${runDir}"`, {
+  execFileSync("python3", [path.join(REPO_ROOT, "evals", "report.py"), runDir], {
     stdio: "inherit",
     cwd: REPO_ROOT,
   });
@@ -100,6 +101,7 @@ console.log(`Skills tested: ${skillDirs.length}`);
 console.log(`Total checks: ${totalPass + totalFail}`);
 console.log(`Passed: ${totalPass}`);
 console.log(`Failed: ${totalFail}`);
+if (totalErrors > 0) console.log(`Errors: ${totalErrors} skill(s) failed to run`);
 console.log(`Results: ${runDir}/`);
 
-process.exit(totalFail > 0 ? 1 : 0);
+process.exit((totalFail > 0 || totalErrors > 0) ? 1 : 0);
