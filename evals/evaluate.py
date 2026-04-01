@@ -86,8 +86,15 @@ def run_cli(cli: str, prompt: str, cwd: Path, timeout: int = 600) -> tuple[str, 
 
     Supports both Claude Code and GitHub Copilot CLI JSON output formats.
     """
-    cmd = [cli, "-p", prompt, "--output-format", "json",
-           "--allowedTools", "Bash(node *) Read Write Glob Edit"]
+    cmd = [cli, "-p", prompt, "--output-format", "json"]
+
+    # Grant tool permissions — different flags per CLI
+    if cli == "copilot":
+        cmd.extend(["--allow-tool", "shell(node *)", "--allow-tool", "read",
+                     "--allow-tool", "write", "--allow-tool", "edit",
+                     "--allow-tool", "glob"])
+    else:
+        cmd.extend(["--allowedTools", "Bash(node *) Read Write Glob Edit"])
 
     # Remove CLAUDECODE env var to allow nesting (same as skill-creator)
     env = {k: v for k, v in os.environ.items() if k != "CLAUDECODE"}
