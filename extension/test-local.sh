@@ -7,6 +7,14 @@
 #   EXTENSIONS_DIR  Custom extensions directory for install (optional)
 set -euo pipefail
 
+# Prerequisite check: node is required for build steps
+if ! command -v node &>/dev/null; then
+  echo "ERROR: node is not installed or not in PATH."
+  echo "Install Node.js (https://nodejs.org) or ensure your shell can find it."
+  echo "Tip: If using WSL, configure tasks.json to use Git Bash instead."
+  exit 1
+fi
+
 PACKAGE_ONLY=false
 [[ "${1:-}" == "--package-only" ]] && PACKAGE_ONLY=true
 
