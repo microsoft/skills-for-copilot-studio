@@ -23,7 +23,7 @@ What the official extension doesn't do is help you *write* the YAML. That's the 
 For a deeper introduction to Copilot Studio, see the [official documentation](https://learn.microsoft.com/microsoft-copilot-studio/).
 
 ```mermaid
-graph LR
+graph TB
     subgraph cloud["☁️ Copilot Studio Cloud"]
         direction TB
         envs["Environments"]
