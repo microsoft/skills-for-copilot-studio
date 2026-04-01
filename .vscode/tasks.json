@@ -1,5 +1,11 @@
 {
   "version": "2.0.0",
+  "options": {
+    "shell": {
+      "executable": "C:\\Program Files\\Git\\bin\\bash.exe",
+      "args": ["-l", "-c"]
+    }
+  },
   "tasks": [
     {
       "label": "Package Extension",

@@ -174,6 +174,28 @@ fs.readdirSync(agentsDir)
         warnings++;
       }
     }
+
+    // Validate sub-commands: /copilot-studio:skill-name sub-command
+    const subCmdPattern = /\/copilot-studio:([a-z][a-z0-9-]*)\s+([a-z][a-z0-9-]*)/g;
+    while ((match = subCmdPattern.exec(content)) !== null) {
+      const skill = match[1];
+      const subCmd = match[2];
+      if (!validSkills.has(skill)) continue;
+
+      // Parse argument-hint from skill frontmatter for valid sub-commands
+      const skillFile = path.join(skillsDir, skill, 'SKILL.md');
+      const skillContent = fs.readFileSync(skillFile, 'utf8');
+      const fmMatch = skillContent.match(/^---\r?\n([\s\S]*?)\r?\n---/);
+      if (!fmMatch) continue;
+      const hintMatch = fmMatch[1].match(/^argument-hint:\s*<(.+)>$/m);
+      if (!hintMatch) continue;
+
+      const validSubCmds = hintMatch[1].split('|').map(s => s.trim());
+      if (!validSubCmds.includes(subCmd)) {
+        console.log('   WARN: ' + f + ' uses /copilot-studio:' + skill + ' ' + subCmd + ' but valid sub-commands are: ' + validSubCmds.join(', '));
+        warnings++;
+      }
+    }
   });
 if (warnings > 0) {
   console.log('   ' + warnings + ' unresolvable skill reference(s) found');
