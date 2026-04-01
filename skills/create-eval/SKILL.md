@@ -32,6 +32,7 @@ The eval harness (`evals/evaluate.py`) works by:
 | `stdout_contains` | CLI response text contains expected strings | Reference/info skills |
 | `stdout_not_contains` | CLI response does NOT contain error strings | Error absence |
 | `exit_code` | CLI exited with expected code | All skills |
+| `yaml_unchanged` | Specific file or YAML path was NOT modified by the skill | Preservation testing |
 
 **Not yet testable**: Integration skills that call external APIs (chat-directline, manage-agent) — these need script mocking which isn't implemented yet.
 
@@ -40,8 +41,10 @@ The eval harness (`evals/evaluate.py`) works by:
 Fixtures are pre-built agent directories in `evals/fixtures/`:
 
 - **basic-agent** — Minimal agent with `GenerativeActionsEnabled: false`, one Greeting topic. Use for most authoring skill evals.
+- **agent-with-mcp-action** — Same as basic-agent plus two MCP action files (`SearchDocs.mcs.yml` in Invoker mode, `CustomMCP.mcs.yml` in Maker mode with ManualTaskInput). Use for action-editing skill evals.
+- **empty-workspace** — No agent files (just `.gitkeep`). Use for negative-path testing (e.g., skill should refuse to run without an agent).
 
-If the skill being tested needs a richer agent (e.g., existing topics to modify, knowledge sources, actions), note that the fixture would need to be created first.
+If the skill being tested needs a richer agent (e.g., existing topics to modify, knowledge sources), note that the fixture would need to be created first.
 
 ## Instructions
 
@@ -89,6 +92,9 @@ If the skill being tested needs a richer agent (e.g., existing topics to modify,
      "schema_validate": true,
      "yaml_structure": [
        {"path": "kind", "equals": "GptComponentMetadata"}
+     ],
+     "yaml_unchanged": [
+       {"file": "topics/Greeting.topic.mcs.yml"}
      ],
      "content_contains": ["<expected content>"],
      "no_placeholders": true
@@ -165,3 +171,31 @@ If the skill being tested needs a richer agent (e.g., existing topics to modify,
 - `content_contains` keywords should come directly from the prompt to verify domain relevance
 - Don't create evals for deprecated skills (chat-with-agent, directline-chat)
 - Eval IDs must be unique integers within a skill's evals.json
+
+## Advanced check features
+
+### File selectors in yaml_structure
+When a skill creates or modifies multiple YAML files, use the `file` field to target a specific file:
+```json
+{"file": "topics/*.topic.mcs.yml", "path": "beginDialog.kind", "equals": "OnRecognizedIntent"}
+```
+
+### Array-index navigation
+Use numeric segments in dotted paths to index into arrays:
+```json
+{"path": "beginDialog.actions.0.kind", "equals": "SendActivity"}
+{"path": "conversationStarters.1.title", "contains": "FAQ"}
+```
+
+### yaml_unchanged for preservation testing
+Verify that editing one part of a file doesn't corrupt other parts:
+```json
+{
+  "yaml_unchanged": [
+    {"file": "agent.mcs.yml"},
+    {"file": "actions/CustomMCP.mcs.yml", "path": "inputs"}
+  ]
+}
+```
+- Whole-file: omit `path` to assert the entire file is byte-identical to the fixture
+- Path-level: include `path` to assert only that specific YAML value survived unchanged
