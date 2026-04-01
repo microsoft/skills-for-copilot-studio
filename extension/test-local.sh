@@ -137,6 +137,51 @@ fs.readdirSync(agentsDir)
 console.log('   Total: ' + totalAdded + ' skill declarations added');
 "
 
+# Validate that all /copilot-studio:<skill> references resolve to actual skill directories.
+# Warns on unresolvable references to catch broken references before packaging.
+echo "==> Validating skill references in agents..."
+node -e "
+const fs = require('fs');
+const path = require('path');
+const agentsDir = path.join('$STAGE_DIR_NODE', 'agents');
+const skillsDir = path.join('$STAGE_DIR_NODE', 'skills');
+
+const validSkills = new Set(
+  fs.readdirSync(skillsDir).filter(d =>
+    fs.existsSync(path.join(skillsDir, d, 'SKILL.md'))
+  )
+);
+
+// Agent names are also valid /copilot-studio: references (agent-to-agent invocation)
+const agentNames = new Set(
+  fs.readdirSync(agentsDir)
+    .filter(f => f.endsWith('.agent.md'))
+    .map(f => f.replace(/\.agent\.md$/, ''))
+);
+
+let warnings = 0;
+fs.readdirSync(agentsDir)
+  .filter(f => f.endsWith('.agent.md'))
+  .forEach(f => {
+    const content = fs.readFileSync(path.join(agentsDir, f), 'utf8');
+    const refs = new Set();
+    let match;
+    const pattern = /\/copilot-studio:([a-z][a-z0-9-]*)/g;
+    while ((match = pattern.exec(content)) !== null) refs.add(match[1]);
+    for (const ref of refs) {
+      if (!validSkills.has(ref) && !agentNames.has(ref)) {
+        console.log('   WARN: ' + f + ' references /copilot-studio:' + ref + ' but no skills/' + ref + '/SKILL.md exists');
+        warnings++;
+      }
+    }
+  });
+if (warnings > 0) {
+  console.log('   ' + warnings + ' unresolvable skill reference(s) found');
+} else {
+  console.log('   All skill references valid');
+}
+"
+
 # Copy scripts, templates, and reference files
 cp -R "$REPO_ROOT/scripts" "$STAGE_DIR/scripts"
 cp -R "$REPO_ROOT/templates" "$STAGE_DIR/templates"
