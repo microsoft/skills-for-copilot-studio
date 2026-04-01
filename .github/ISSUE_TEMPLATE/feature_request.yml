@@ -27,17 +27,19 @@ body:
       required: false
 
   - type: dropdown
-    id: agent
+    id: area
     attributes:
-      label: Agent
-      description: Which agent does this relate to?
+      label: Area
+      description: Which part of the project does this relate to?
       options:
-        - copilot-studio-author
-        - copilot-studio-manage
-        - copilot-studio-test
-        - copilot-studio-troubleshoot
-        - All agents
-        - Not applicable
+        - Hooks
+        - Scripts
+        - Evals
+        - Skills
+        - Setup / Installation
+        - Agents (sub-agents)
+        - Documentation
+        - Other
     validations:
       required: true
 

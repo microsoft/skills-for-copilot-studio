@@ -1,0 +1,72 @@
+name: Wrong Agent Output
+description: Report incorrect or unexpected output from a sub-agent
+labels: ["bug", "wrong-output"]
+body:
+  - type: dropdown
+    id: agent
+    attributes:
+      label: Agent
+      description: Which agent were you using?
+      options:
+        - copilot-studio-author
+        - copilot-studio-manage
+        - copilot-studio-test
+        - copilot-studio-troubleshoot
+        - Not applicable
+    validations:
+      required: true
+
+  - type: textarea
+    id: user-prompt
+    attributes:
+      label: User Prompt
+      description: The exact prompt you sent to the agent.
+      placeholder: |
+        /copilot-studio:copilot-studio-author Create a topic that asks for the user's order number and looks it up
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected-result
+    attributes:
+      label: Expected Result
+      description: What you expected the agent to produce. Include YAML if applicable.
+      placeholder: |
+        A topic YAML file with a Question node asking for the order number,
+        followed by an action that looks up the order. For example:
+
+        ```yaml
+        kind: AdaptiveDialog
+        actions:
+          - kind: Question
+            ...
+        ```
+      render: markdown
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual-result
+    attributes:
+      label: Actual Result
+      description: What the agent actually produced. Include YAML output, error messages, or unexpected behavior.
+      placeholder: |
+        The agent generated a topic but used an invalid kind value:
+
+        ```yaml
+        kind: SendMessage
+        ...
+        ```
+
+        Or paste the error message you received.
+      render: markdown
+    validations:
+      required: true
+
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional Context
+      description: Any other context, screenshots, or log output.
+    validations:
+      required: false
