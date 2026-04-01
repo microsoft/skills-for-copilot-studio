@@ -353,7 +353,7 @@ def run_checks(
     return all_results
 
 
-def run_eval(eval_item: dict, cli: str, verbose: bool) -> dict:
+def run_eval(eval_item: dict, cli: str, verbose: bool, artifacts_dir: Path | None = None) -> dict:
     """Run a single eval and return results."""
     eval_id = eval_item["id"]
     prompt = eval_item["prompt"]
@@ -406,6 +406,17 @@ def run_eval(eval_item: dict, cli: str, verbose: bool) -> dict:
                 print(f"  [{status}] {r['check']}: {r['evidence']}", file=sys.stderr)
             print(f"Result: {passed}/{total} checks passed", file=sys.stderr)
 
+        # Save generated files as artifacts
+        saved_artifacts = []
+        if artifacts_dir and changed_files:
+            eval_artifacts = artifacts_dir / f"eval-{eval_id}"
+            eval_artifacts.mkdir(parents=True, exist_ok=True)
+            for f in changed_files:
+                dest = eval_artifacts / f.relative_to(agent_dir)
+                dest.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(f, dest)
+                saved_artifacts.append(str(dest.relative_to(artifacts_dir)))
+
         return {
             "eval_id": eval_id,
             "prompt": prompt,
@@ -413,6 +424,7 @@ def run_eval(eval_item: dict, cli: str, verbose: bool) -> dict:
             "response_text": response_text[:1000],
             "exit_code": exit_code,
             "changed_files": [str(f.relative_to(agent_dir)) for f in changed_files],
+            "artifacts": saved_artifacts,
             "checks": check_results,
             "summary": {"passed": passed, "failed": total - passed, "total": total},
         }
@@ -427,6 +439,7 @@ def main():
     parser.add_argument("--cli", default="claude", help="CLI binary: 'claude' or 'copilot' (default: claude)")
     parser.add_argument("--verbose", action="store_true", help="Print progress to stderr")
     parser.add_argument("--output", default=None, help="Output results to file (default: stdout)")
+    parser.add_argument("--artifacts-dir", default=None, help="Save generated files to this directory")
     args = parser.parse_args()
 
     evals_data = load_evals(args.skill)
@@ -438,12 +451,21 @@ def main():
             print(f"Error: Eval ID {args.eval_id} not found", file=sys.stderr)
             sys.exit(1)
 
+    # Determine artifacts directory
+    artifacts_dir = None
+    if args.artifacts_dir:
+        artifacts_dir = Path(args.artifacts_dir)
+    elif args.output:
+        # Place artifacts alongside the output file: <output_dir>/<skill_name>/
+        artifacts_dir = Path(args.output).parent / evals_data["skill_name"]
+    artifacts_dir and artifacts_dir.mkdir(parents=True, exist_ok=True)
+
     if args.verbose:
         print(f"Running {len(evals_to_run)} eval(s) for skill '{args.skill}' with {args.cli}", file=sys.stderr)
 
     results = []
     for eval_item in evals_to_run:
-        result = run_eval(eval_item, args.cli, args.verbose)
+        result = run_eval(eval_item, args.cli, args.verbose, artifacts_dir)
         results.append(result)
 
     output = {
@@ -464,6 +486,8 @@ def main():
         Path(args.output).write_text(output_json)
         if args.verbose:
             print(f"Results written to {args.output}", file=sys.stderr)
+            if artifacts_dir:
+                print(f"Artifacts saved to {artifacts_dir}", file=sys.stderr)
     else:
         print(output_json)
 

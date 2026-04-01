@@ -82,6 +82,18 @@ for (const name of skillDirs) {
   }
 }
 
+// Generate HTML report
+console.log("");
+console.log("Generating report...");
+try {
+  execSync(`python3 ${path.join(REPO_ROOT, "evals", "report.py")} "${runDir}"`, {
+    stdio: "inherit",
+    cwd: REPO_ROOT,
+  });
+} catch (e) {
+  console.error(`Warning: Report generation failed: ${e.message}`);
+}
+
 console.log("");
 console.log("=== Summary ===");
 console.log(`Skills tested: ${skillDirs.length}`);
