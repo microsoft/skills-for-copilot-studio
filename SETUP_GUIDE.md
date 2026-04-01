@@ -9,10 +9,12 @@ This guide walks you through setting up the plugin and using it end-to-end: inst
 | Requirement | Version | Verification |
 |-------------|---------|-------------|
 | Node.js | 18+ | `node --version` |
-| Claude Code or GitHub Copilot CLI | Latest | `claude --version` or equivalent |
+| Claude Code or GitHub Copilot CLI | Latest | `claude --version` or `copilot --version` |
 | Copilot Studio VS Code Extension | Latest | [Install from marketplace](https://github.com/microsoft/vscode-copilotstudio) |
 
 The VS Code extension provides the LanguageServerHost binary used for clone, push, and pull operations. VS Code itself does not need to be running.
+
+> **Note**: The plugin works with **Claude Code** and **GitHub Copilot CLI** (terminal). VS Code Copilot Chat support is in progress — the embedded Copilot branch does not yet inject SessionStart hook context the same way the CLI does. See [#116](https://github.com/microsoft/skills-for-copilot-studio/issues/116) for updates.
 
 You also need access to a Power Platform environment with Copilot Studio and an existing agent.
 
