@@ -58,6 +58,17 @@
         "content_contains": ["order", "refund"],
         "no_placeholders": true
       }
+    },
+    {
+      "id": 4,
+      "name": "Refuse topic creation in empty workspace (no agent)",
+      "prompt": "Use the new-topic skill to create a Copilot Studio topic for handling password reset requests.",
+      "fixture": "empty-workspace",
+      "mock_scripts": [],
+      "checks": {
+        "stdout_contains": ["No Copilot Studio agent found", "clone"],
+        "stdout_not_contains": ["kind: AdaptiveDialog"]
+      }
     }
   ]
 }
