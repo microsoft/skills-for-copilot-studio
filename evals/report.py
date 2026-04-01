@@ -207,13 +207,15 @@ def build_eval_row(skill_name: str, ev: dict, results_dir: Path) -> str:
     all_passed = s["failed"] == 0
     status_class = "eval-passed" if all_passed else "eval-failed"
 
-    # Build artifact pills
+    # Build artifact pills (paths relative to report.html in same results dir)
     artifact_pills = []
     for art in ev.get("artifacts", []):
-        art_path = results_dir / art
+        # art is like "eval-1/topics/ITSupport.topic.mcs.yml" — relative to artifacts_dir
+        # artifacts_dir is <results_dir>/<skill_name>/, so link is <skill_name>/<art>
+        rel_path = f"{skill_name}/{art}"
         fname = html.escape(art.split("/")[-1])
         artifact_pills.append(
-            f'<a href="{html.escape(str(art_path))}" class="artifact-pill" title="Open generated file">{fname}</a>'
+            f'<a href="{html.escape(rel_path)}" class="artifact-pill" title="Open generated file">{fname}</a>'
         )
     if not artifact_pills and ev.get("changed_files"):
         for cf in ev["changed_files"]:

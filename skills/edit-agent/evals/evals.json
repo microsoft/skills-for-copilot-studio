@@ -1,0 +1,53 @@
+{
+  "skill_name": "edit-agent",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Use the edit-agent skill to change the agent's instructions to: 'You are a customer support agent for Contoso Electronics. Be friendly, concise, and always offer to escalate to a human agent if the customer is frustrated.'",
+      "fixture": "basic-agent",
+      "mock_scripts": [],
+      "checks": {
+        "files_created": [
+          {"pattern": "agent.mcs.yml", "min_count": 1}
+        ],
+        "schema_validate": true,
+        "yaml_structure": [
+          {"path": "kind", "equals": "GptComponentMetadata"}
+        ],
+        "content_contains": ["Contoso Electronics", "escalate"],
+        "no_placeholders": true
+      }
+    },
+    {
+      "id": 2,
+      "prompt": "Use the edit-agent skill to change the agent's display name to 'Contoso Support Bot' and update the conversation starters to: 'Track my order', 'Return a product', and 'Speak to an agent'.",
+      "fixture": "basic-agent",
+      "mock_scripts": [],
+      "checks": {
+        "files_created": [
+          {"pattern": "agent.mcs.yml", "min_count": 1}
+        ],
+        "schema_validate": true,
+        "yaml_structure": [
+          {"path": "kind", "equals": "GptComponentMetadata"},
+          {"path": "displayName", "equals": "Contoso Support Bot"}
+        ],
+        "content_contains": ["Track my order", "Return a product", "Speak to an agent"],
+        "no_placeholders": true
+      }
+    },
+    {
+      "id": 3,
+      "prompt": "Use the edit-agent skill to enable generative actions on the agent (set GenerativeActionsEnabled to true in settings.mcs.yml).",
+      "fixture": "basic-agent",
+      "mock_scripts": [],
+      "checks": {
+        "files_created": [
+          {"pattern": "settings.mcs.yml", "min_count": 1}
+        ],
+        "content_contains": ["GenerativeActionsEnabled: true"],
+        "no_placeholders": true
+      }
+    }
+  ]
+}
