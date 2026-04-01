@@ -37,15 +37,31 @@ graph TB
         topics["topics/"]
         actions["actions/"]
         knowledge["knowledge/"]
-        lsp["Official Copilot Studio Extension\n(LSP binary)"]
+        lsp["Official Copilot Studio Extension<br/>(LSP binary)"]
     end
 
     subgraph chat["💬 GitHub Copilot Chat"]
         direction TB
-        author["@copilot-studio-author"]
-        manage["@copilot-studio-manage"]
-        test["@copilot-studio-test"]
-        troubleshoot["@copilot-studio-troubleshoot"]
+
+        subgraph author_grp["@copilot-studio-author"]
+            direction TB
+            author_skills["SKILLS<br/><br/>new-topic<br/>add-node<br/>add-action<br/>edit-action<br/>add-knowledge<br/>add-generative-answers<br/>add-other-agents<br/>add-global-variable<br/>edit-agent<br/>edit-triggers<br/>add-adaptive-card<br/>best-practices<br/>validate<br/>lookup-schema<br/>list-kinds<br/>list-topics"]
+        end
+
+        subgraph manage_grp["@copilot-studio-manage"]
+            direction TB
+            manage_skills["SKILLS<br/><br/>manage-agent<br/>clone-agent"]
+        end
+
+        subgraph test_grp["@copilot-studio-test"]
+            direction TB
+            test_skills["SKILLS<br/><br/>detect-mode<br/>chat-directline<br/>chat-sdk<br/>run-tests<br/>validate"]
+        end
+
+        subgraph troubleshoot_grp["@copilot-studio-troubleshoot"]
+            direction TB
+            troubleshoot_skills["SKILLS<br/><br/>known-issues<br/>validate<br/>lookup-schema<br/>list-kinds<br/>list-topics<br/>edit-agent<br/>edit-triggers<br/>run-tests<br/>chat-with-agent"]
+        end
     end
 
     cloud <-- "push / pull / clone" --> workspace
@@ -55,6 +71,14 @@ graph TB
     style workspace fill:#fef7e0,stroke:#f9ab00,stroke-width:2px,color:#000
     style chat fill:#e6f4ea,stroke:#34a853,stroke-width:2px,color:#000
     style lsp fill:#fff3e0,stroke:#e65100,stroke-width:1px,color:#000
+    style author_grp fill:#c8e6c9,stroke:#2e7d32,stroke-width:1px,color:#000
+    style manage_grp fill:#c8e6c9,stroke:#2e7d32,stroke-width:1px,color:#000
+    style test_grp fill:#c8e6c9,stroke:#2e7d32,stroke-width:1px,color:#000
+    style troubleshoot_grp fill:#c8e6c9,stroke:#2e7d32,stroke-width:1px,color:#000
+    style author_skills fill:#e6f4ea,stroke:#a5d6a7,stroke-width:1px,color:#555,font-size:12px
+    style manage_skills fill:#e6f4ea,stroke:#a5d6a7,stroke-width:1px,color:#555,font-size:12px
+    style test_skills fill:#e6f4ea,stroke:#a5d6a7,stroke-width:1px,color:#555,font-size:12px
+    style troubleshoot_skills fill:#e6f4ea,stroke:#a5d6a7,stroke-width:1px,color:#555,font-size:12px
 ```
 
 ## The agents and skills
