@@ -77,12 +77,37 @@ Use these to help the user understand:
 
    > Would you like me to edit the action YAML? I can modify input descriptions, switch between automatic and manual inputs, change the connection mode, and more. Just say the word and I'll use `/copilot-studio:edit-action`.
 
+## MCP Server Actions
+
+MCP (Model Context Protocol) server actions use a different YAML structure than regular connector actions. They use `InvokeExternalAgentTaskAction` with `ModelContextProtocolMetadata` instead of `InvokeConnectorTaskAction`.
+
+**Like regular connector actions, MCP actions require a connection reference that can only be created through the Copilot Studio portal.** This skill cannot create MCP connections — the user must add the MCP server through the UI first.
+
+If the user asks to add an MCP server action:
+
+> MCP server actions require a connection to be set up in the Copilot Studio portal first — I can't create that from here.
+>
+> Here's how to add it:
+>
+> 1. Open [Copilot Studio](https://copilotstudio.microsoft.com)
+> 2. Navigate to your agent
+> 3. Go to **Actions** in the left sidebar
+> 4. Click **+ Add an action**
+> 5. Search for the MCP server connector (e.g., "Microsoft Learn Docs MCP Server")
+> 6. Configure the connection (authenticate with your credentials)
+> 7. Save the action
+>
+> Once saved, pull the updated agent files. I can then help you edit the action with `/copilot-studio:edit-action` — for example, changing the `modelDescription` or `modelDisplayName`.
+
+**Key difference from regular connector actions:** MCP actions typically do not have explicit `inputs` or `outputs` in the YAML — the MCP protocol handles tool discovery dynamically. Do not add `AutomaticTaskInput` or `ManualTaskInput` entries to MCP actions.
+
 ## Structural Reference
 
-For the generic structural template of a connector action (TaskDialog), see:
+For structural templates, see:
 
 ```
 Read: ${CLAUDE_SKILL_DIR}/../../templates/actions/connector-action.mcs.yml
+Read: ${CLAUDE_SKILL_DIR}/../../templates/actions/mcp-action.mcs.yml
 ```
 
-Use this alongside `connector-lookup operation` output to understand both the YAML structure and the full inputs/outputs for a specific operation.
+Use these alongside `connector-lookup operation` output to understand both the YAML structure and the full inputs/outputs for a specific operation.
