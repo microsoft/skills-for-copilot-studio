@@ -23,9 +23,16 @@ Modify agent metadata (`agent.mcs.yml`) or configuration (`settings.mcs.yml`).
    - **Instructions, display name, conversation starters, AI settings** → `agent.mcs.yml`
    - **GenerativeActionsEnabled, authentication, recognizer, capabilities** → `settings.mcs.yml`
 
-3. **Read the current file** before making any changes.
+3. **If the user wants to change the AI model**, run the schema lookup tool first:
+   ```bash
+   node ${CLAUDE_SKILL_DIR}/../../scripts/schema-lookup.bundle.js models
+   ```
+   Use the output to determine the correct `modelNameHint` and `provider` values.
+   **CRITICAL:** Do NOT include `kind` in the model block — the agent-level schema uses `CurrentModelsNoKind`.
 
-4. **Make the requested changes** using the Edit tool.
+4. **Read the current file** before making any changes.
+
+5. **Make the requested changes** using the Edit tool.
 
 ## Editable Fields in `agent.mcs.yml`
 
@@ -34,8 +41,8 @@ Modify agent metadata (`agent.mcs.yml`) or configuration (`settings.mcs.yml`).
 | `displayName` | Agent's display name | `displayName: My Agent` |
 | `instructions` | System prompt / personality | Multi-line YAML with `\|` |
 | `conversationStarters` | Suggested conversation starters | Array of `{title, text}` |
-| `aISettings.model.kind` | Model selection | `CurrentModels` |
-| `aISettings.model.modelNameHint` | Model hint | `GPT5Chat` |
+| `aISettings.model.modelNameHint` | Model hint (run `models` command for convention) | `Sonnet46`, `GPT5Chat` |
+| `aISettings.model.provider` | Model provider (required for non-OpenAI) | `Anthropic` |
 
 ## Editable Fields in `settings.mcs.yml`
 

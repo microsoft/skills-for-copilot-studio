@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "hooks": {
+    "sessionStart": [
+      {
+        "type": "command",
+        "bash": "node hooks/print-prompt.js",
+        "powershell": "node hooks/print-prompt.js"
+      },
+      {
+        "type": "command",
+        "bash": "node hooks/setup.js",
+        "powershell": "node hooks/setup.js"
+      }
+    ]
+  }
+}

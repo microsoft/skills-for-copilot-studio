@@ -2883,6 +2883,16 @@ function resolveObject(obj, definitions, visited, depth, maxDepth) {
   }
   return resolved;
 }
+function printModelReference(definitions) {
+  const result = {};
+  const noKind = resolveDefinition("CurrentModelsNoKind", definitions);
+  if (noKind) result.CurrentModelsNoKind = noKind;
+  const providerDef = resolveDefinition("ModelProvider", definitions);
+  if (providerDef) result.ModelProvider = providerDef;
+  const apiTypeDef = resolveDefinition("ModelApiType", definitions);
+  if (apiTypeDef) result.ModelApiType = apiTypeDef;
+  console.log(JSON.stringify(result, null, 2));
+}
 function findKindValues(definitions) {
   const kinds = /* @__PURE__ */ new Set();
   function extractKinds(obj) {
@@ -2910,6 +2920,49 @@ function findKindValues(definitions) {
     extractKinds(definition);
   }
   return [...kinds].sort();
+}
+function getValidKindsFromOneOf(definitionName, definitions) {
+  const def = definitions[definitionName];
+  if (!def || !def.oneOf) return [];
+  const kinds = [];
+  for (const entry of def.oneOf) {
+    const ref = entry.$ref;
+    if (ref && ref.startsWith("#/definitions/")) {
+      const refName = ref.slice("#/definitions/".length);
+      const refDef = definitions[refName];
+      if (refDef && refDef.properties && refDef.properties.kind) {
+        const kindProp = refDef.properties.kind;
+        if (kindProp.const) kinds.push(kindProp.const);
+        if (kindProp.enum) kinds.push(...kindProp.enum);
+      }
+    }
+  }
+  return kinds;
+}
+function getValidProperties(definitionName, definitions) {
+  const def = definitions[definitionName];
+  if (!def) return /* @__PURE__ */ new Set();
+  if (def.properties) {
+    return new Set(Object.keys(def.properties));
+  }
+  if (def.oneOf) {
+    const allProps = /* @__PURE__ */ new Set();
+    for (const entry of def.oneOf) {
+      const ref = entry.$ref;
+      if (ref && ref.startsWith("#/definitions/")) {
+        const refName = ref.slice("#/definitions/".length);
+        const refDef = definitions[refName];
+        if (refDef && refDef.properties) {
+          Object.keys(refDef.properties).forEach((p) => allProps.add(p));
+        }
+      }
+      if (entry.properties) {
+        Object.keys(entry.properties).forEach((p) => allProps.add(p));
+      }
+    }
+    return allProps;
+  }
+  return /* @__PURE__ */ new Set();
 }
 function formatDefinition(name, definition, compact) {
   if (!compact) {
@@ -3064,6 +3117,41 @@ function validateYamlFile(filepath, definitions) {
       warnings++;
     }
   }
+  if (kind && data.beginDialog && typeof data.beginDialog === "object") {
+    const bd = data.beginDialog;
+    const triggerKind = bd.kind;
+    if (Array.isArray(bd.actions)) {
+      const validActionKinds = getValidKindsFromOneOf("DialogAction", definitions);
+      if (validActionKinds.length > 0) {
+        for (const action of bd.actions) {
+          if (action && typeof action === "object" && action.kind) {
+            if (validActionKinds.includes(action.kind)) {
+              passes++;
+            } else {
+              console.log(
+                `[FAIL] '${action.kind}' is not a valid action kind inside beginDialog.actions (not found in DialogAction schema definition). Use 'schema-lookup.bundle.js resolve DialogAction' to see valid action kinds.`
+              );
+              failures++;
+            }
+          }
+        }
+      }
+    }
+    if (triggerKind) {
+      const triggerProps = getValidProperties(triggerKind, definitions);
+      const rootDef = definitions[kind];
+      const rootProps = rootDef && rootDef.properties ? new Set(Object.keys(rootDef.properties)) : /* @__PURE__ */ new Set();
+      for (const key of Object.keys(bd)) {
+        if (key === "kind" || key === "id") continue;
+        if (!triggerProps.has(key) && rootProps.has(key)) {
+          console.log(
+            `[FAIL] '${key}' is inside beginDialog but belongs at the ${kind} root level (not a valid property of ${triggerKind}, but is a property of ${kind}). Move '${key}' to the top level of the YAML.`
+          );
+          failures++;
+        }
+      }
+    }
+  }
   const idsFound = [];
   function collectIds(obj) {
     if (Array.isArray(obj)) {
@@ -3212,6 +3300,7 @@ Copilot Studio schema:
     node schema-lookup.js resolve <definition-name>
     node schema-lookup.js kinds
     node schema-lookup.js summary <definition-name>
+    node schema-lookup.js models
     node schema-lookup.js validate <path-to-yaml-file>
 
 Adaptive Cards schema:
@@ -3308,6 +3397,10 @@ function main() {
       } else {
         console.log(`Definition '${name}' not found.`);
       }
+      break;
+    }
+    case "models": {
+      printModelReference(definitions);
       break;
     }
     case "validate": {
