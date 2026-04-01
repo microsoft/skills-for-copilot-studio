@@ -99,7 +99,7 @@ If the user asks to add an MCP server action:
 >
 > Once saved, pull the updated agent files. I can then help you edit the action with `/copilot-studio:edit-action` — for example, changing the `modelDescription` or `modelDisplayName`.
 
-**Key difference from regular connector actions:** MCP actions typically do not have explicit `inputs` or `outputs` in the YAML — the MCP protocol handles tool discovery dynamically. Do not add `AutomaticTaskInput` or `ManualTaskInput` entries to MCP actions.
+**Key differences from regular connector actions:** MCP actions do not use `AutomaticTaskInput` — the MCP protocol handles tool parameter discovery dynamically. However, `ManualTaskInput` entries are OK for passing context to the MCP server (e.g., user identity via Power Fx: `value: =System.User.Email`).
 
 ## Structural Reference
 

@@ -138,10 +138,19 @@ node ${CLAUDE_SKILL_DIR}/../../scripts/schema-lookup.bundle.js summary ModelCont
        mode: Invoker    # or Maker
    ```
 
+   MCP actions may also have `ManualTaskInput` entries for passing context to the MCP server (e.g., user identity as a header):
+   ```yaml
+   inputs:
+     - kind: ManualTaskInput
+       propertyName: userid
+       value: =System.User.Email
+   ```
+   This is fine — `ManualTaskInput` with Power Fx expressions can pass user context. But do NOT add `AutomaticTaskInput` entries — MCP handles tool parameter discovery dynamically.
+
    **Do NOT edit on MCP actions:**
    - `action.operationDetails.operationId` — identifies the MCP operation
    - `action.connectionReference` — links to the authenticated connection
-   - Do NOT add `inputs` or `outputs` — MCP handles tool discovery dynamically
+   - Do NOT add `AutomaticTaskInput` entries — MCP handles tool discovery dynamically
    - Be cautious with `modelDescription` — keep it on a single line; multi-line descriptions have been reported to break MCP tool registration after push (see [#91](https://github.com/microsoft/skills-for-copilot-studio/issues/91))
 
 7. **Validate the edited file**:
@@ -161,5 +170,5 @@ node ${CLAUDE_SKILL_DIR}/../../scripts/schema-lookup.bundle.js summary ModelCont
 - **Property names must match the connector definition** — use `connector-lookup operation` to verify exact property names.
 - **ManualTaskInput values are strings only** — if the value needs to be a number, enum, or complex type, warn the user that it may need UI configuration.
 - **Output propertyName values must match the connector definition's output schema** — use `connector-lookup operation` to see available output properties.
-- **MCP actions must not have explicit inputs/outputs** — the MCP protocol handles tool discovery dynamically. Adding `AutomaticTaskInput` or `ManualTaskInput` entries to an MCP action will break it.
+- **MCP actions must not have `AutomaticTaskInput` entries** — the MCP protocol handles tool parameter discovery dynamically. `ManualTaskInput` entries are OK for passing context (e.g., user identity via Power Fx expressions like `=System.User.Email`).
 - **MCP modelDescription should be single-line** — multi-line descriptions have been reported to break MCP tool registration after push.
