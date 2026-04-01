@@ -349,6 +349,7 @@ def run_checks(
     """Run all configured checks and return results."""
     all_results = []
 
+    # skill_invoked is a gate check — if it fails, skip all other checks
     if "skill_invoked" in checks:
         expected = checks["skill_invoked"]
         found = expected in (skills_invoked or [])
@@ -357,6 +358,8 @@ def run_checks(
             "passed": found,
             "evidence": f"Skills invoked: {skills_invoked}" if skills_invoked else "No skills invoked (skill routing failed)",
         })
+        if not found:
+            return all_results  # skip remaining checks — test is invalid
 
     if "files_created" in checks:
         all_results.extend(check_files_created(workspace, changed_files, checks["files_created"]))
@@ -444,12 +447,29 @@ def run_eval(eval_item: dict, cli: str, verbose: bool, artifacts_dir: Path | Non
 
         passed = sum(1 for r in check_results if r["passed"])
         total = len(check_results)
+        failed = total - passed
+
+        # Determine eval status
+        # If skill_invoked was checked and failed, the test is invalid (routing failed)
+        skill_check_failed = any(
+            not r["passed"] and r["check"].startswith("skill_invoked:")
+            for r in check_results
+        )
+        if skill_check_failed:
+            eval_status = "invalid"
+        elif failed == 0:
+            eval_status = "passed"
+        else:
+            eval_status = "failed"
 
         if verbose:
             for r in check_results:
-                status = "PASS" if r["passed"] else "FAIL"
-                print(f"  [{status}] {r['check']}: {r['evidence']}", file=sys.stderr)
-            print(f"Result: {passed}/{total} checks passed", file=sys.stderr)
+                label = "PASS" if r["passed"] else "FAIL"
+                print(f"  [{label}] {r['check']}: {r['evidence']}", file=sys.stderr)
+            if eval_status == "invalid":
+                print(f"Result: INVALID — wrong skill invoked, {total - 1} check(s) skipped", file=sys.stderr)
+            else:
+                print(f"Result: {passed}/{total} checks passed", file=sys.stderr)
 
         # Save generated files as artifacts
         saved_artifacts = []
@@ -482,7 +502,7 @@ def run_eval(eval_item: dict, cli: str, verbose: bool, artifacts_dir: Path | Non
             "changed_files": [str(f.relative_to(agent_dir)) for f in changed_files],
             "artifacts": saved_artifacts,
             "checks": check_results,
-            "summary": {"passed": passed, "failed": total - passed, "total": total},
+            "summary": {"passed": passed, "failed": failed, "total": total, "status": eval_status},
         }
     finally:
         shutil.rmtree(workspace, ignore_errors=True)
@@ -533,6 +553,7 @@ def main():
             "total_checks_passed": sum(r["summary"]["passed"] for r in results),
             "total_checks_failed": sum(r["summary"]["failed"] for r in results),
             "total_checks": sum(r["summary"]["total"] for r in results),
+            "evals_invalid": sum(1 for r in results if r["summary"].get("status") == "invalid"),
         },
     }
 

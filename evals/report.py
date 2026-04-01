@@ -52,9 +52,13 @@ def generate_html(results: list[dict], results_dir: Path) -> str:
 
     evals_passed = 0
     evals_failed = 0
+    evals_invalid = 0
     for r in results:
         for ev in r["results"]:
-            if ev["summary"]["failed"] == 0:
+            status = ev["summary"].get("status", "passed" if ev["summary"]["failed"] == 0 else "failed")
+            if status == "invalid":
+                evals_invalid += 1
+            elif status == "passed":
                 evals_passed += 1
             else:
                 evals_failed += 1
@@ -151,6 +155,7 @@ def generate_html(results: list[dict], results_dir: Path) -> str:
         <div class="stat-value">{evals_failed}</div>
         <div class="stat-label">Failed</div>
       </div>
+      {'<div class="stat-card stat-warn"><div class="stat-value">' + str(evals_invalid) + '</div><div class="stat-label">Invalid</div></div>' if evals_invalid > 0 else ''}
     </div>
 
     <div class="progress-bar">
@@ -211,8 +216,8 @@ def build_eval_row(skill_name: str, ev: dict, results_dir: Path) -> str:
     eval_name = ev.get("name", "")
     prompt = ev["prompt"]
     s = ev["summary"]
-    all_passed = s["failed"] == 0
-    status_class = "eval-passed" if all_passed else "eval-failed"
+    eval_status = s.get("status", "passed" if s["failed"] == 0 else "failed")
+    status_class = {"passed": "eval-passed", "failed": "eval-failed", "invalid": "eval-invalid"}.get(eval_status, "eval-failed")
 
     # Build artifact pills (paths relative to report.html in same results dir)
     artifact_pills = []
@@ -283,12 +288,13 @@ def build_eval_row(skill_name: str, ev: dict, results_dir: Path) -> str:
       <div class="eval-row {status_class}">
         <div class="eval-header" onclick="toggleEval(this)">
           <div class="eval-info">
-            <span class="status-dot {'dot-pass' if all_passed else 'dot-fail'}"></span>
+            <span class="status-dot {'dot-pass' if eval_status == 'passed' else 'dot-warn' if eval_status == 'invalid' else 'dot-fail'}"></span>
             <span class="eval-id">#{eval_id}</span>
             <span class="eval-name">{html.escape(eval_name) if eval_name else html.escape(prompt[:100]) + ('&hellip;' if len(prompt) > 100 else '')}</span>
+            {'<span class="eval-invalid-tag">INVALID</span>' if eval_status == 'invalid' else ''}
           </div>
           <div class="eval-stats">
-            <span class="checks-badge-sm {'badge-pass' if all_passed else 'badge-fail'}">{s['passed']}/{s['total']}</span>
+            <span class="checks-badge-sm {'badge-pass' if eval_status == 'passed' else 'badge-warn' if eval_status == 'invalid' else 'badge-fail'}">{s['passed']}/{s['total']}</span>
             <span class="chevron-sm">
               <svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
             </span>
@@ -443,6 +449,8 @@ kbd {
 .checks-badge, .checks-badge-sm { font-size: 0.78rem; padding: 3px 10px; border-radius: 12px; font-weight: 500; white-space: nowrap; }
 .badge-pass { background: rgba(63, 185, 80, 0.12); color: #3fb950; }
 .badge-fail { background: rgba(248, 81, 73, 0.12); color: #f85149; }
+.badge-warn { background: rgba(210, 153, 34, 0.12); color: #d29922; }
+.stat-warn .stat-value { color: #d29922; }
 
 .chevron, .chevron-sm { color: #484f58; display: flex; align-items: center; transition: transform 0.25s ease; }
 .expanded .chevron, .expanded .chevron-sm { transform: rotate(180deg); }
@@ -461,6 +469,11 @@ kbd {
   background: #0d1117; border: 1px solid #1c2028; border-radius: 8px;
   margin-top: 8px; overflow: hidden;
 }
+.eval-invalid { border-left: 2px solid #d29922; }
+.eval-invalid-tag {
+  font-size: 0.65rem; font-weight: 600; color: #d29922; background: rgba(210, 153, 34, 0.12);
+  padding: 1px 6px; border-radius: 4px; text-transform: uppercase; letter-spacing: 0.04em;
+}
 .eval-row.focused { box-shadow: 0 0 0 1px rgba(88, 166, 255, 0.35); }
 .eval-header {
   display: flex; justify-content: space-between; align-items: center;
@@ -475,6 +488,7 @@ kbd {
 }
 .dot-pass { background: #3fb950; }
 .dot-fail { background: #f85149; }
+.dot-warn { background: #d29922; }
 
 .eval-id { font-weight: 600; color: #c9d1d9; font-size: 0.82rem; white-space: nowrap; }
 .eval-name { color: #c9d1d9; font-size: 0.82rem; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

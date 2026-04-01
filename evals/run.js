@@ -48,6 +48,7 @@ if (skillNames.length === 0) {
 
 let totalPass = 0;
 let totalFail = 0;
+let totalInvalid = 0;
 let totalErrors = 0;
 
 for (const name of skillNames) {
@@ -80,9 +81,16 @@ for (const name of skillNames) {
       const passed = summary.total_checks_passed ?? 0;
       const failed = summary.total_checks_failed ?? 0;
       const total = summary.total_checks ?? 0;
-      console.log(`  ${passed}/${total} checks passed`);
+      // Count invalid evals (wrong skill routed)
+      const invalidCount = (results.results ?? []).filter(r => r.summary?.status === "invalid").length;
+      if (invalidCount > 0) {
+        console.log(`  ${passed}/${total} checks passed (${invalidCount} invalid — wrong skill routed)`);
+      } else {
+        console.log(`  ${passed}/${total} checks passed`);
+      }
       totalPass += passed;
       totalFail += failed;
+      totalInvalid += invalidCount;
     } catch {
       console.error(`  Warning: could not read results from ${outputFile}`);
     }
@@ -107,6 +115,7 @@ console.log(`Skills tested: ${skillNames.length}`);
 console.log(`Total checks: ${totalPass + totalFail}`);
 console.log(`Passed: ${totalPass}`);
 console.log(`Failed: ${totalFail}`);
+if (totalInvalid > 0) console.log(`Invalid: ${totalInvalid} eval(s) — wrong skill routed`);
 if (totalErrors > 0) console.log(`Errors: ${totalErrors} skill(s) failed to run`);
 console.log(`Results: ${runDir}/`);
 
