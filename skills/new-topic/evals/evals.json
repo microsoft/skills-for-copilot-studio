@@ -1,0 +1,60 @@
+{
+  "skill_name": "new-topic",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Use the new-topic skill to create a Copilot Studio topic for handling IT support requests. The topic should ask what device the user is having trouble with (laptop, phone, or tablet), then ask them to describe the issue, then send a confirmation message saying their request has been logged.",
+      "fixture": "basic-agent",
+      "mock_scripts": [],
+      "checks": {
+        "files_created": [
+          {"pattern": "topics/*.topic.mcs.yml", "min_count": 1}
+        ],
+        "schema_validate": true,
+        "yaml_structure": [
+          {"path": "kind", "equals": "AdaptiveDialog"},
+          {"path": "beginDialog.kind", "equals": "OnRecognizedIntent"},
+          {"path": "beginDialog.actions", "min_length": 3}
+        ],
+        "content_contains": ["device", "issue"],
+        "no_placeholders": true
+      }
+    },
+    {
+      "id": 2,
+      "prompt": "Use the new-topic skill to create a Copilot Studio welcome topic called 'WelcomeNewUser' that fires on conversation start. It should greet the user with 3 different message variations and mention the company name 'Contoso'.",
+      "fixture": "basic-agent",
+      "mock_scripts": [],
+      "checks": {
+        "files_created": [
+          {"pattern": "topics/*.topic.mcs.yml", "min_count": 1}
+        ],
+        "schema_validate": true,
+        "yaml_structure": [
+          {"path": "kind", "equals": "AdaptiveDialog"},
+          {"path": "beginDialog.kind", "equals": "OnConversationStart"}
+        ],
+        "content_contains": ["Contoso"],
+        "no_placeholders": true
+      }
+    },
+    {
+      "id": 3,
+      "prompt": "Use the new-topic skill to create a Copilot Studio fallback topic that handles unknown user input. It should apologize, suggest some topics the user can ask about (order status, refunds, and shipping), and offer to escalate to a human agent.",
+      "fixture": "basic-agent",
+      "mock_scripts": [],
+      "checks": {
+        "files_created": [
+          {"pattern": "topics/*.topic.mcs.yml", "min_count": 1}
+        ],
+        "schema_validate": true,
+        "yaml_structure": [
+          {"path": "kind", "equals": "AdaptiveDialog"},
+          {"path": "beginDialog.kind", "equals": "OnUnknownIntent"}
+        ],
+        "content_contains": ["order", "refund"],
+        "no_placeholders": true
+      }
+    }
+  ]
+}
