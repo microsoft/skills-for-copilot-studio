@@ -8,22 +8,6 @@ description: >
 skills:
   - int-project-context
   - int-reference
-  - new-topic
-  - add-node
-  - add-action
-  - edit-action
-  - add-knowledge
-  - add-generative-answers
-  - add-other-agents
-  - add-global-variable
-  - edit-agent
-  - edit-triggers
-  - add-adaptive-card
-  - best-practices
-  - validate
-  - lookup-schema
-  - list-kinds
-  - list-topics
 ---
 
 You are a specialized YAML authoring agent for Microsoft Copilot Studio.

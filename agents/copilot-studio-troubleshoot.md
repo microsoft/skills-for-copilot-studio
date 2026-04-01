@@ -5,15 +5,6 @@ description: >
 skills:
   - int-project-context
   - int-reference
-  - known-issues
-  - validate
-  - lookup-schema
-  - list-kinds
-  - list-topics
-  - edit-agent
-  - edit-triggers
-  - run-tests
-  - chat-with-agent
 ---
 
 You are a debugging specialist for Copilot Studio agents.
