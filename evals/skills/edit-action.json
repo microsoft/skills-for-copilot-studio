@@ -1,0 +1,63 @@
+{
+  "skill_name": "edit-action",
+  "evals": [
+    {
+      "id": 1,
+      "name": "Change MCP action display name and description",
+      "prompt": "Use the edit-action skill to change the display name of the SearchDocs MCP action to 'Learn Docs Search' and update the description to 'Search Microsoft Learn documentation for product guides and API references'.",
+      "fixture": "agent-with-mcp-action",
+      "mock_scripts": [],
+      "checks": {
+        "files_created": [
+          {"pattern": "actions/SearchDocs.mcs.yml", "min_count": 1}
+        ],
+        "yaml_structure": [
+          {"path": "kind", "equals": "TaskDialog"},
+          {"path": "action.kind", "equals": "InvokeExternalAgentTaskAction"},
+          {"path": "action.operationDetails.kind", "equals": "ModelContextProtocolMetadata"},
+          {"path": "modelDisplayName", "equals": "Learn Docs Search"}
+        ],
+        "content_contains": ["API references", "InvokeExternalAgentTaskAction", "ModelContextProtocolMetadata"],
+        "no_placeholders": true
+      }
+    },
+    {
+      "id": 2,
+      "name": "Change MCP action connection mode to Maker",
+      "prompt": "Use the edit-action skill to change the connection mode of the SearchDocs MCP action from Invoker to Maker.",
+      "fixture": "agent-with-mcp-action",
+      "mock_scripts": [],
+      "checks": {
+        "files_created": [
+          {"pattern": "actions/SearchDocs.mcs.yml", "min_count": 1}
+        ],
+        "yaml_structure": [
+          {"path": "action.kind", "equals": "InvokeExternalAgentTaskAction"},
+          {"path": "action.connectionProperties.mode", "equals": "Maker"},
+          {"path": "action.operationDetails.kind", "equals": "ModelContextProtocolMetadata"}
+        ],
+        "content_contains": ["Maker"],
+        "no_placeholders": true
+      }
+    },
+    {
+      "id": 3,
+      "name": "MCP action preserves structure after edit",
+      "prompt": "Use the edit-action skill to update the description of the CustomMCP action to 'Internal tools MCP server for employee self-service'. Make sure to preserve the existing ManualTaskInput for userid.",
+      "fixture": "agent-with-mcp-action",
+      "mock_scripts": [],
+      "checks": {
+        "files_created": [
+          {"pattern": "actions/CustomMCP.mcs.yml", "min_count": 1}
+        ],
+        "yaml_structure": [
+          {"path": "action.kind", "equals": "InvokeExternalAgentTaskAction"},
+          {"path": "action.operationDetails.kind", "equals": "ModelContextProtocolMetadata"},
+          {"path": "action.operationDetails.operationId", "equals": "InvokeMCP"}
+        ],
+        "content_contains": ["employee self-service", "ManualTaskInput", "System.User.Email"],
+        "no_placeholders": true
+      }
+    }
+  ]
+}
