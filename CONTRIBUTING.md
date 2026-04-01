@@ -53,6 +53,7 @@ npm run build
 .github/plugin/          # GitHub Copilot Plugin manifest to speedup discovery
 agents/                  # Sub-agent definitions (author, test, troubleshoot)
 evals/                   # Skill eval framework (harness, report, fixtures)
+  skills/                # Eval definitions per skill (<name>.json)
 hooks/                   # Session hooks (agent routing)
 skills/                  # Skill definitions (entry points + internal skills)
 scripts/                 # Bundled tools (schema lookup, chat-with-agent)
@@ -143,11 +144,11 @@ python3 evals/report.py evals/results/<timestamp>/
 /create-eval <skill-name>
 ```
 
-This walks you through the process — reads your skill, suggests test cases, and writes the `evals.json` file.
+This walks you through the process — reads your skill, suggests test cases, and writes `evals/skills/<skill-name>.json`.
 
 **Option 2: Create manually**
 
-Create `skills/<your-skill>/evals/evals.json`:
+Create `evals/skills/<your-skill>.json`:
 
 ```json
 {

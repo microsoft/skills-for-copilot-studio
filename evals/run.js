@@ -15,7 +15,7 @@ const fs = require("fs");
 const path = require("path");
 
 const REPO_ROOT = path.resolve(__dirname, "..");
-const SKILLS_DIR = path.join(REPO_ROOT, "skills");
+const EVALS_SKILLS_DIR = path.join(REPO_ROOT, "evals", "skills");
 const RESULTS_DIR = path.join(REPO_ROOT, "evals", "results");
 
 // Parse args
@@ -35,15 +35,14 @@ const timestamp = new Date().toISOString().replace(/[T:]/g, "-").replace(/\..+/,
 const runDir = path.join(RESULTS_DIR, timestamp);
 fs.mkdirSync(runDir, { recursive: true });
 
-// Find skills with evals
-const skillDirs = fs.readdirSync(SKILLS_DIR).filter((name) => {
-  if (skill && name !== skill) return false;
-  const evalsFile = path.join(SKILLS_DIR, name, "evals", "evals.json");
-  return fs.existsSync(evalsFile);
-});
+// Find skills with evals (from evals/skills/<name>.json)
+const skillNames = fs.readdirSync(EVALS_SKILLS_DIR)
+  .filter((f) => f.endsWith(".json"))
+  .map((f) => f.replace(/\.json$/, ""))
+  .filter((name) => !skill || name === skill);
 
-if (skillDirs.length === 0) {
-  console.error(skill ? `No evals found for skill '${skill}'` : "No skills with evals found");
+if (skillNames.length === 0) {
+  console.error(skill ? `No evals found for skill '${skill}'` : "No eval files found in evals/skills/");
   process.exit(1);
 }
 
@@ -51,7 +50,7 @@ let totalPass = 0;
 let totalFail = 0;
 let totalErrors = 0;
 
-for (const name of skillDirs) {
+for (const name of skillNames) {
   console.log(`=== ${name} ===`);
   const outputFile = path.join(runDir, `${name}.json`);
   const evalArgs = [
@@ -75,11 +74,18 @@ for (const name of skillDirs) {
 
   // Read results
   if (fs.existsSync(outputFile)) {
-    const results = JSON.parse(fs.readFileSync(outputFile, "utf8"));
-    const { total_checks_passed: passed, total_checks_failed: failed, total_checks: total } = results.summary;
-    console.log(`  ${passed}/${total} checks passed`);
-    totalPass += passed;
-    totalFail += failed;
+    try {
+      const results = JSON.parse(fs.readFileSync(outputFile, "utf8"));
+      const summary = results.summary ?? {};
+      const passed = summary.total_checks_passed ?? 0;
+      const failed = summary.total_checks_failed ?? 0;
+      const total = summary.total_checks ?? 0;
+      console.log(`  ${passed}/${total} checks passed`);
+      totalPass += passed;
+      totalFail += failed;
+    } catch {
+      console.error(`  Warning: could not read results from ${outputFile}`);
+    }
   }
 }
 
@@ -97,7 +103,7 @@ try {
 
 console.log("");
 console.log("=== Summary ===");
-console.log(`Skills tested: ${skillDirs.length}`);
+console.log(`Skills tested: ${skillNames.length}`);
 console.log(`Total checks: ${totalPass + totalFail}`);
 console.log(`Passed: ${totalPass}`);
 console.log(`Failed: ${totalFail}`);

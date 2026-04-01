@@ -55,7 +55,7 @@ If the skill being tested needs a richer agent (e.g., existing topics to modify,
 
 3. **Check if evals already exist:**
    ```
-   Glob: skills/<skill-name>/evals/evals.json
+   Glob: evals/skills/<skill-name>.json
    ```
    If yes, read them and offer to add more test cases. Note the highest existing eval ID.
 
@@ -129,7 +129,7 @@ If the skill being tested needs a richer agent (e.g., existing topics to modify,
 
 7. **Write the evals.json file:**
    ```
-   Write: skills/<skill-name>/evals/evals.json
+   Write: evals/skills/<skill-name>.json
    ```
 
    Format:
