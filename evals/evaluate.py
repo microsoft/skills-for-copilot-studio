@@ -107,6 +107,8 @@ def run_cli(cli: str, prompt: str, cwd: Path, timeout: int = 600) -> tuple[str, 
             cmd,
             capture_output=True,
             text=True,
+            encoding="utf-8",
+            errors="replace",
             cwd=str(cwd),
             env=env,
             timeout=timeout,
@@ -118,7 +120,8 @@ def run_cli(cli: str, prompt: str, cwd: Path, timeout: int = 600) -> tuple[str, 
     exit_code = result.returncode
 
     # Parse JSON lines from stdout
-    for line in result.stdout.strip().split("\n"):
+    stdout = result.stdout or ""
+    for line in stdout.strip().split("\n"):
         line = line.strip()
         if not line:
             continue
