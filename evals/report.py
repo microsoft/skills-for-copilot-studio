@@ -288,6 +288,10 @@ def build_eval_row(skill_name: str, ev: dict, results_dir: Path) -> str:
           </div>
         </div>
         <div class="eval-body">
+          <div class="prompt-box">
+            <span class="prompt-label">Prompt</span>
+            <div class="prompt-text">{html.escape(prompt)}</div>
+          </div>
           {artifacts_html}
           {response_html}
           <div class="checks-list">
@@ -357,7 +361,7 @@ code {
 .action-btn:hover { border-color: #30363d; color: #c9d1d9; }
 
 /* ── Main content ── */
-.main-content { flex: 1; min-width: 0; padding: 0 32px 64px; max-width: 860px; }
+.main-content { flex: 1; min-width: 0; padding: 0 32px 64px; }
 
 /* Topbar */
 .topbar {
@@ -474,6 +478,17 @@ kbd {
 }
 .eval-row.open .eval-body {
   max-height: 3000px; padding: 12px 14px 14px; border-top: 1px solid #1c2028;
+}
+
+/* ── Prompt ── */
+.prompt-box { margin-bottom: 12px; }
+.prompt-label {
+  display: block; font-size: 0.68rem; color: #484f58; text-transform: uppercase;
+  letter-spacing: 0.05em; font-weight: 600; margin-bottom: 4px;
+}
+.prompt-text {
+  font-size: 0.88rem; color: #e1e4e8; line-height: 1.55;
+  border-left: 2px solid #30363d; padding-left: 12px;
 }
 
 /* ── Artifacts ── */
