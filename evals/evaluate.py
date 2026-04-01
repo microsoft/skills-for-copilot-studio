@@ -28,9 +28,12 @@ SKILLS_DIR = REPO_ROOT / "skills"
 SCRIPTS_DIR = REPO_ROOT / "scripts"
 
 
+EVALS_SKILLS_DIR = REPO_ROOT / "evals" / "skills"
+
+
 def load_evals(skill_name: str) -> dict:
-    """Load evals.json for a skill."""
-    evals_path = SKILLS_DIR / skill_name / "evals" / "evals.json"
+    """Load eval definition for a skill from evals/skills/<name>.json."""
+    evals_path = EVALS_SKILLS_DIR / f"{skill_name}.json"
     if not evals_path.exists():
         print(f"Error: No evals found at {evals_path}", file=sys.stderr)
         sys.exit(1)
