@@ -3,32 +3,26 @@
   "evals": [
     {
       "id": 1,
-      "name": "MCP action guides user to portal",
-      "prompt": "Use the add-action skill to add an MCP server action for searching Microsoft Learn documentation. Provide the full step-by-step instructions for how to do this.",
+      "name": "MCP action does not modify agent files",
+      "prompt": "Use the add-action skill to add an MCP server action for searching Microsoft Learn documentation.",
       "fixture": "basic-agent",
       "mock_scripts": [],
       "checks": {
-        "stdout_contains": ["Copilot Studio", "action", "connection"]
+        "files_created": [
+          {"pattern": "**/*.mcs.yml", "min_count": 0, "max_count": 0}
+        ]
       }
     },
     {
       "id": 2,
-      "name": "Connector action guides user to portal",
-      "prompt": "Use the add-action skill to add a Teams connector action that sends a message to a channel. Provide the full step-by-step instructions for how to do this.",
+      "name": "Connector action does not modify agent files",
+      "prompt": "Use the add-action skill to add a Teams connector action that sends a message to a channel.",
       "fixture": "basic-agent",
       "mock_scripts": [],
       "checks": {
-        "stdout_contains": ["Copilot Studio", "action", "connection"]
-      }
-    },
-    {
-      "id": 3,
-      "name": "MCP action mentions edit-action for customization",
-      "prompt": "Use the add-action skill to add a custom MCP server action to the agent. Provide the full step-by-step instructions and explain how to customize the action after adding it.",
-      "fixture": "basic-agent",
-      "mock_scripts": [],
-      "checks": {
-        "stdout_contains": ["Copilot Studio", "edit-action"]
+        "files_created": [
+          {"pattern": "**/*.mcs.yml", "min_count": 0, "max_count": 0}
+        ]
       }
     }
   ]

@@ -152,11 +152,15 @@ def check_files_created(workspace: Path, changed_files: list[Path], spec: list[d
     for item in spec:
         pattern = item["pattern"]
         min_count = item.get("min_count", 1)
+        max_count = item.get("max_count", None)
         # Only match against new/modified files, not pre-existing fixture files
         matches = [f for f in changed_files if f.is_relative_to(agent_dir) and fnmatch.fnmatch(str(f.relative_to(agent_dir)), pattern)]
         passed = len(matches) >= min_count
+        if max_count is not None:
+            passed = passed and len(matches) <= max_count
+        label = f"files_created: {pattern} (min {min_count})" if max_count is None else f"files_created: {pattern} (min {min_count}, max {max_count})"
         results.append({
-            "check": f"files_created: {pattern} (min {min_count})",
+            "check": label,
             "passed": passed,
             "evidence": f"Found {len(matches)} new/modified files: {[str(m.relative_to(agent_dir)) for m in matches]}" if matches else "No matching new/modified files found",
         })
