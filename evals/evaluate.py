@@ -84,19 +84,22 @@ def setup_mocks(workspace: Path, mock_scripts: list[str]) -> None:
         shutil.copy2(mock_src, mock_dst)
 
 
-def run_cli(cli: str, prompt: str, cwd: Path, timeout: int = 600) -> tuple[str, int]:
-    """Run claude/copilot in non-interactive mode and return (response_text, exit_code).
+def run_cli(cli: str, prompt: str, cwd: Path, timeout: int = 600) -> tuple[str, int, list[str]]:
+    """Run claude/copilot in non-interactive mode and return (response_text, exit_code, skills_invoked).
 
     Supports both Claude Code and GitHub Copilot CLI JSON output formats.
+    Uses stream-json with verbose for Claude Code to capture skill invocations.
     """
-    cmd = [cli, "-p", prompt, "--output-format", "json"]
+    cmd = [cli, "-p", prompt]
 
     # Grant tool permissions — different flags per CLI
     if cli == "copilot":
+        cmd.extend(["--output-format", "json"])
         cmd.extend(["--allow-tool", "shell(node *)", "--allow-tool", "read",
                      "--allow-tool", "write", "--allow-tool", "edit",
                      "--allow-tool", "glob"])
     else:
+        cmd.extend(["--output-format", "stream-json", "--verbose"])
         cmd.extend(["--allowedTools", "Bash(node *) Read Write Glob Edit"])
 
     # Remove CLAUDECODE env var to allow nesting (same as skill-creator)
@@ -112,10 +115,11 @@ def run_cli(cli: str, prompt: str, cwd: Path, timeout: int = 600) -> tuple[str, 
             timeout=timeout,
         )
     except subprocess.TimeoutExpired:
-        return "[TIMEOUT]", 1
+        return "[TIMEOUT]", 1, []
 
     response_text = ""
     exit_code = result.returncode
+    skills_invoked = []
 
     # Parse JSON lines from stdout
     for line in result.stdout.strip().split("\n"):
@@ -129,9 +133,18 @@ def run_cli(cli: str, prompt: str, cwd: Path, timeout: int = 600) -> tuple[str, 
 
         event_type = event.get("type", "")
 
-        # Claude Code: single result event with response text
+        # Claude Code: result event with response text
         if event_type == "result" and "result" in event:
             response_text = event["result"]
+
+        # Claude Code stream-json: assistant messages with tool_use for skills
+        elif event_type == "assistant":
+            message = event.get("message", {})
+            for content in message.get("content", []):
+                if content.get("type") == "tool_use" and content.get("name") == "Skill":
+                    skill_name = content.get("input", {}).get("skill", "")
+                    if skill_name:
+                        skills_invoked.append(skill_name)
 
         # Copilot CLI: assistant.message with full content
         elif event_type == "assistant.message":
@@ -140,7 +153,7 @@ def run_cli(cli: str, prompt: str, cwd: Path, timeout: int = 600) -> tuple[str, 
             if content:
                 response_text = content.strip()
 
-    return response_text, exit_code
+    return response_text, exit_code, skills_invoked
 
 
 # --- Check functions ---
@@ -331,9 +344,19 @@ def run_checks(
     response_text: str,
     exit_code: int,
     checks: dict,
+    skills_invoked: list[str] | None = None,
 ) -> list[dict]:
     """Run all configured checks and return results."""
     all_results = []
+
+    if "skill_invoked" in checks:
+        expected = checks["skill_invoked"]
+        found = expected in (skills_invoked or [])
+        all_results.append({
+            "check": f"skill_invoked: {expected}",
+            "passed": found,
+            "evidence": f"Skills invoked: {skills_invoked}" if skills_invoked else "No skills invoked (skill routing failed)",
+        })
 
     if "files_created" in checks:
         all_results.extend(check_files_created(workspace, changed_files, checks["files_created"]))
@@ -399,10 +422,12 @@ def run_eval(eval_item: dict, cli: str, verbose: bool, artifacts_dir: Path | Non
         if verbose:
             print(f"Running: {cli} -p ...", file=sys.stderr)
 
-        response_text, exit_code = run_cli(cli, prompt, cwd=agent_dir)
+        response_text, exit_code, skills_invoked = run_cli(cli, prompt, cwd=agent_dir)
 
         if verbose:
             print(f"Exit code: {exit_code}", file=sys.stderr)
+            if skills_invoked:
+                print(f"Skills invoked: {skills_invoked}", file=sys.stderr)
             print(f"Response: {response_text[:200]}...", file=sys.stderr)
 
         # Find changed files
@@ -415,7 +440,7 @@ def run_eval(eval_item: dict, cli: str, verbose: bool, artifacts_dir: Path | Non
             print(f"Changed files: {[str(f.relative_to(agent_dir)) for f in changed_files]}", file=sys.stderr)
 
         # Run checks
-        check_results = run_checks(workspace, changed_files, response_text, exit_code, checks)
+        check_results = run_checks(workspace, changed_files, response_text, exit_code, checks, skills_invoked)
 
         passed = sum(1 for r in check_results if r["passed"])
         total = len(check_results)
@@ -453,6 +478,7 @@ def run_eval(eval_item: dict, cli: str, verbose: bool, artifacts_dir: Path | Non
             "fixture": fixture,
             "response_text": response_text[:5000] + ("[...truncated]" if len(response_text) > 5000 else ""),
             "exit_code": exit_code,
+            "skills_invoked": skills_invoked,
             "changed_files": [str(f.relative_to(agent_dir)) for f in changed_files],
             "artifacts": saved_artifacts,
             "checks": check_results,
