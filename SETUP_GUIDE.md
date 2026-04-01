@@ -22,6 +22,10 @@ The toolkit is available in two forms:
 | GitHub Copilot + Copilot Chat       | Latest  | Required for the VS Code extension path                                                        |
 | Claude Code or GitHub Copilot CLI   | Latest  | Required for the Claude Code plugin path; `claude --version`                                   |
 
+The VS Code extension provides the LanguageServerHost binary used for clone, push, and pull operations. VS Code itself does not need to be running.
+
+> **Note**: The plugin works with **Claude Code** and **GitHub Copilot CLI** (terminal). VS Code Copilot Chat support is in progress — the embedded Copilot branch does not yet inject SessionStart hook context the same way the CLI does. See [#116](https://github.com/microsoft/skills-for-copilot-studio/issues/116) for updates.
+
 You also need access to a Power Platform environment with Copilot Studio and an existing agent.
 
 ---
@@ -77,7 +81,7 @@ claude plugin install /path/to/skills-for-copilot-studio --scope user
 In Copilot Chat (VS Code) or Claude Code, ask the Manage agent to clone an agent:
 
 ```text
-Clone an agent from Copilot Studio
+@copilot-studio:copilot-studio-manage Clone an agent from Copilot Studio
 ```
 
 This walks you through environment selection, agent selection, and downloads the agent files with interactive browser auth (no app registration needed).
@@ -99,13 +103,13 @@ Open VS Code (or Claude Code) in the cloned agent's directory.
 Ask the Author agent to describe the agent:
 
 ```text
-What topics does this agent have? Give me an overview.
+@copilot-studio:copilot-studio-author What topics does this agent have? Give me an overview.
 ```
 
 ### Create a new topic
 
 ```text
-Create a new topic called "Product Information" that responds to questions about our products with a message listing our top 3 products.
+@copilot-studio:copilot-studio-author Create a new topic called "Product Information" that responds to questions about our products with a message listing our top 3 products.
 ```
 
 The Author agent generates a valid YAML file with unique IDs and saves it to the `topics/` directory.
@@ -115,7 +119,7 @@ The Author agent generates a valid YAML file with unique IDs and saves it to the
 Ask the Troubleshoot agent to validate:
 
 ```text
-Validate all topics in my agent
+@copilot-studio:copilot-studio-troubleshoot Validate all topics in my agent
 ```
 
 ---
@@ -127,7 +131,7 @@ Validate all topics in my agent
 Ask the Manage agent to push:
 
 ```text
-Push my changes to Copilot Studio
+@copilot-studio:copilot-studio-manage Push my changes to Copilot Studio
 ```
 
 A browser window may open for sign-in on first use. Tokens are cached after that.
@@ -151,7 +155,7 @@ After pushing, **publish** in the Copilot Studio UI at [copilotstudio.microsoft.
 
 ## 5. Test the Published Agent
 
-The Test agent supports three ways to test:
+The Test agent (`@copilot-studio:copilot-studio-test`) supports three ways to test:
 
 ### Option A: Send a test message (point-test)
 
@@ -162,7 +166,7 @@ Send a single utterance directly to the published agent and see its full respons
 * **API permissions**: Add a permission, then APIs my organization uses, search **Power Platform API**, Delegated permissions, expand CopilotStudio, check `CopilotStudio.Copilots.Invoke` (optionally grant admin consent)
 
 ```text
-Send "What products do you offer?" to the published agent
+@copilot-studio:copilot-studio-test Send "What products do you offer?" to the published agent
 ```
 
 The Test agent asks for your App Registration Client ID on first use, authenticates via device code flow, and returns the agent's full response. Multi-turn is supported; the agent reuses the conversation automatically.
@@ -172,7 +176,7 @@ The Test agent asks for your App Registration Client ID on first use, authentica
 If you have the [Power CAT Copilot Studio Kit](https://github.com/microsoft/Power-CAT-Copilot-Studio-Kit) installed in your environment, you can run pre-defined test sets with expected responses and pass/fail scoring. Requires an Azure App Registration with Dataverse permissions.
 
 ```text
-Run my test suite
+@copilot-studio:copilot-studio-test Run my test suite
 ```
 
 The Test agent walks you through configuring the Dataverse connection on first use.
@@ -182,7 +186,7 @@ The Test agent walks you through configuring the Dataverse connection on first u
 Run evaluations in the Copilot Studio UI, export the results as CSV, and have the agent analyze failures and propose fixes:
 
 ```text
-Analyze my evaluation results from ~/Downloads/Evaluate MyAgent.csv
+@copilot-studio:copilot-studio-test Analyze my evaluation results from ~/Downloads/Evaluate MyAgent.csv
 ```
 
 ---
@@ -192,13 +196,13 @@ Analyze my evaluation results from ~/Downloads/Evaluate MyAgent.csv
 If the agent responds with incorrect or outdated information:
 
 ```text
-The agent is making up product details that aren't accurate. It seems to be hallucinating instead of using real data.
+@copilot-studio:copilot-studio-troubleshoot The agent is making up product details that aren't accurate. It seems to be hallucinating instead of using real data.
 ```
 
 The Troubleshoot agent diagnoses the issue. In this case, the agent is generating ungrounded responses because it has no knowledge source to draw from. Fix it by asking the Author agent:
 
 ```text
-Add a knowledge source pointing to our product catalog at https://contoso.com/products
+@copilot-studio:copilot-studio-author Add a knowledge source pointing to our product catalog at https://contoso.com/products
 ```
 
 Then push, publish, and test again to verify the agent now responds with grounded information.
@@ -227,7 +231,7 @@ See [extension/docs/LOCAL_DEV_HOST.md](extension/docs/LOCAL_DEV_HOST.md) for the
 | Extension not found (clone/push/pull)  | Copilot Studio VS Code Extension not installed    | [Install from marketplace](https://github.com/microsoft/vscode-copilotstudio)  |
 | ConcurrencyVersionMismatch on push     | Stale row versions                                | Pull first, then push                                                           |
 
-If something goes wrong, you can always re-clone the original agent using the Manage agent or the Copilot Studio VS Code Extension.
+If something goes wrong, you can always re-clone the original agent with `@copilot-studio:copilot-studio-manage clone` or the Copilot Studio VS Code Extension.
 
 ---
 
@@ -235,9 +239,9 @@ If something goes wrong, you can always re-clone the original agent using the Ma
 
 * [ ] Toolkit installed (VS Code extension or Claude Code plugin)
 * [ ] Copilot Studio VS Code Extension installed (provides the LSP binary for push/pull/clone)
-* [ ] Agent cloned using the Manage agent or VS Code Extension
+* [ ] Agent cloned with `@copilot-studio:copilot-studio-manage clone` or VS Code Extension
 * [ ] Agents visible in Copilot Chat (`@` menu) or Claude Code (`/` autocomplete)
-* [ ] Created a topic with the Author agent
-* [ ] Validated with the Troubleshoot agent
-* [ ] Pulled, pushed, and published
-* [ ] Tested published agent with the Test agent
+* [ ] Created a topic with `@copilot-studio:copilot-studio-author`
+* [ ] Validated with `@copilot-studio:copilot-studio-troubleshoot`
+* [ ] Pulled, pushed, and published (`@copilot-studio:copilot-studio-manage pull`, then `push`)
+* [ ] Tested published agent with `@copilot-studio:copilot-studio-test`

@@ -5,15 +5,15 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node -e \"var r=process.env.CLAUDE_PLUGIN_ROOT;if(r){process.stdout.write(require('fs').readFileSync(require('path').join(r,'hooks','system-prompt.md'),'utf8'))}\"",
-            "bash": "node hooks/print-prompt.js",
-            "powershell": "node hooks/print-prompt.js"
+            "command": "node -e \"var r=process.env.CLAUDE_PLUGIN_ROOT;if(r){var f=require('fs'),p=require('path');var t=f.readFileSync(p.join(r,'hooks','system-prompt.md'),'utf8');process.stdout.write(JSON.stringify({hookSpecificOutput:{hookEventName:'SessionStart',additionalContext:t}}))}\"",
+            "bash": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/print-prompt.js\"",
+            "powershell": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/print-prompt.js\""
           },
           {
             "type": "command",
-            "command": "node -e \"var r=process.env.CLAUDE_PLUGIN_ROOT;if(r){require(require('path').join(r,'hooks','setup.js'))}\"",
-            "bash": "node hooks/setup.js",
-            "powershell": "node hooks/setup.js"
+            "command": "node -e \"var r=process.env.CLAUDE_PLUGIN_ROOT;if(r){var p=require('path');require(p.join(r,'hooks','setup.js'))}\"",
+            "bash": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/setup.js\"",
+            "powershell": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/setup.js\""
           }
         ]
       }

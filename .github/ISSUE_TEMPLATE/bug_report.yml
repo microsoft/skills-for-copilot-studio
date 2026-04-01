@@ -1,72 +1,82 @@
 name: Bug Report
-description: Report a bug or unexpected behavior
+description: Report a bug or unexpected behavior (not related to wrong agent output)
 labels: ["bug"]
 body:
   - type: dropdown
-    id: agent
+    id: area
     attributes:
-      label: Agent
-      description: Which agent were you using?
+      label: Area
+      description: Which part of the project is affected?
       options:
-        - copilot-studio-author
-        - copilot-studio-manage
-        - copilot-studio-test
-        - copilot-studio-troubleshoot
-        - Not applicable
+        - Hooks
+        - Scripts
+        - Evals
+        - Skills
+        - Setup / Installation
+        - Agents (sub-agents)
+        - Documentation
+        - Other
     validations:
       required: true
 
   - type: textarea
-    id: user-prompt
+    id: description
     attributes:
-      label: User Prompt
-      description: The exact prompt you sent to the agent.
+      label: Description
+      description: A clear description of the bug.
       placeholder: |
-        /copilot-studio:copilot-studio-author Create a topic that asks for the user's order number and looks it up
+        Hooks are not triggering when opening VS Code on macOS.
     validations:
       required: true
 
   - type: textarea
-    id: expected-result
+    id: steps-to-reproduce
     attributes:
-      label: Expected Result
-      description: What you expected the agent to produce. Include YAML if applicable.
+      label: Steps to Reproduce
+      description: Step-by-step instructions to reproduce the issue.
       placeholder: |
-        A topic YAML file with a Question node asking for the order number,
-        followed by an action that looks up the order. For example:
+        1. Clone the repository
+        2. Run `npm install` in the scripts folder
+        3. Open VS Code and trigger the hook via ...
+        4. Observe that nothing happens
+    validations:
+      required: true
 
-        ```yaml
-        kind: AdaptiveDialog
-        actions:
-          - kind: Question
-            ...
-        ```
+  - type: textarea
+    id: expected-behavior
+    attributes:
+      label: Expected Behavior
+      description: What you expected to happen.
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual-behavior
+    attributes:
+      label: Actual Behavior
+      description: What actually happened. Include error messages if applicable.
       render: markdown
     validations:
       required: true
 
   - type: textarea
-    id: actual-result
+    id: environment
     attributes:
-      label: Actual Result
-      description: What the agent actually produced. Include YAML output, error messages, or unexpected behavior.
+      label: Environment
+      description: Your environment details (OS, VS Code version, Node version, Python version, etc.).
       placeholder: |
-        The agent generated a topic but used an invalid kind value:
-
-        ```yaml
-        kind: SendMessage
-        ...
-        ```
-
-        Or paste the error message you received.
-      render: markdown
+        - OS: Windows 11 / macOS 14.x / Ubuntu 22.04
+        - VS Code: 1.95.x
+        - Node: 20.x
+        - Python: 3.12.x
     validations:
-      required: true
+      required: false
 
   - type: textarea
-    id: additional-context
+    id: logs
     attributes:
-      label: Additional Context
-      description: Any other context, screenshots, or log output.
+      label: Logs / Screenshots
+      description: Any relevant logs, terminal output, or screenshots.
+      render: markdown
     validations:
       required: false

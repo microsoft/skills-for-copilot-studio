@@ -1,0 +1,62 @@
+{
+  "skill_name": "add-knowledge",
+  "evals": [
+    {
+      "id": 1,
+      "name": "Public website knowledge source",
+      "prompt": "Use the add-knowledge skill to add https://docs.contoso.com/products as a knowledge source for the agent.",
+      "fixture": "basic-agent",
+      "mock_scripts": [],
+      "checks": {
+        "files_created": [
+          {"pattern": "knowledge/*.knowledge.mcs.yml", "min_count": 1}
+        ],
+        "schema_validate": true,
+        "yaml_structure": [
+          {"path": "kind", "equals": "KnowledgeSourceConfiguration"},
+          {"path": "source.kind", "equals": "PublicSiteSearchSource"}
+        ],
+        "content_contains": ["docs.contoso.com"],
+        "no_placeholders": true
+      }
+    },
+    {
+      "id": 2,
+      "name": "SharePoint knowledge source",
+      "prompt": "Use the add-knowledge skill to add the SharePoint folder https://contoso.sharepoint.com/sites/HRTeam/Shared%20Documents/Policies as a knowledge source for the agent.",
+      "fixture": "basic-agent",
+      "mock_scripts": [],
+      "checks": {
+        "files_created": [
+          {"pattern": "knowledge/*.knowledge.mcs.yml", "min_count": 1}
+        ],
+        "schema_validate": true,
+        "yaml_structure": [
+          {"path": "kind", "equals": "KnowledgeSourceConfiguration"},
+          {"path": "source.kind", "equals": "SharePointSearchSource"}
+        ],
+        "content_contains": ["contoso.sharepoint.com"],
+        "no_placeholders": true
+      }
+    },
+    {
+      "id": 3,
+      "name": "Public website with custom name and description",
+      "prompt": "Use the add-knowledge skill to add https://learn.microsoft.com/copilot-studio as a knowledge source. Name it 'Copilot Studio Docs' and describe it as 'Official Microsoft documentation for Copilot Studio'.",
+      "fixture": "basic-agent",
+      "mock_scripts": [],
+      "checks": {
+        "files_created": [
+          {"pattern": "knowledge/*.knowledge.mcs.yml", "min_count": 1}
+        ],
+        "schema_validate": true,
+        "yaml_structure": [
+          {"path": "kind", "equals": "KnowledgeSourceConfiguration"},
+          {"path": "source.kind", "equals": "PublicSiteSearchSource"}
+        ],
+        "content_contains": ["Copilot Studio Docs", "learn.microsoft.com"],
+        "no_placeholders": true
+      }
+    }
+  ]
+}
