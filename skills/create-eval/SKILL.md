@@ -32,6 +32,10 @@ The eval harness (`evals/evaluate.py`) works by:
 | `stdout_contains` | CLI response text contains expected strings | Reference/info skills |
 | `stdout_not_contains` | CLI response does NOT contain error strings | Error absence |
 | `exit_code` | CLI exited with expected code | All skills |
+| `yaml_unchanged` | Specific file or YAML path was NOT modified by the skill | Preservation testing |
+| `skill_invoked` | Validates the expected skill was called (routing check) | All skills |
+
+Note: `no_placeholders` runs automatically when any `.mcs.yml` file is changed, unless explicitly set to `false`.
 
 **Not yet testable**: Integration skills that call external APIs (chat-directline, manage-agent) — these need script mocking which isn't implemented yet.
 
@@ -40,6 +44,8 @@ The eval harness (`evals/evaluate.py`) works by:
 Fixtures are pre-built agent directories in `evals/fixtures/`:
 
 - **basic-agent** — Minimal agent with `GenerativeActionsEnabled: false`, one Greeting topic. Use for most authoring skill evals.
+- **agent-with-mcp-action** — Same as basic-agent plus two MCP action files. Use for action-editing skill evals.
+- **empty-workspace** — No agent files. Use for negative-path testing.
 
 If the skill being tested needs a richer agent (e.g., existing topics to modify, knowledge sources, actions), note that the fixture would need to be created first.
 
