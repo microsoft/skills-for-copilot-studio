@@ -19,6 +19,26 @@ const REPO_ROOT = path.resolve(__dirname, "..");
 const EVALS_SKILLS_DIR = path.join(REPO_ROOT, "evals", "skills");
 const RESULTS_DIR = path.join(REPO_ROOT, "evals", "results");
 
+// Resolve Python 3 binary — cross-platform (Windows has python/py, not python3)
+function findPython() {
+  const candidates = process.env.PYTHON
+    ? [process.env.PYTHON]
+    : process.platform === "win32"
+      ? ["python3", "python", "py"]
+      : ["python3", "python"];
+  for (const cmd of candidates) {
+    try {
+      const pyArgs = cmd === "py" ? ["-3", "--version"] : ["--version"];
+      const out = execFileSync(cmd, pyArgs, { stdio: "pipe" }).toString();
+      if (out.includes("Python 3")) return cmd === "py" ? "py" : cmd;
+    } catch {}
+  }
+  console.error("Error: Python 3 not found. Install Python 3 or set the PYTHON env var.");
+  process.exit(1);
+}
+const pythonBin = findPython();
+const pythonArgs = pythonBin === "py" ? ["-3"] : [];
+
 // Parse args
 let cli = "claude";
 let skill = "";
@@ -62,7 +82,7 @@ function runSkill(name) {
     ];
     if (verbose) evalArgs.push("--verbose");
 
-    const proc = spawn("python3", evalArgs, {
+    const proc = spawn(pythonBin, [...pythonArgs, ...evalArgs], {
       stdio: verbose ? "inherit" : ["pipe", "pipe", "pipe"],
       cwd: REPO_ROOT,
     });
@@ -132,7 +152,7 @@ async function main() {
   // Generate HTML report
   console.log("\nGenerating report...");
   try {
-    execFileSync("python3", [path.join(REPO_ROOT, "evals", "report.py"), runDir], {
+    execFileSync(pythonBin, [...pythonArgs, path.join(REPO_ROOT, "evals", "report.py"), runDir], {
       stdio: "inherit",
       cwd: REPO_ROOT,
     });
