@@ -89,11 +89,11 @@ def setup_mocks(workspace: Path, mock_scripts: list[str]) -> None:
         shutil.copy2(mock_src, mock_dst)
 
 
-def run_cli(cli: str, prompt: str, cwd: Path, timeout: int = 600) -> tuple[str, int, list[str]]:
-    """Run claude/copilot in non-interactive mode and return (response_text, exit_code, skills_invoked).
+def run_cli(cli: str, prompt: str, cwd: Path, timeout: int = 600) -> tuple[str, int, list[str], list[str]]:
+    """Run claude/copilot in non-interactive mode and return (response_text, exit_code, skills_invoked, agents_invoked).
 
     Supports both Claude Code and GitHub Copilot CLI JSON output formats.
-    Uses stream-json with verbose for Claude Code to capture skill invocations.
+    Uses stream-json with verbose for Claude Code to capture skill/agent invocations.
     """
     cmd = [cli, "-p", prompt]
 
@@ -120,11 +120,12 @@ def run_cli(cli: str, prompt: str, cwd: Path, timeout: int = 600) -> tuple[str, 
             timeout=timeout,
         )
     except subprocess.TimeoutExpired:
-        return "[TIMEOUT]", 1, []
+        return "[TIMEOUT]", 1, [], []
 
     response_text = ""
     exit_code = result.returncode
     skills_invoked = []
+    agents_invoked = []
 
     # Parse JSON lines from stdout
     for line in result.stdout.strip().split("\n"):
@@ -142,14 +143,22 @@ def run_cli(cli: str, prompt: str, cwd: Path, timeout: int = 600) -> tuple[str, 
         if event_type == "result" and "result" in event:
             response_text = event["result"]
 
-        # Claude Code stream-json: assistant messages with tool_use for skills
+        # Claude Code stream-json: assistant messages with tool_use for skills/agents
         elif event_type == "assistant":
             message = event.get("message", {})
             for content in message.get("content", []):
-                if content.get("type") == "tool_use" and content.get("name") == "Skill":
-                    skill_name = content.get("input", {}).get("skill", "")
+                if content.get("type") != "tool_use":
+                    continue
+                tool_name = content.get("name", "")
+                tool_input = content.get("input", {})
+                if tool_name == "Skill":
+                    skill_name = tool_input.get("skill", "")
                     if skill_name:
                         skills_invoked.append(skill_name)
+                elif tool_name == "Agent":
+                    agent_type = tool_input.get("subagent_type", "")
+                    if agent_type:
+                        agents_invoked.append(agent_type)
 
         # Copilot CLI: assistant.message with full content
         elif event_type == "assistant.message":
@@ -158,7 +167,7 @@ def run_cli(cli: str, prompt: str, cwd: Path, timeout: int = 600) -> tuple[str, 
             if content:
                 response_text = content.strip()
 
-    return response_text, exit_code, skills_invoked
+    return response_text, exit_code, skills_invoked, agents_invoked
 
 
 # --- Check functions ---
@@ -444,13 +453,16 @@ def run_checks(
     exit_code: int,
     checks: dict,
     skills_invoked: list[str] | None = None,
+    agents_invoked: list[str] | None = None,
     before_snapshot: dict[str, str] | None = None,
     before_content: dict[str, str] | None = None,
 ) -> list[dict]:
     """Run all configured checks and return results."""
     all_results = []
 
-    # skill_invoked is a gate check — if it fails, skip all other checks
+    # Routing checks are gate checks — if any fail, skip all other checks (test is invalid)
+    routing_passed = True
+
     if "skill_invoked" in checks:
         expected = checks["skill_invoked"]
         found = expected in (skills_invoked or [])
@@ -466,7 +478,49 @@ def run_checks(
             "evidence": evidence,
         })
         if not found:
-            return all_results  # skip remaining checks — test is invalid
+            routing_passed = False
+
+    if "agent_invoked" in checks:
+        expected = checks["agent_invoked"]
+        found = expected in (agents_invoked or [])
+        if found:
+            evidence = f"Correct — {expected} was invoked"
+        elif agents_invoked:
+            evidence = f"Wrong agent routed: expected {expected}, got {', '.join(agents_invoked)}"
+        else:
+            evidence = f"No agents were invoked — expected {expected}"
+        all_results.append({
+            "check": f"agent_invoked: {expected}",
+            "passed": found,
+            "evidence": evidence,
+        })
+        if not found:
+            routing_passed = False
+
+    if "skill_not_invoked" in checks:
+        for unwanted in checks["skill_not_invoked"]:
+            found = unwanted in (skills_invoked or [])
+            all_results.append({
+                "check": f"skill_not_invoked: {unwanted}",
+                "passed": not found,
+                "evidence": f"Correct — {unwanted} was not invoked" if not found else f"Wrong: {unwanted} was invoked but should not have been",
+            })
+            if found:
+                routing_passed = False
+
+    if "agent_not_invoked" in checks:
+        for unwanted in checks["agent_not_invoked"]:
+            found = unwanted in (agents_invoked or [])
+            all_results.append({
+                "check": f"agent_not_invoked: {unwanted}",
+                "passed": not found,
+                "evidence": f"Correct — {unwanted} was not invoked" if not found else f"Wrong: {unwanted} was invoked but should not have been",
+            })
+            if found:
+                routing_passed = False
+
+    if not routing_passed:
+        return all_results  # skip remaining checks — test is invalid
 
     if "files_created" in checks:
         all_results.extend(check_files_created(workspace, changed_files, checks["files_created"]))
@@ -547,12 +601,14 @@ def run_eval(eval_item: dict, cli: str, verbose: bool, artifacts_dir: Path | Non
         if verbose:
             print(f"Running: {cli} -p ...", file=sys.stderr)
 
-        response_text, exit_code, skills_invoked = run_cli(cli, prompt, cwd=agent_dir)
+        response_text, exit_code, skills_invoked, agents_invoked = run_cli(cli, prompt, cwd=agent_dir)
 
         if verbose:
             print(f"Exit code: {exit_code}", file=sys.stderr)
             if skills_invoked:
                 print(f"Skills invoked: {skills_invoked}", file=sys.stderr)
+            if agents_invoked:
+                print(f"Agents invoked: {agents_invoked}", file=sys.stderr)
             print(f"Response: {response_text[:200]}...", file=sys.stderr)
 
         # Find changed files
@@ -565,19 +621,19 @@ def run_eval(eval_item: dict, cli: str, verbose: bool, artifacts_dir: Path | Non
             print(f"Changed files: {[str(f.relative_to(agent_dir)) for f in changed_files]}", file=sys.stderr)
 
         # Run checks
-        check_results = run_checks(workspace, changed_files, response_text, exit_code, checks, skills_invoked, before, before_content)
+        check_results = run_checks(workspace, changed_files, response_text, exit_code, checks, skills_invoked, agents_invoked, before, before_content)
 
         passed = sum(1 for r in check_results if r["passed"])
         total = len(check_results)
         failed = total - passed
 
         # Determine eval status
-        # If skill_invoked was checked and failed, the test is invalid (routing failed)
-        skill_check_failed = any(
-            not r["passed"] and r["check"].startswith("skill_invoked:")
+        # If any routing check failed, the test is invalid
+        routing_check_failed = any(
+            not r["passed"] and (r["check"].startswith("skill_invoked:") or r["check"].startswith("agent_invoked:"))
             for r in check_results
         )
-        if skill_check_failed:
+        if routing_check_failed:
             eval_status = "invalid"
         elif failed == 0:
             eval_status = "passed"
@@ -621,6 +677,7 @@ def run_eval(eval_item: dict, cli: str, verbose: bool, artifacts_dir: Path | Non
             "response_text": response_text[:5000] + ("[...truncated]" if len(response_text) > 5000 else ""),
             "exit_code": exit_code,
             "skills_invoked": skills_invoked,
+            "agents_invoked": agents_invoked,
             "changed_files": [str(f.relative_to(agent_dir)) for f in changed_files],
             "artifacts": saved_artifacts,
             "checks": check_results,

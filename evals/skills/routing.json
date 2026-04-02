@@ -1,0 +1,49 @@
+{
+  "skill_name": "routing",
+  "evals": [
+    {
+      "id": 1,
+      "name": "Topic creation routes to Author agent",
+      "prompt": "Create a topic for handling IT support requests that asks about the device type and issue description.",
+      "fixture": "basic-agent",
+      "mock_scripts": [],
+      "checks": {
+        "agent_invoked": "copilot-studio:Copilot Studio Author",
+        "agent_not_invoked": ["copilot-studio:Copilot Studio Manage", "copilot-studio:Copilot Studio Test", "copilot-studio:Copilot Studio Troubleshoot"]
+      }
+    },
+    {
+      "id": 2,
+      "name": "Agent settings change routes to Author agent",
+      "prompt": "Change the agent's display name to 'Contoso Help Desk'.",
+      "fixture": "basic-agent",
+      "mock_scripts": [],
+      "checks": {
+        "agent_invoked": "copilot-studio:Copilot Studio Author",
+        "agent_not_invoked": ["copilot-studio:Copilot Studio Manage", "copilot-studio:Copilot Studio Test"]
+      }
+    },
+    {
+      "id": 3,
+      "name": "Knowledge source routes to Author agent, not Manage",
+      "prompt": "Add https://docs.contoso.com as a knowledge source for the agent.",
+      "fixture": "basic-agent",
+      "mock_scripts": [],
+      "checks": {
+        "agent_invoked": "copilot-studio:Copilot Studio Author",
+        "agent_not_invoked": ["copilot-studio:Copilot Studio Manage", "copilot-studio:Copilot Studio Test"]
+      }
+    },
+    {
+      "id": 4,
+      "name": "Troubleshooting routes to Troubleshoot agent, not Author",
+      "prompt": "My agent keeps returning empty responses when users ask about refunds. Can you help troubleshoot?",
+      "fixture": "basic-agent",
+      "mock_scripts": [],
+      "checks": {
+        "agent_invoked": "copilot-studio:Copilot Studio Troubleshoot",
+        "agent_not_invoked": ["copilot-studio:Copilot Studio Author", "copilot-studio:Copilot Studio Manage"]
+      }
+    }
+  ]
+}
