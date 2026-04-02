@@ -8,6 +8,7 @@
  *   node evals/run.js --skill new-topic        # Single skill
  *   node evals/run.js --cli copilot            # Use Copilot CLI
  *   node evals/run.js --verbose                # Verbose output
+ *   node evals/run.js --parallel 5             # Run 5 evals concurrently (default: 3)
  */
 
 const { execFileSync } = require("child_process");
@@ -22,11 +23,13 @@ const RESULTS_DIR = path.join(REPO_ROOT, "evals", "results");
 let cli = "claude";
 let skill = "";
 let verbose = false;
+let parallel = 3;
 
 const args = process.argv.slice(2);
 for (let i = 0; i < args.length; i++) {
   if (args[i] === "--cli" && args[i + 1]) cli = args[++i];
   else if (args[i] === "--skill" && args[i + 1]) skill = args[++i];
+  else if (args[i] === "--parallel" && args[i + 1]) parallel = parseInt(args[++i], 10) || 3;
   else if (args[i] === "--verbose") verbose = true;
 }
 
@@ -59,6 +62,7 @@ for (const name of skillNames) {
     "--skill", name,
     "--cli", cli,
     "--output", outputFile,
+    "--parallel", String(parallel),
   ];
   if (verbose) evalArgs.push("--verbose");
 

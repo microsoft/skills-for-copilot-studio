@@ -522,6 +522,8 @@ def main():
     parser.add_argument("--verbose", action="store_true", help="Print progress to stderr")
     parser.add_argument("--output", default=None, help="Output results to file (default: stdout)")
     parser.add_argument("--artifacts-dir", default=None, help="Save generated files to this directory")
+    parser.add_argument("--parallel", type=int, default=1, metavar="N",
+                        help="Run N evals in parallel (default: 1, recommended: 3)")
     args = parser.parse_args()
 
     evals_data = load_evals(args.skill)
@@ -542,13 +544,27 @@ def main():
         artifacts_dir = Path(args.output).parent / evals_data["skill_name"]
     artifacts_dir and artifacts_dir.mkdir(parents=True, exist_ok=True)
 
+    parallel = max(1, args.parallel)
     if args.verbose:
-        print(f"Running {len(evals_to_run)} eval(s) for skill '{args.skill}' with {args.cli}", file=sys.stderr)
+        mode = f"parallel ({parallel} workers)" if parallel > 1 else "sequential"
+        print(f"Running {len(evals_to_run)} eval(s) for skill '{args.skill}' with {args.cli} ({mode})", file=sys.stderr)
 
-    results = []
-    for eval_item in evals_to_run:
-        result = run_eval(eval_item, args.cli, args.verbose, artifacts_dir)
-        results.append(result)
+    if parallel > 1 and len(evals_to_run) > 1:
+        from concurrent.futures import ThreadPoolExecutor, as_completed
+        results = [None] * len(evals_to_run)
+        with ThreadPoolExecutor(max_workers=parallel) as pool:
+            future_to_idx = {
+                pool.submit(run_eval, eval_item, args.cli, args.verbose, artifacts_dir): i
+                for i, eval_item in enumerate(evals_to_run)
+            }
+            for future in as_completed(future_to_idx):
+                idx = future_to_idx[future]
+                results[idx] = future.result()
+    else:
+        results = []
+        for eval_item in evals_to_run:
+            result = run_eval(eval_item, args.cli, args.verbose, artifacts_dir)
+            results.append(result)
 
     output = {
         "skill_name": evals_data["skill_name"],
