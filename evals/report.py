@@ -65,6 +65,8 @@ def generate_html(results: list[dict], results_dir: Path) -> str:
 
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     cli = results[0]["cli"] if results else "unknown"
+    total_duration = sum(r.get("duration_sec", 0) for r in results)
+    max_parallel = max((r.get("parallel", 1) for r in results), default=1)
 
     # Build skill cards
     skill_cards = []
@@ -104,6 +106,7 @@ def generate_html(results: list[dict], results_dir: Path) -> str:
     <div class="sidebar-meta">
       <span class="meta-item">{timestamp}</span>
       <span class="meta-item">CLI: {html.escape(cli)}</span>
+      <span class="meta-item">{total_duration:.0f}s &middot; {max_parallel} worker{'s' if max_parallel != 1 else ''}</span>
     </div>
     <div class="sidebar-section-label">Skills</div>
     <div class="nav-list">

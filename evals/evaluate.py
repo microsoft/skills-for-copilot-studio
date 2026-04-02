@@ -544,10 +544,13 @@ def main():
         artifacts_dir = Path(args.output).parent / evals_data["skill_name"]
     artifacts_dir and artifacts_dir.mkdir(parents=True, exist_ok=True)
 
+    import time
     parallel = max(1, args.parallel)
     if args.verbose:
         mode = f"parallel ({parallel} workers)" if parallel > 1 else "sequential"
         print(f"Running {len(evals_to_run)} eval(s) for skill '{args.skill}' with {args.cli} ({mode})", file=sys.stderr)
+
+    start_time = time.time()
 
     if parallel > 1 and len(evals_to_run) > 1:
         from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -566,9 +569,13 @@ def main():
             result = run_eval(eval_item, args.cli, args.verbose, artifacts_dir)
             results.append(result)
 
+    duration_sec = round(time.time() - start_time, 1)
+
     output = {
         "skill_name": evals_data["skill_name"],
         "cli": args.cli,
+        "parallel": parallel,
+        "duration_sec": duration_sec,
         "results": results,
         "summary": {
             "total_evals": len(results),
