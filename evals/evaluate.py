@@ -10,6 +10,7 @@ Usage:
 
 import argparse
 import fnmatch
+import hashlib
 import json
 import os
 import re
@@ -51,21 +52,25 @@ def setup_workspace(fixture_name: str) -> Path:
     return workspace
 
 
-def snapshot_files(directory: Path) -> dict[str, float]:
-    """Take a snapshot of all files and their modification times."""
+def snapshot_files(directory: Path) -> dict[str, str]:
+    """Take a snapshot of all files with content hashes for reliable change detection."""
     snapshot = {}
     for f in directory.rglob("*"):
         if f.is_file():
-            snapshot[str(f.relative_to(directory))] = f.stat().st_mtime
+            try:
+                content = f.read_bytes()
+                snapshot[f.relative_to(directory).as_posix()] = hashlib.sha256(content).hexdigest()
+            except (PermissionError, OSError):
+                pass
     return snapshot
 
 
-def find_new_or_modified_files(directory: Path, before: dict[str, float]) -> list[Path]:
+def find_new_or_modified_files(directory: Path, before: dict[str, str]) -> list[Path]:
     """Find files that are new or modified since the snapshot."""
     after = snapshot_files(directory)
     changed = []
-    for rel_path, mtime in after.items():
-        if rel_path not in before or mtime > before[rel_path]:
+    for rel_path, file_hash in after.items():
+        if rel_path not in before or file_hash != before[rel_path]:
             changed.append(directory / rel_path)
     return changed
 
@@ -167,7 +172,7 @@ def check_files_created(workspace: Path, changed_files: list[Path], spec: list[d
         min_count = item.get("min_count", 1)
         max_count = item.get("max_count", None)
         # Only match against new/modified files, not pre-existing fixture files
-        matches = [f for f in changed_files if f.is_relative_to(agent_dir) and fnmatch.fnmatch(str(f.relative_to(agent_dir)), pattern)]
+        matches = [f for f in changed_files if f.is_relative_to(agent_dir) and fnmatch.fnmatch(f.relative_to(agent_dir).as_posix(), pattern)]
         passed = len(matches) >= min_count
         if max_count is not None:
             passed = passed and len(matches) <= max_count
@@ -215,6 +220,24 @@ def check_schema_validate(workspace: Path, changed_files: list[Path]) -> list[di
     return results
 
 
+def _navigate_yaml_path(data, path: str):
+    """Navigate a dotted path through YAML data, supporting array indices."""
+    value = data
+    for key in path.split("."):
+        if value is None:
+            break
+        if isinstance(value, list):
+            try:
+                value = value[int(key)]
+            except (ValueError, IndexError):
+                value = None
+        elif isinstance(value, dict):
+            value = value.get(key)
+        else:
+            value = None
+    return value
+
+
 def check_yaml_structure(workspace: Path, changed_files: list[Path], specs: list[dict]) -> list[dict]:
     """Check specific YAML paths for expected values."""
     results = []
@@ -223,27 +246,39 @@ def check_yaml_structure(workspace: Path, changed_files: list[Path], specs: list
     except ImportError:
         return [{"check": "yaml_structure", "passed": False, "evidence": "PyYAML not installed"}]
 
-    yaml_files = [f for f in changed_files if f.name.endswith(".mcs.yml")]
-    if not yaml_files:
+    agent_dir = workspace / "agent"
+    all_yaml = [f for f in changed_files if f.name.endswith(".mcs.yml")]
+    if not all_yaml:
         return [{"check": "yaml_structure", "passed": False, "evidence": "No .mcs.yml files found"}]
 
     for spec in specs:
         path = spec["path"]
+        file_pattern = spec.get("file")
+
+        # Filter to matching files if a file selector is provided
+        if file_pattern:
+            yaml_files = [f for f in all_yaml
+                          if f.is_relative_to(agent_dir)
+                          and fnmatch.fnmatch(f.relative_to(agent_dir).as_posix(), file_pattern)]
+            if not yaml_files:
+                results.append({
+                    "check": f"yaml_structure: {path} in {file_pattern}",
+                    "passed": False,
+                    "evidence": f"No changed files matching '{file_pattern}'",
+                })
+                continue
+        else:
+            yaml_files = all_yaml
+
         for yaml_file in yaml_files:
             data = yaml.safe_load(yaml_file.read_text())
-            # Navigate the dotted path
-            value = data
-            for key in path.split("."):
-                if isinstance(value, dict):
-                    value = value.get(key)
-                else:
-                    value = None
-                    break
+            value = _navigate_yaml_path(data, path)
+            file_label = yaml_file.name
 
             if "equals" in spec:
                 passed = value == spec["equals"]
                 results.append({
-                    "check": f"yaml_structure: {path} == {spec['equals']} in {yaml_file.name}",
+                    "check": f"yaml_structure: {path} == {spec['equals']} in {file_label}",
                     "passed": passed,
                     "evidence": f"Actual value: {value}",
                 })
@@ -251,7 +286,7 @@ def check_yaml_structure(workspace: Path, changed_files: list[Path], specs: list
                 actual_len = len(value) if isinstance(value, (list, dict, str)) else 0
                 passed = actual_len >= spec["min_length"]
                 results.append({
-                    "check": f"yaml_structure: {path} min_length {spec['min_length']} in {yaml_file.name}",
+                    "check": f"yaml_structure: {path} min_length {spec['min_length']} in {file_label}",
                     "passed": passed,
                     "evidence": f"Actual length: {actual_len}",
                 })
@@ -259,7 +294,7 @@ def check_yaml_structure(workspace: Path, changed_files: list[Path], specs: list
                 text = str(value).lower() if value else ""
                 passed = spec["contains"].lower() in text
                 results.append({
-                    "check": f"yaml_structure: {path} contains '{spec['contains']}' in {yaml_file.name}",
+                    "check": f"yaml_structure: {path} contains '{spec['contains']}' in {file_label}",
                     "passed": passed,
                     "evidence": f"Value: {str(value)[:200]}",
                 })
@@ -312,6 +347,70 @@ def check_no_placeholders(workspace: Path, changed_files: list[Path]) -> list[di
     return results
 
 
+def check_yaml_unchanged(workspace: Path, before_snapshot: dict[str, str], specs: list[dict],
+                         before_content: dict[str, str] | None = None) -> list[dict]:
+    """Check that specific files or YAML paths were NOT changed by the skill."""
+    results = []
+    agent_dir = workspace / "agent"
+
+    for spec in specs:
+        file_pattern = spec.get("file", "")
+        yaml_path = spec.get("path")
+
+        matching = [rel for rel in before_snapshot if fnmatch.fnmatch(rel, file_pattern)]
+
+        if not matching:
+            results.append({
+                "check": f"yaml_unchanged: {file_pattern}",
+                "passed": False,
+                "evidence": f"No fixture files matching '{file_pattern}'",
+            })
+            continue
+
+        for rel_path in matching:
+            current_file = agent_dir / rel_path
+            if not current_file.exists():
+                results.append({
+                    "check": f"yaml_unchanged: {rel_path}",
+                    "passed": False,
+                    "evidence": "File was deleted",
+                })
+                continue
+
+            if yaml_path:
+                if not before_content or rel_path not in before_content:
+                    results.append({
+                        "check": f"yaml_unchanged: {rel_path} -> {yaml_path}",
+                        "passed": False,
+                        "evidence": "No before-content captured for path comparison",
+                    })
+                    continue
+                try:
+                    import yaml
+                    before_data = yaml.safe_load(before_content[rel_path])
+                    current_data = yaml.safe_load(current_file.read_text())
+                    before_val = _navigate_yaml_path(before_data, yaml_path)
+                    current_val = _navigate_yaml_path(current_data, yaml_path)
+                    passed = before_val == current_val
+                    results.append({
+                        "check": f"yaml_unchanged: {rel_path} -> {yaml_path}",
+                        "passed": passed,
+                        "evidence": "Unchanged" if passed else f"Before: {str(before_val)[:100]}, After: {str(current_val)[:100]}",
+                    })
+                except ImportError:
+                    results.append({"check": "yaml_unchanged", "passed": False, "evidence": "PyYAML not installed"})
+            else:
+                current_hash = hashlib.sha256(current_file.read_bytes()).hexdigest()
+                passed = before_snapshot[rel_path] == current_hash
+                results.append({
+                    "check": f"yaml_unchanged: {rel_path}",
+                    "passed": passed,
+                    "evidence": "File unchanged" if passed else "File was modified",
+                })
+
+    return results
+
+
 def check_stdout_contains(response_text: str, keywords: list[str]) -> list[dict]:
     """Check that CLI response text contains expected strings."""
     results = []
@@ -345,6 +444,8 @@ def run_checks(
     exit_code: int,
     checks: dict,
     skills_invoked: list[str] | None = None,
+    before_snapshot: dict[str, str] | None = None,
+    before_content: dict[str, str] | None = None,
 ) -> list[dict]:
     """Run all configured checks and return results."""
     all_results = []
@@ -379,8 +480,13 @@ def run_checks(
     if "content_contains" in checks:
         all_results.extend(check_content_contains(workspace, changed_files, checks["content_contains"]))
 
-    if checks.get("no_placeholders"):
+    # Auto-run no_placeholders when YAML files were changed, unless explicitly disabled
+    no_ph = checks.get("no_placeholders")
+    if no_ph is True or (no_ph is None and any(f.name.endswith(".mcs.yml") for f in changed_files)):
         all_results.extend(check_no_placeholders(workspace, changed_files))
+
+    if "yaml_unchanged" in checks and before_snapshot is not None:
+        all_results.extend(check_yaml_unchanged(workspace, before_snapshot, checks["yaml_unchanged"], before_content))
 
     if "stdout_contains" in checks:
         all_results.extend(check_stdout_contains(response_text, checks["stdout_contains"]))
@@ -427,6 +533,16 @@ def run_eval(eval_item: dict, cli: str, verbose: bool, artifacts_dir: Path | Non
         # Snapshot files before running
         before = snapshot_files(agent_dir)
 
+        # Capture file contents for yaml_unchanged path comparisons
+        before_content = {}
+        if "yaml_unchanged" in checks:
+            for f in agent_dir.rglob("*.mcs.yml"):
+                if f.is_file():
+                    try:
+                        before_content[f.relative_to(agent_dir).as_posix()] = f.read_text()
+                    except (PermissionError, OSError, UnicodeDecodeError):
+                        pass
+
         # Run CLI
         if verbose:
             print(f"Running: {cli} -p ...", file=sys.stderr)
@@ -449,7 +565,7 @@ def run_eval(eval_item: dict, cli: str, verbose: bool, artifacts_dir: Path | Non
             print(f"Changed files: {[str(f.relative_to(agent_dir)) for f in changed_files]}", file=sys.stderr)
 
         # Run checks
-        check_results = run_checks(workspace, changed_files, response_text, exit_code, checks, skills_invoked)
+        check_results = run_checks(workspace, changed_files, response_text, exit_code, checks, skills_invoked, before, before_content)
 
         passed = sum(1 for r in check_results if r["passed"])
         total = len(check_results)
@@ -522,6 +638,8 @@ def main():
     parser.add_argument("--verbose", action="store_true", help="Print progress to stderr")
     parser.add_argument("--output", default=None, help="Output results to file (default: stdout)")
     parser.add_argument("--artifacts-dir", default=None, help="Save generated files to this directory")
+    parser.add_argument("--parallel", type=int, default=1, metavar="N",
+                        help="Run N evals in parallel (default: 1, recommended: 3)")
     args = parser.parse_args()
 
     evals_data = load_evals(args.skill)
@@ -542,17 +660,38 @@ def main():
         artifacts_dir = Path(args.output).parent / evals_data["skill_name"]
     artifacts_dir and artifacts_dir.mkdir(parents=True, exist_ok=True)
 
+    import time
+    parallel = max(1, args.parallel)
     if args.verbose:
-        print(f"Running {len(evals_to_run)} eval(s) for skill '{args.skill}' with {args.cli}", file=sys.stderr)
+        mode = f"parallel ({parallel} workers)" if parallel > 1 else "sequential"
+        print(f"Running {len(evals_to_run)} eval(s) for skill '{args.skill}' with {args.cli} ({mode})", file=sys.stderr)
 
-    results = []
-    for eval_item in evals_to_run:
-        result = run_eval(eval_item, args.cli, args.verbose, artifacts_dir)
-        results.append(result)
+    start_time = time.time()
+
+    if parallel > 1 and len(evals_to_run) > 1:
+        from concurrent.futures import ThreadPoolExecutor, as_completed
+        results = [None] * len(evals_to_run)
+        with ThreadPoolExecutor(max_workers=parallel) as pool:
+            future_to_idx = {
+                pool.submit(run_eval, eval_item, args.cli, args.verbose, artifacts_dir): i
+                for i, eval_item in enumerate(evals_to_run)
+            }
+            for future in as_completed(future_to_idx):
+                idx = future_to_idx[future]
+                results[idx] = future.result()
+    else:
+        results = []
+        for eval_item in evals_to_run:
+            result = run_eval(eval_item, args.cli, args.verbose, artifacts_dir)
+            results.append(result)
+
+    duration_sec = round(time.time() - start_time, 1)
 
     output = {
         "skill_name": evals_data["skill_name"],
         "cli": args.cli,
+        "parallel": parallel,
+        "duration_sec": duration_sec,
         "results": results,
         "summary": {
             "total_evals": len(results),
