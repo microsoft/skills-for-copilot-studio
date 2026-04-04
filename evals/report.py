@@ -28,7 +28,7 @@ def load_results(results_dir: Path) -> list[dict]:
     for f in sorted(results_dir.glob("*.json")):
         try:
             data = json.loads(f.read_text())
-            if "skill_name" in data and "results" in data:
+            if ("scenario_name" in data or "skill_name" in data) and "results" in data:
                 results.append(data)
         except (json.JSONDecodeError, KeyError):
             continue
@@ -68,13 +68,13 @@ def generate_html(results: list[dict], results_dir: Path) -> str:
     # Build skill cards
     skill_cards = []
     for skill_data in results:
-        skill_name = skill_data["skill_name"]
-        skill_cards.append(build_skill_card(skill_name, skill_data, results_dir))
+        scenario_name = skill_data.get("scenario_name", skill_data.get("skill_name", "unknown"))
+        skill_cards.append(build_skill_card(scenario_name, skill_data, results_dir))
 
     # Build skill nav items for sidebar
     skill_nav_items = []
     for skill_data in results:
-        sn = skill_data["skill_name"]
+        sn = skill_data.get("scenario_name", skill_data.get("skill_name", "unknown"))
         sf = skill_data["summary"]["total_checks_failed"]
         nav_class = "nav-fail" if sf > 0 else "nav-pass"
         skill_nav_items.append(
@@ -177,7 +177,7 @@ def generate_html(results: list[dict], results_dir: Path) -> str:
 </html>"""
 
 
-def build_skill_card(skill_name: str, skill_data: dict, results_dir: Path) -> str:
+def build_skill_card(scenario_name: str, skill_data: dict, results_dir: Path) -> str:
     """Build HTML for a single skill card with its evals."""
     summary = skill_data["summary"]
     passed = summary["total_checks_passed"]
@@ -188,14 +188,14 @@ def build_skill_card(skill_name: str, skill_data: dict, results_dir: Path) -> st
 
     eval_rows = []
     for ev in skill_data["results"]:
-        eval_rows.append(build_eval_row(skill_name, ev, results_dir))
+        eval_rows.append(build_eval_row(scenario_name, ev, results_dir))
 
     return f"""
-    <div class="skill-card {status_class}" data-status="{'passed' if all_passed else 'failed'}" id="skill-{sanitize_id(skill_name)}">
+    <div class="skill-card {status_class}" data-status="{'passed' if all_passed else 'failed'}" id="skill-{sanitize_id(scenario_name)}">
       <div class="skill-header" onclick="toggleSkill(this)">
         <div class="skill-info">
           <span class="skill-accent {'accent-pass' if all_passed else 'accent-fail'}"></span>
-          <h2>{html.escape(skill_name)}</h2>
+          <h2>{html.escape(scenario_name)}</h2>
           <span class="eval-count">{len(skill_data['results'])} eval{'s' if len(skill_data['results']) != 1 else ''}</span>
         </div>
         <div class="skill-stats">
@@ -211,7 +211,7 @@ def build_skill_card(skill_name: str, skill_data: dict, results_dir: Path) -> st
     </div>"""
 
 
-def build_eval_row(skill_name: str, ev: dict, results_dir: Path) -> str:
+def build_eval_row(scenario_name: str, ev: dict, results_dir: Path) -> str:
     """Build HTML for a single eval within a skill card."""
     eval_id = ev["eval_id"]
     eval_name = ev.get("name", "")
@@ -224,8 +224,8 @@ def build_eval_row(skill_name: str, ev: dict, results_dir: Path) -> str:
     artifact_pills = []
     for art in ev.get("artifacts", []):
         # art is like "eval-1/topics/ITSupport.topic.mcs.yml" — relative to artifacts_dir
-        # artifacts_dir is <results_dir>/<skill_name>/, so link is <skill_name>/<art>
-        rel_path = f"{skill_name}/{art}"
+        # artifacts_dir is <results_dir>/<scenario_name>/, so link is <scenario_name>/<art>
+        rel_path = f"{scenario_name}/{art}"
         fname = html.escape(art.split("/")[-1])
         artifact_pills.append(
             f'<a href="{html.escape(rel_path)}" class="artifact-pill" title="Open generated file">{fname}</a>'

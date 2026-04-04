@@ -1,14 +1,14 @@
 #!/usr/bin/env node
 /**
- * Run skill evals for all skills or a specific skill.
+ * Run scenario-based evals for Copilot Studio skills.
  * Cross-platform (Node.js) — works on macOS, Windows, and Linux.
  *
  * Usage:
- *   node evals/run.js                          # All skills
- *   node evals/run.js --skill new-topic        # Single skill
- *   node evals/run.js --cli copilot            # Use Copilot CLI
- *   node evals/run.js --verbose                # Verbose output
- *   node evals/run.js --parallel 5             # Run 5 evals concurrently (default: 3)
+ *   node evals/run.js                              # All scenarios
+ *   node evals/run.js --scenario edit-agent         # Single scenario
+ *   node evals/run.js --cli copilot                 # Use Copilot CLI
+ *   node evals/run.js --verbose                     # Verbose output
+ *   node evals/run.js --parallel 5                  # Run 5 evals concurrently (default: 3)
  */
 
 const { spawn, execFileSync } = require("child_process");
@@ -17,7 +17,6 @@ const path = require("path");
 
 const REPO_ROOT = path.resolve(__dirname, "..");
 const EVALS_SCENARIOS_DIR = path.join(REPO_ROOT, "evals", "scenarios");
-const EVALS_SKILLS_DIR = path.join(REPO_ROOT, "evals", "skills");
 const RESULTS_DIR = path.join(REPO_ROOT, "evals", "results");
 
 // Resolve Python 3 binary — cross-platform (Windows has python/py, not python3)
@@ -42,14 +41,14 @@ const pythonArgs = pythonBin === "py" ? ["-3"] : [];
 
 // Parse args
 let cli = "claude";
-let skill = "";
+let scenario = "";
 let verbose = false;
 let parallel = 3;
 
 const args = process.argv.slice(2);
 for (let i = 0; i < args.length; i++) {
   if (args[i] === "--cli" && args[i + 1]) cli = args[++i];
-  else if (args[i] === "--skill" && args[i + 1]) skill = args[++i];
+  else if (args[i] === "--scenario" && args[i + 1]) scenario = args[++i];
   else if (args[i] === "--parallel" && args[i + 1]) parallel = parseInt(args[++i], 10) || 3;
   else if (args[i] === "--verbose") verbose = true;
 }
@@ -59,19 +58,14 @@ const timestamp = new Date().toISOString().replace(/[T:]/g, "-").replace(/\..+/,
 const runDir = path.join(RESULTS_DIR, timestamp);
 fs.mkdirSync(runDir, { recursive: true });
 
-// Find evals from scenarios/ (preferred) and skills/ (legacy), deduplicating
+// Find scenario eval definitions
 const scenarioNames = fs.existsSync(EVALS_SCENARIOS_DIR)
   ? fs.readdirSync(EVALS_SCENARIOS_DIR).filter((f) => f.endsWith(".json")).map((f) => f.replace(/\.json$/, ""))
   : [];
-const legacyNames = fs.existsSync(EVALS_SKILLS_DIR)
-  ? fs.readdirSync(EVALS_SKILLS_DIR).filter((f) => f.endsWith(".json")).map((f) => f.replace(/\.json$/, ""))
-  : [];
-// Scenarios take precedence over legacy skills with the same name
-const skillNames = [...new Set([...scenarioNames, ...legacyNames])]
-  .filter((name) => !skill || name === skill);
+const names = scenarioNames.filter((name) => !scenario || name === scenario);
 
-if (skillNames.length === 0) {
-  console.error(skill ? `No evals found for skill '${skill}'` : "No eval files found in evals/skills/");
+if (names.length === 0) {
+  console.error(scenario ? `No evals found for scenario '${scenario}'` : "No eval files found in evals/scenarios/");
   process.exit(1);
 }
 
@@ -128,10 +122,10 @@ function runSkill(name) {
 // Main async runner
 async function main() {
   const startTime = Date.now();
-  console.log(`Running evals for ${skillNames.length} skill(s) with ${parallel} worker(s)...\n`);
+  console.log(`Running evals for ${names.length} scenario(s) with ${parallel} worker(s)...\n`);
 
   // Run all skills in parallel
-  const promises = skillNames.map((name) => runSkill(name));
+  const promises = names.map((name) => runSkill(name));
   const results = await Promise.all(promises);
 
   let totalPass = 0;
@@ -162,7 +156,7 @@ async function main() {
 
   console.log("");
   console.log("=== Summary ===");
-  console.log(`Skills tested: ${skillNames.length}`);
+  console.log(`Scenarios tested: ${names.length}`);
   console.log(`Total checks: ${totalPass + totalFail}`);
   console.log(`Passed: ${totalPass}`);
   console.log(`Failed: ${totalFail}`);

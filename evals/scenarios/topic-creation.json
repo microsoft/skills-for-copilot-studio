@@ -1,5 +1,5 @@
 {
-  "skill_name": "new-topic",
+  "scenario_name": "topic-creation",
   "evals": [
     {
       "id": 1,

@@ -1,5 +1,5 @@
 {
-  "skill_name": "add-knowledge",
+  "scenario_name": "knowledge-sources",
   "evals": [
     {
       "id": 1,

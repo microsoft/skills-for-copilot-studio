@@ -30,17 +30,13 @@ SCRIPTS_DIR = REPO_ROOT / "scripts"
 
 
 EVALS_SCENARIOS_DIR = REPO_ROOT / "evals" / "scenarios"
-# Legacy fallback
-EVALS_SKILLS_DIR = REPO_ROOT / "evals" / "skills"
 
 
-def load_evals(skill_name: str) -> dict:
-    """Load eval definition from evals/scenarios/<name>.json (preferred) or evals/skills/<name>.json (legacy)."""
-    evals_path = EVALS_SCENARIOS_DIR / f"{skill_name}.json"
+def load_evals(scenario_name: str) -> dict:
+    """Load eval definition from evals/scenarios/<name>.json."""
+    evals_path = EVALS_SCENARIOS_DIR / f"{scenario_name}.json"
     if not evals_path.exists():
-        evals_path = EVALS_SKILLS_DIR / f"{skill_name}.json"
-    if not evals_path.exists():
-        print(f"Error: No evals found for '{skill_name}' in scenarios/ or skills/", file=sys.stderr)
+        print(f"Error: No evals found for scenario '{scenario_name}' in evals/scenarios/", file=sys.stderr)
         sys.exit(1)
     return json.loads(evals_path.read_text())
 
@@ -672,7 +668,7 @@ def run_eval(eval_item: dict, cli: str, verbose: bool, artifacts_dir: Path | Non
 
 def main():
     parser = argparse.ArgumentParser(description="Skill result testing harness")
-    parser.add_argument("--skill", required=True, help="Skill name to test")
+    parser.add_argument("--skill", "--scenario", required=True, dest="skill", help="Scenario name to test")
     parser.add_argument("--eval-id", type=int, default=None, help="Run specific eval by ID")
     parser.add_argument("--cli", default="claude", help="CLI binary: 'claude' or 'copilot' (default: claude)")
     parser.add_argument("--verbose", action="store_true", help="Print progress to stderr")
@@ -697,7 +693,7 @@ def main():
         artifacts_dir = Path(args.artifacts_dir)
     elif args.output:
         # Place artifacts alongside the output file: <output_dir>/<skill_name>/
-        artifacts_dir = Path(args.output).parent / evals_data["skill_name"]
+        artifacts_dir = Path(args.output).parent / evals_data.get("scenario_name", evals_data.get("skill_name", args.skill))
     artifacts_dir and artifacts_dir.mkdir(parents=True, exist_ok=True)
 
     import time
@@ -728,7 +724,7 @@ def main():
     duration_sec = round(time.time() - start_time, 1)
 
     output = {
-        "skill_name": evals_data["skill_name"],
+        "scenario_name": evals_data.get("scenario_name", evals_data.get("skill_name", args.skill)),
         "cli": args.cli,
         "parallel": parallel,
         "duration_sec": duration_sec,
