@@ -21,7 +21,7 @@ Modify agent metadata (`agent.mcs.yml`) or configuration (`settings.mcs.yml`).
 
 2. **Identify what the user wants to change** and read the appropriate file:
    - **Instructions, display name, conversation starters, AI settings** → `agent.mcs.yml`
-   - **GenerativeActionsEnabled, SmartTaskCompletionEnabled, authentication, recognizer, capabilities** → `settings.mcs.yml`
+   - **GenerativeActionsEnabled, SmartTaskCompletionEnabled (aka Enhanced Task Completion), authentication, recognizer, capabilities** → `settings.mcs.yml`
 
 3. **If the user wants to change the AI model**, run the schema lookup tool first:
    ```bash
@@ -45,6 +45,12 @@ Modify agent metadata (`agent.mcs.yml`) or configuration (`settings.mcs.yml`).
 | `aISettings.model.provider` | Model provider (required for non-OpenAI) | `Anthropic` |
 
 ## Editable Fields in `settings.mcs.yml`
+
+> **UI-to-YAML name mapping** — The Copilot Studio UI uses different names than the YAML keys:
+> - "Enhanced Task Completion" → `SmartTaskCompletionEnabled`
+> - "Generative orchestration" → `GenerativeActionsEnabled`
+>
+> Always use the YAML key names from the table below, NOT the UI names.
 
 | Field | Description | Example |
 |-------|-------------|---------|

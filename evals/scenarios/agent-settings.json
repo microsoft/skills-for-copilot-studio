@@ -61,10 +61,12 @@
     {
       "id": 4,
       "name": "Enable Enhanced Task Completion (generative actions off)",
-      "prompt": "Use the edit-agent skill to enable Enhanced Task Completion on the agent. The setting is SmartTaskCompletionEnabled in settings.mcs.yml under configuration.settings.",
+      "prompt": "Enable Enhanced Task Completion on the agent.",
       "fixture": "basic-agent",
       "mock_scripts": [],
       "checks": {
+        "agent_invoked": "copilot-studio:Copilot Studio Author",
+        "skill_invoked": "copilot-studio:edit-agent",
         "files_created": [
           {"pattern": "settings.mcs.yml", "min_count": 1}
         ],
@@ -75,10 +77,12 @@
     {
       "id": 5,
       "name": "Enable Enhanced Task Completion (generative actions already on)",
-      "prompt": "Use the edit-agent skill to enable Enhanced Task Completion on the agent (set SmartTaskCompletionEnabled to true in settings.mcs.yml).",
+      "prompt": "Enable Enhanced Task Completion on the agent.",
       "fixture": "generative-agent",
       "mock_scripts": [],
       "checks": {
+        "agent_invoked": "copilot-studio:Copilot Studio Author",
+        "skill_invoked": "copilot-studio:edit-agent",
         "files_created": [
           {"pattern": "settings.mcs.yml", "min_count": 1}
         ],
