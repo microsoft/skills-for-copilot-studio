@@ -97,6 +97,8 @@ Skills invoked inside sub-agents are traced via a `PreToolUse` hook injected at 
 | `stdout_contains` / `stdout_not_contains` | CLI response text assertions |
 | `exit_code` | CLI exit code matches expected |
 
+**Note:** `skill_invoked` and `skill_not_invoked` checks rely on a `PreToolUse` hook injected at runtime via `--settings`. This only works with Claude Code CLI. When using Copilot CLI (`--cli copilot`), skill tracing is not available — these checks will be skipped and a warning is emitted.
+
 ### Running evals
 
 ```bash

@@ -94,8 +94,8 @@ def setup_mocks(workspace: Path, mock_scripts: list[str]) -> None:
 HOOK_SCRIPT = REPO_ROOT / "evals" / "hooks" / "log-skill-use.js"
 
 
-def run_cli(cli: str, prompt: str, cwd: Path, timeout: int = 600) -> tuple[str, int, list[str], list[str]]:
-    """Run claude/copilot in non-interactive mode and return (response_text, exit_code, skills_invoked, agents_invoked).
+def run_cli(cli: str, prompt: str, cwd: Path, timeout: int = 600) -> tuple[str, int, list[str], list[str], bool]:
+    """Run claude/copilot in non-interactive mode and return (response_text, exit_code, skills_invoked, agents_invoked, skill_tracing).
 
     Supports both Claude Code and GitHub Copilot CLI JSON output formats.
     Uses stream-json with verbose for Claude Code to capture skill/agent invocations.
@@ -109,6 +109,7 @@ def run_cli(cli: str, prompt: str, cwd: Path, timeout: int = 600) -> tuple[str, 
     skill_log = Path(skill_log_str)
 
     # Grant tool permissions — different flags per CLI
+    skill_tracing = False
     if cli == "copilot":
         cmd.extend(["--output-format", "json"])
         cmd.extend(["--allow-tool", "shell(node *)", "--allow-tool", "read",
@@ -132,6 +133,7 @@ def run_cli(cli: str, prompt: str, cwd: Path, timeout: int = 600) -> tuple[str, 
             }
         })
         cmd.extend(["--settings", hook_settings])
+        skill_tracing = True
 
     # Remove CLAUDECODE env var to allow nesting (same as skill-creator)
     env = {k: v for k, v in os.environ.items() if k != "CLAUDECODE"}
@@ -148,7 +150,7 @@ def run_cli(cli: str, prompt: str, cwd: Path, timeout: int = 600) -> tuple[str, 
         )
     except subprocess.TimeoutExpired:
         skill_log.unlink(missing_ok=True)
-        return "[TIMEOUT]", 1, [], []
+        return "[TIMEOUT]", 1, [], [], False
 
     response_text = ""
     exit_code = result.returncode
@@ -195,7 +197,7 @@ def run_cli(cli: str, prompt: str, cwd: Path, timeout: int = 600) -> tuple[str, 
             if content:
                 response_text = content.strip()
 
-    return response_text, exit_code, skills_invoked, agents_invoked
+    return response_text, exit_code, skills_invoked, agents_invoked, skill_tracing
 
 
 # --- Check functions ---
@@ -484,35 +486,50 @@ def run_checks(
     agents_invoked: list[str] | None = None,
     before_snapshot: dict[str, str] | None = None,
     before_content: dict[str, str] | None = None,
+    skill_tracing_available: bool = True,
 ) -> list[dict]:
     """Run all configured checks and return results."""
     all_results = []
 
     # skill_invoked check
     if "skill_invoked" in checks:
-        expected = checks["skill_invoked"]
-        found = expected in (skills_invoked or [])
-        if found:
-            evidence = f"Correct — {expected} was invoked"
-        elif skills_invoked:
-            evidence = f"Wrong skill routed: expected {expected}, got {', '.join(skills_invoked)}"
+        if not skill_tracing_available:
+            all_results.append({
+                "check": f"skill_invoked: {checks['skill_invoked']}",
+                "passed": True,
+                "evidence": "Skipped — skill tracing not available with Copilot CLI",
+            })
         else:
-            evidence = f"No skills were invoked — expected {expected}"
-        all_results.append({
-            "check": f"skill_invoked: {expected}",
-            "passed": found,
-            "evidence": evidence,
-        })
+            expected = checks["skill_invoked"]
+            found = expected in (skills_invoked or [])
+            if found:
+                evidence = f"Correct — {expected} was invoked"
+            elif skills_invoked:
+                evidence = f"Wrong skill routed: expected {expected}, got {', '.join(skills_invoked)}"
+            else:
+                evidence = f"No skills were invoked — expected {expected}"
+            all_results.append({
+                "check": f"skill_invoked: {expected}",
+                "passed": found,
+                "evidence": evidence,
+            })
 
     # skill_not_invoked check
     if "skill_not_invoked" in checks:
-        for unwanted in checks["skill_not_invoked"]:
-            found = unwanted in (skills_invoked or [])
+        if not skill_tracing_available:
             all_results.append({
-                "check": f"skill_not_invoked: {unwanted}",
-                "passed": not found,
-                "evidence": f"{'Found (FAIL)' if found else 'Not found (OK)'}",
+                "check": "skill_not_invoked",
+                "passed": True,
+                "evidence": "Skipped — skill tracing not available with Copilot CLI",
             })
+        else:
+            for unwanted in checks["skill_not_invoked"]:
+                found = unwanted in (skills_invoked or [])
+                all_results.append({
+                    "check": f"skill_not_invoked: {unwanted}",
+                    "passed": not found,
+                    "evidence": f"{'Found (FAIL)' if found else 'Not found (OK)'}",
+                })
 
     # agent_invoked check
     if "agent_invoked" in checks:
@@ -619,7 +636,7 @@ def run_eval(eval_item: dict, cli: str, verbose: bool, artifacts_dir: Path | Non
         if verbose:
             print(f"Running: {cli} -p ...", file=sys.stderr)
 
-        response_text, exit_code, skills_invoked, agents_invoked = run_cli(cli, prompt, cwd=agent_dir)
+        response_text, exit_code, skills_invoked, agents_invoked, skill_tracing = run_cli(cli, prompt, cwd=agent_dir)
 
         if verbose:
             print(f"Exit code: {exit_code}", file=sys.stderr)
@@ -639,7 +656,7 @@ def run_eval(eval_item: dict, cli: str, verbose: bool, artifacts_dir: Path | Non
             print(f"Changed files: {[str(f.relative_to(agent_dir)) for f in changed_files]}", file=sys.stderr)
 
         # Run checks
-        check_results = run_checks(workspace, changed_files, response_text, exit_code, checks, skills_invoked, agents_invoked, before, before_content)
+        check_results = run_checks(workspace, changed_files, response_text, exit_code, checks, skills_invoked, agents_invoked, before, before_content, skill_tracing)
 
         passed = sum(1 for r in check_results if r["passed"])
         total = len(check_results)
@@ -706,6 +723,10 @@ def main():
     parser.add_argument("--parallel", type=int, default=1, metavar="N",
                         help="Run N evals in parallel (default: 1, recommended: 3)")
     args = parser.parse_args()
+
+    if args.cli == "copilot":
+        print("Warning: Copilot CLI does not support runtime hook injection. "
+              "skill_invoked/skill_not_invoked checks will be skipped.", file=sys.stderr)
 
     evals_data = load_evals(args.skill)
     evals_to_run = evals_data["evals"]
