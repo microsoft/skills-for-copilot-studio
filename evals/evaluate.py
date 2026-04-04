@@ -104,7 +104,9 @@ def run_cli(cli: str, prompt: str, cwd: Path, timeout: int = 600) -> tuple[str, 
     cmd = [cli, "-p", prompt]
 
     # Skill log file — PreToolUse hook writes here, we read after
-    skill_log = Path(tempfile.mktemp(prefix="skill-log-", suffix=".txt"))
+    fd, skill_log_str = tempfile.mkstemp(prefix="skill-log-", suffix=".txt")
+    os.close(fd)
+    skill_log = Path(skill_log_str)
 
     # Grant tool permissions — different flags per CLI
     if cli == "copilot":

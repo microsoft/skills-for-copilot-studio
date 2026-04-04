@@ -75,7 +75,7 @@ function runSkill(name) {
     const outputFile = path.join(runDir, `${name}.json`);
     const evalArgs = [
       path.join(REPO_ROOT, "evals", "evaluate.py"),
-      "--skill", name,
+      "--scenario", name,
       "--cli", cli,
       "--output", outputFile,
       "--parallel", String(parallel),

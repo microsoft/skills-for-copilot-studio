@@ -113,7 +113,7 @@ If the scenario needs a richer agent (e.g., existing topics to modify, knowledge
    {
      "agent_invoked": "copilot-studio:Copilot Studio Author",
      "skill_invoked": "copilot-studio:add-knowledge",
-     "files_created": [{"pattern": "knowledge/*.mcs.yml", "min_count": 1}],
+     "files_created": [{"pattern": "knowledge/*.knowledge.mcs.yml", "min_count": 1}],
      "schema_validate": true,
      "no_placeholders": true
    }
