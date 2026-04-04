@@ -1,0 +1,33 @@
+{
+  "skill_name": "add-action",
+  "evals": [
+    {
+      "id": 1,
+      "name": "MCP action does not modify files",
+      "prompt": "Add an MCP server action for searching Microsoft Learn documentation.",
+      "fixture": "basic-agent",
+      "mock_scripts": [],
+      "checks": {
+        "agent_invoked": "copilot-studio:Copilot Studio Author",
+
+        "files_created": [
+          {"pattern": "**/*.mcs.yml", "min_count": 0, "max_count": 0}
+        ]
+      }
+    },
+    {
+      "id": 2,
+      "name": "Connector action does not modify files",
+      "prompt": "Add a Teams connector action that sends a message to a channel.",
+      "fixture": "basic-agent",
+      "mock_scripts": [],
+      "checks": {
+        "agent_invoked": "copilot-studio:Copilot Studio Author",
+
+        "files_created": [
+          {"pattern": "**/*.mcs.yml", "min_count": 0, "max_count": 0}
+        ]
+      }
+    }
+  ]
+}

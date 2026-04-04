@@ -16,6 +16,7 @@ const fs = require("fs");
 const path = require("path");
 
 const REPO_ROOT = path.resolve(__dirname, "..");
+const EVALS_SCENARIOS_DIR = path.join(REPO_ROOT, "evals", "scenarios");
 const EVALS_SKILLS_DIR = path.join(REPO_ROOT, "evals", "skills");
 const RESULTS_DIR = path.join(REPO_ROOT, "evals", "results");
 
@@ -58,10 +59,15 @@ const timestamp = new Date().toISOString().replace(/[T:]/g, "-").replace(/\..+/,
 const runDir = path.join(RESULTS_DIR, timestamp);
 fs.mkdirSync(runDir, { recursive: true });
 
-// Find skills with evals (from evals/skills/<name>.json)
-const skillNames = fs.readdirSync(EVALS_SKILLS_DIR)
-  .filter((f) => f.endsWith(".json"))
-  .map((f) => f.replace(/\.json$/, ""))
+// Find evals from scenarios/ (preferred) and skills/ (legacy), deduplicating
+const scenarioNames = fs.existsSync(EVALS_SCENARIOS_DIR)
+  ? fs.readdirSync(EVALS_SCENARIOS_DIR).filter((f) => f.endsWith(".json")).map((f) => f.replace(/\.json$/, ""))
+  : [];
+const legacyNames = fs.existsSync(EVALS_SKILLS_DIR)
+  ? fs.readdirSync(EVALS_SKILLS_DIR).filter((f) => f.endsWith(".json")).map((f) => f.replace(/\.json$/, ""))
+  : [];
+// Scenarios take precedence over legacy skills with the same name
+const skillNames = [...new Set([...scenarioNames, ...legacyNames])]
   .filter((name) => !skill || name === skill);
 
 if (skillNames.length === 0) {
@@ -101,14 +107,8 @@ function runSkill(name) {
           const passed = summary.total_checks_passed ?? 0;
           const failed = summary.total_checks_failed ?? 0;
           const total = summary.total_checks ?? 0;
-          const invalidCount = (results.results ?? []).filter(r => r.summary?.status === "invalid").length;
-
-          if (invalidCount > 0) {
-            console.log(`  ${name}: ${passed}/${total} checks passed (${invalidCount} invalid — wrong skill routed)`);
-          } else {
-            console.log(`  ${name}: ${passed}/${total} checks passed`);
-          }
-          resolve({ name, passed, failed, invalidCount });
+          console.log(`  ${name}: ${passed}/${total} checks passed`);
+          resolve({ name, passed, failed });
         } catch {
           console.error(`  Warning: could not read results from ${outputFile}`);
           resolve({ name, error: true });
@@ -136,7 +136,6 @@ async function main() {
 
   let totalPass = 0;
   let totalFail = 0;
-  let totalInvalid = 0;
   let totalErrors = 0;
 
   for (const r of results) {
@@ -145,7 +144,6 @@ async function main() {
     } else {
       totalPass += r.passed ?? 0;
       totalFail += r.failed ?? 0;
-      totalInvalid += r.invalidCount ?? 0;
     }
   }
 
@@ -168,7 +166,6 @@ async function main() {
   console.log(`Total checks: ${totalPass + totalFail}`);
   console.log(`Passed: ${totalPass}`);
   console.log(`Failed: ${totalFail}`);
-  if (totalInvalid > 0) console.log(`Invalid: ${totalInvalid} eval(s) — wrong skill routed`);
   if (totalErrors > 0) console.log(`Errors: ${totalErrors} skill(s) failed to run`);
   console.log(`Duration: ${durationSec}s (${parallel} worker(s))`);
   console.log(`Results: ${runDir}/`);

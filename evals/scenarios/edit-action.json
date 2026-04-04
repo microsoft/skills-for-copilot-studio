@@ -4,10 +4,12 @@
     {
       "id": 1,
       "name": "Change MCP action display name and description",
-      "prompt": "Use the edit-action skill to change the display name of the SearchDocs MCP action to 'Learn Docs Search' and update the description to 'Search Microsoft Learn documentation for product guides and API references'.",
+      "prompt": "Change the display name of the SearchDocs MCP action to 'Learn Docs Search' and update the description to 'Search Microsoft Learn documentation for product guides and API references'.",
       "fixture": "agent-with-mcp-action",
       "mock_scripts": [],
       "checks": {
+        "agent_invoked": "copilot-studio:Copilot Studio Author",
+
         "files_created": [
           {"pattern": "actions/SearchDocs.mcs.yml", "min_count": 1}
         ],
@@ -24,10 +26,12 @@
     {
       "id": 2,
       "name": "Change MCP action connection mode to Maker",
-      "prompt": "Use the edit-action skill to change the connection mode of the SearchDocs MCP action from Invoker to Maker.",
+      "prompt": "Change the connection mode of the SearchDocs MCP action from Invoker to Maker.",
       "fixture": "agent-with-mcp-action",
       "mock_scripts": [],
       "checks": {
+        "agent_invoked": "copilot-studio:Copilot Studio Author",
+
         "files_created": [
           {"pattern": "actions/SearchDocs.mcs.yml", "min_count": 1}
         ],
@@ -43,10 +47,12 @@
     {
       "id": 3,
       "name": "MCP action preserves structure after edit",
-      "prompt": "Use the edit-action skill to update the description of the CustomMCP action to 'Internal tools MCP server for employee self-service'. Make sure to preserve the existing ManualTaskInput for userid.",
+      "prompt": "Update the description of the CustomMCP action to 'Internal tools MCP server for employee self-service'. Make sure to preserve the existing ManualTaskInput for userid.",
       "fixture": "agent-with-mcp-action",
       "mock_scripts": [],
       "checks": {
+        "agent_invoked": "copilot-studio:Copilot Studio Author",
+
         "files_created": [
           {"pattern": "actions/CustomMCP.mcs.yml", "min_count": 1}
         ],
