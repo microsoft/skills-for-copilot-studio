@@ -49,6 +49,7 @@ Modify agent metadata (`agent.mcs.yml`) or configuration (`settings.mcs.yml`).
 | Field | Description | Example |
 |-------|-------------|---------|
 | `GenerativeActionsEnabled` | Enable generative orchestration | `true` / `false` |
+| `SmartTaskCompletionEnabled` | Enable Enhanced Task Completion (experimental as of 2026-04). Requires `GenerativeActionsEnabled: true`. Allows the agent to break down complex tasks, ask clarifying questions, and chain tools step by step. Some features may not be supported when enabled. | `true` / `false` |
 | `authenticationMode` | Auth mode | `Integrated`, `None` |
 | `authenticationTrigger` | When to auth | `Always`, `AsNeeded` |
 | `accessControlPolicy` | Access control | `ChatbotReaders` |
