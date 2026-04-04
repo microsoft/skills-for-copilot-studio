@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
-"""Skill result testing harness for Copilot Studio skills.
+"""Scenario-based eval harness for Copilot Studio skills.
 
-Runs a skill via claude/copilot CLI in non-interactive mode, then validates
-the output (files created, response text) against deterministic checks.
+Runs end-to-end scenarios via claude/copilot CLI in non-interactive mode,
+then validates routing (agents/skills invoked) and output (files, response)
+against deterministic checks. Skills inside sub-agents are traced via a
+PreToolUse hook injected at runtime.
 
 Usage:
-    python evals/evaluate.py --skill new-topic [--eval-id 1] [--cli copilot] [--verbose]
+    python evals/evaluate.py --scenario agent-settings [--eval-id 1] [--cli copilot] [--verbose]
 """
 
 import argparse
