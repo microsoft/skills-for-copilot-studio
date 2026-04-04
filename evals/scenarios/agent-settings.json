@@ -57,6 +57,35 @@
         "content_contains": ["GenerativeActionsEnabled: true"],
         "no_placeholders": true
       }
+    },
+    {
+      "id": 4,
+      "name": "Enable Enhanced Task Completion (generative actions off)",
+      "prompt": "Use the edit-agent skill to enable Enhanced Task Completion on the agent. The setting is SmartTaskCompletionEnabled in settings.mcs.yml under configuration.settings.",
+      "fixture": "basic-agent",
+      "mock_scripts": [],
+      "checks": {
+        "files_created": [
+          {"pattern": "settings.mcs.yml", "min_count": 1}
+        ],
+        "content_contains": ["SmartTaskCompletionEnabled: true"],
+        "no_placeholders": true
+      }
+    },
+    {
+      "id": 5,
+      "name": "Enable Enhanced Task Completion (generative actions already on)",
+      "prompt": "Use the edit-agent skill to enable Enhanced Task Completion on the agent (set SmartTaskCompletionEnabled to true in settings.mcs.yml).",
+      "fixture": "generative-agent",
+      "mock_scripts": [],
+      "checks": {
+        "files_created": [
+          {"pattern": "settings.mcs.yml", "min_count": 1}
+        ],
+        "content_contains": ["SmartTaskCompletionEnabled: true"],
+        "yaml_unchanged": [{"file": "agent.mcs.yml"}],
+        "no_placeholders": true
+      }
     }
   ]
 }

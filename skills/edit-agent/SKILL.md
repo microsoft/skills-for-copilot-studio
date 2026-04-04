@@ -21,7 +21,7 @@ Modify agent metadata (`agent.mcs.yml`) or configuration (`settings.mcs.yml`).
 
 2. **Identify what the user wants to change** and read the appropriate file:
    - **Instructions, display name, conversation starters, AI settings** → `agent.mcs.yml`
-   - **GenerativeActionsEnabled, authentication, recognizer, capabilities** → `settings.mcs.yml`
+   - **GenerativeActionsEnabled, SmartTaskCompletionEnabled, authentication, recognizer, capabilities** → `settings.mcs.yml`
 
 3. **If the user wants to change the AI model**, run the schema lookup tool first:
    ```bash
@@ -49,7 +49,7 @@ Modify agent metadata (`agent.mcs.yml`) or configuration (`settings.mcs.yml`).
 | Field | Description | Example |
 |-------|-------------|---------|
 | `GenerativeActionsEnabled` | Enable generative orchestration | `true` / `false` |
-| `SmartTaskCompletionEnabled` | Enable Enhanced Task Completion (experimental as of 2026-04). Requires `GenerativeActionsEnabled: true`. Allows the agent to break down complex tasks, ask clarifying questions, and chain tools step by step. Some features may not be supported when enabled. | `true` / `false` |
+| `SmartTaskCompletionEnabled` | Enable Enhanced Task Completion (experimental as of 2026-04). **Requires `GenerativeActionsEnabled: true`** — if it is currently `false`, you MUST set it to `true` in the same edit. Both keys live under `configuration.settings`. Allows the agent to break down complex tasks, ask clarifying questions, and chain tools step by step. Some features may not be supported when enabled. | `true` / `false` |
 | `authenticationMode` | Auth mode | `Integrated`, `None` |
 | `authenticationTrigger` | When to auth | `Always`, `AsNeeded` |
 | `accessControlPolicy` | Access control | `ChatbotReaders` |
@@ -68,6 +68,18 @@ For detailed guidance on writing knowledge-aware instructions, grounding directi
 - `language` — Changing this can corrupt the agent.
 
 If the user asks to change any of these, warn them.
+
+## Example: Enable Enhanced Task Completion
+
+Both `SmartTaskCompletionEnabled` and `GenerativeActionsEnabled` live in `settings.mcs.yml` under `configuration.settings` — NOT in `agent.mcs.yml`:
+
+```yaml
+# settings.mcs.yml
+configuration:
+  settings:
+    GenerativeActionsEnabled: true
+    SmartTaskCompletionEnabled: true
+```
 
 ## Example: Update Instructions
 
