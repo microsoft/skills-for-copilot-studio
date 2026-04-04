@@ -1,13 +1,15 @@
 {
-  "skill_name": "add-knowledge",
+  "scenario_name": "knowledge-sources",
   "evals": [
     {
       "id": 1,
       "name": "Public website knowledge source",
-      "prompt": "Use the add-knowledge skill to add https://docs.contoso.com/products as a knowledge source for the agent.",
+      "prompt": "Add https://docs.contoso.com/products as a knowledge source for the agent.",
       "fixture": "basic-agent",
       "mock_scripts": [],
       "checks": {
+        "agent_invoked": "copilot-studio:Copilot Studio Author",
+        "skill_invoked": "copilot-studio:add-knowledge",
         "files_created": [
           {"pattern": "knowledge/*.knowledge.mcs.yml", "min_count": 1}
         ],
@@ -23,10 +25,12 @@
     {
       "id": 2,
       "name": "SharePoint knowledge source",
-      "prompt": "Use the add-knowledge skill to add the SharePoint folder https://contoso.sharepoint.com/sites/HRTeam/Shared%20Documents/Policies as a knowledge source for the agent.",
+      "prompt": "Add the SharePoint folder https://contoso.sharepoint.com/sites/HRTeam/Shared%20Documents/Policies as a knowledge source for the agent.",
       "fixture": "basic-agent",
       "mock_scripts": [],
       "checks": {
+        "agent_invoked": "copilot-studio:Copilot Studio Author",
+        "skill_invoked": "copilot-studio:add-knowledge",
         "files_created": [
           {"pattern": "knowledge/*.knowledge.mcs.yml", "min_count": 1}
         ],
@@ -42,10 +46,12 @@
     {
       "id": 3,
       "name": "Public website with custom name and description",
-      "prompt": "Use the add-knowledge skill to add https://learn.microsoft.com/copilot-studio as a knowledge source. Name it 'Copilot Studio Docs' and describe it as 'Official Microsoft documentation for Copilot Studio'.",
+      "prompt": "Add https://learn.microsoft.com/copilot-studio as a knowledge source. Name it 'Copilot Studio Docs' and describe it as 'Official Microsoft documentation for Copilot Studio'.",
       "fixture": "basic-agent",
       "mock_scripts": [],
       "checks": {
+        "agent_invoked": "copilot-studio:Copilot Studio Author",
+        "skill_invoked": "copilot-studio:add-knowledge",
         "files_created": [
           {"pattern": "knowledge/*.knowledge.mcs.yml", "min_count": 1}
         ],

@@ -1,14 +1,14 @@
 #!/usr/bin/env node
 /**
- * Run skill evals for all skills or a specific skill.
+ * Run scenario-based evals for Copilot Studio skills.
  * Cross-platform (Node.js) — works on macOS, Windows, and Linux.
  *
  * Usage:
- *   node evals/run.js                          # All skills
- *   node evals/run.js --skill new-topic        # Single skill
- *   node evals/run.js --cli copilot            # Use Copilot CLI
- *   node evals/run.js --verbose                # Verbose output
- *   node evals/run.js --parallel 5             # Run 5 evals concurrently (default: 3)
+ *   node evals/run.js                              # All scenarios
+ *   node evals/run.js --scenario edit-agent         # Single scenario
+ *   node evals/run.js --cli copilot                 # Use Copilot CLI
+ *   node evals/run.js --verbose                     # Verbose output
+ *   node evals/run.js --parallel 5                  # Run 5 evals concurrently (default: 3)
  */
 
 const { spawn, execFileSync } = require("child_process");
@@ -16,7 +16,7 @@ const fs = require("fs");
 const path = require("path");
 
 const REPO_ROOT = path.resolve(__dirname, "..");
-const EVALS_SKILLS_DIR = path.join(REPO_ROOT, "evals", "skills");
+const EVALS_SCENARIOS_DIR = path.join(REPO_ROOT, "evals", "scenarios");
 const RESULTS_DIR = path.join(REPO_ROOT, "evals", "results");
 
 // Resolve Python 3 binary — cross-platform (Windows has python/py, not python3)
@@ -41,14 +41,14 @@ const pythonArgs = pythonBin === "py" ? ["-3"] : [];
 
 // Parse args
 let cli = "claude";
-let skill = "";
+let scenario = "";
 let verbose = false;
 let parallel = 3;
 
 const args = process.argv.slice(2);
 for (let i = 0; i < args.length; i++) {
   if (args[i] === "--cli" && args[i + 1]) cli = args[++i];
-  else if (args[i] === "--skill" && args[i + 1]) skill = args[++i];
+  else if (args[i] === "--scenario" && args[i + 1]) scenario = args[++i];
   else if (args[i] === "--parallel" && args[i + 1]) parallel = parseInt(args[++i], 10) || 3;
   else if (args[i] === "--verbose") verbose = true;
 }
@@ -58,14 +58,14 @@ const timestamp = new Date().toISOString().replace(/[T:]/g, "-").replace(/\..+/,
 const runDir = path.join(RESULTS_DIR, timestamp);
 fs.mkdirSync(runDir, { recursive: true });
 
-// Find skills with evals (from evals/skills/<name>.json)
-const skillNames = fs.readdirSync(EVALS_SKILLS_DIR)
-  .filter((f) => f.endsWith(".json"))
-  .map((f) => f.replace(/\.json$/, ""))
-  .filter((name) => !skill || name === skill);
+// Find scenario eval definitions
+const scenarioNames = fs.existsSync(EVALS_SCENARIOS_DIR)
+  ? fs.readdirSync(EVALS_SCENARIOS_DIR).filter((f) => f.endsWith(".json")).map((f) => f.replace(/\.json$/, ""))
+  : [];
+const names = scenarioNames.filter((name) => !scenario || name === scenario);
 
-if (skillNames.length === 0) {
-  console.error(skill ? `No evals found for skill '${skill}'` : "No eval files found in evals/skills/");
+if (names.length === 0) {
+  console.error(scenario ? `No evals found for scenario '${scenario}'` : "No eval files found in evals/scenarios/");
   process.exit(1);
 }
 
@@ -75,7 +75,7 @@ function runSkill(name) {
     const outputFile = path.join(runDir, `${name}.json`);
     const evalArgs = [
       path.join(REPO_ROOT, "evals", "evaluate.py"),
-      "--skill", name,
+      "--scenario", name,
       "--cli", cli,
       "--output", outputFile,
       "--parallel", String(parallel),
@@ -101,14 +101,8 @@ function runSkill(name) {
           const passed = summary.total_checks_passed ?? 0;
           const failed = summary.total_checks_failed ?? 0;
           const total = summary.total_checks ?? 0;
-          const invalidCount = (results.results ?? []).filter(r => r.summary?.status === "invalid").length;
-
-          if (invalidCount > 0) {
-            console.log(`  ${name}: ${passed}/${total} checks passed (${invalidCount} invalid — wrong skill routed)`);
-          } else {
-            console.log(`  ${name}: ${passed}/${total} checks passed`);
-          }
-          resolve({ name, passed, failed, invalidCount });
+          console.log(`  ${name}: ${passed}/${total} checks passed`);
+          resolve({ name, passed, failed });
         } catch {
           console.error(`  Warning: could not read results from ${outputFile}`);
           resolve({ name, error: true });
@@ -128,15 +122,14 @@ function runSkill(name) {
 // Main async runner
 async function main() {
   const startTime = Date.now();
-  console.log(`Running evals for ${skillNames.length} skill(s) with ${parallel} worker(s)...\n`);
+  console.log(`Running evals for ${names.length} scenario(s) with ${parallel} worker(s)...\n`);
 
   // Run all skills in parallel
-  const promises = skillNames.map((name) => runSkill(name));
+  const promises = names.map((name) => runSkill(name));
   const results = await Promise.all(promises);
 
   let totalPass = 0;
   let totalFail = 0;
-  let totalInvalid = 0;
   let totalErrors = 0;
 
   for (const r of results) {
@@ -145,7 +138,6 @@ async function main() {
     } else {
       totalPass += r.passed ?? 0;
       totalFail += r.failed ?? 0;
-      totalInvalid += r.invalidCount ?? 0;
     }
   }
 
@@ -164,11 +156,10 @@ async function main() {
 
   console.log("");
   console.log("=== Summary ===");
-  console.log(`Skills tested: ${skillNames.length}`);
+  console.log(`Scenarios tested: ${names.length}`);
   console.log(`Total checks: ${totalPass + totalFail}`);
   console.log(`Passed: ${totalPass}`);
   console.log(`Failed: ${totalFail}`);
-  if (totalInvalid > 0) console.log(`Invalid: ${totalInvalid} eval(s) — wrong skill routed`);
   if (totalErrors > 0) console.log(`Errors: ${totalErrors} skill(s) failed to run`);
   console.log(`Duration: ${durationSec}s (${parallel} worker(s))`);
   console.log(`Results: ${runDir}/`);
