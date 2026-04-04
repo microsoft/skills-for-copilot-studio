@@ -89,13 +89,20 @@ def setup_mocks(workspace: Path, mock_scripts: list[str]) -> None:
         shutil.copy2(mock_src, mock_dst)
 
 
+HOOK_SCRIPT = REPO_ROOT / "evals" / "hooks" / "log-skill-use.js"
+
+
 def run_cli(cli: str, prompt: str, cwd: Path, timeout: int = 600) -> tuple[str, int, list[str], list[str]]:
     """Run claude/copilot in non-interactive mode and return (response_text, exit_code, skills_invoked, agents_invoked).
 
     Supports both Claude Code and GitHub Copilot CLI JSON output formats.
     Uses stream-json with verbose for Claude Code to capture skill/agent invocations.
+    Skills invoked inside sub-agents are captured via a PreToolUse hook.
     """
     cmd = [cli, "-p", prompt]
+
+    # Skill log file — PreToolUse hook writes here, we read after
+    skill_log = Path(tempfile.mktemp(prefix="skill-log-", suffix=".txt"))
 
     # Grant tool permissions — different flags per CLI
     if cli == "copilot":
@@ -106,9 +113,25 @@ def run_cli(cli: str, prompt: str, cwd: Path, timeout: int = 600) -> tuple[str, 
     else:
         cmd.extend(["--output-format", "stream-json", "--verbose"])
         cmd.extend(["--allowedTools", "Bash(node *) Read Write Glob Edit"])
+        # Inject PreToolUse hook to trace skill invocations inside sub-agents
+        # Use forward slashes for cross-platform compatibility in node command
+        hook_path = str(HOOK_SCRIPT).replace("\\", "/")
+        hook_settings = json.dumps({
+            "hooks": {
+                "PreToolUse": [{
+                    "matcher": "Skill",
+                    "hooks": [{
+                        "type": "command",
+                        "command": f"node \"{hook_path}\""
+                    }]
+                }]
+            }
+        })
+        cmd.extend(["--settings", hook_settings])
 
     # Remove CLAUDECODE env var to allow nesting (same as skill-creator)
     env = {k: v for k, v in os.environ.items() if k != "CLAUDECODE"}
+    env["EVAL_SKILL_LOG"] = str(skill_log)
 
     try:
         result = subprocess.run(
@@ -120,12 +143,18 @@ def run_cli(cli: str, prompt: str, cwd: Path, timeout: int = 600) -> tuple[str, 
             timeout=timeout,
         )
     except subprocess.TimeoutExpired:
+        skill_log.unlink(missing_ok=True)
         return "[TIMEOUT]", 1, [], []
 
     response_text = ""
     exit_code = result.returncode
     skills_invoked = []
     agents_invoked = []
+
+    # Read skill log from hook (captures skills invoked at all levels, including sub-agents)
+    if skill_log.exists():
+        skills_invoked = [line.strip() for line in skill_log.read_text().splitlines() if line.strip()]
+        skill_log.unlink(missing_ok=True)
 
     # Parse JSON lines from stdout
     for line in result.stdout.strip().split("\n"):
@@ -143,18 +172,14 @@ def run_cli(cli: str, prompt: str, cwd: Path, timeout: int = 600) -> tuple[str, 
         if event_type == "result" and "result" in event:
             response_text = event["result"]
 
-        # Claude Code stream-json: assistant messages with tool_use for skills/agents
+        # Claude Code stream-json: assistant messages with tool_use for agents
         elif event_type == "assistant":
             message = event.get("message", {})
             for content in message.get("content", []):
                 if content.get("type") == "tool_use":
                     tool_name = content.get("name", "")
                     tool_input = content.get("input", {})
-                    if tool_name == "Skill":
-                        skill_name = tool_input.get("skill", "")
-                        if skill_name:
-                            skills_invoked.append(skill_name)
-                    elif tool_name == "Agent":
+                    if tool_name == "Agent":
                         agent_type = tool_input.get("subagent_type", "")
                         if agent_type:
                             agents_invoked.append(agent_type)

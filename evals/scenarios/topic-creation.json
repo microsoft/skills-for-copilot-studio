@@ -9,7 +9,7 @@
       "mock_scripts": [],
       "checks": {
         "agent_invoked": "copilot-studio:Copilot Studio Author",
-
+        "skill_invoked": "copilot-studio:new-topic",
         "files_created": [
           {"pattern": "topics/*.topic.mcs.yml", "min_count": 1}
         ],
@@ -31,7 +31,7 @@
       "mock_scripts": [],
       "checks": {
         "agent_invoked": "copilot-studio:Copilot Studio Author",
-
+        "skill_invoked": "copilot-studio:new-topic",
         "files_created": [
           {"pattern": "topics/*.topic.mcs.yml", "min_count": 1}
         ],
@@ -52,7 +52,7 @@
       "mock_scripts": [],
       "checks": {
         "agent_invoked": "copilot-studio:Copilot Studio Author",
-
+        "skill_invoked": "copilot-studio:new-topic",
         "files_created": [
           {"pattern": "topics/*.topic.mcs.yml", "min_count": 1}
         ],

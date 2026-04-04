@@ -9,7 +9,7 @@
       "mock_scripts": [],
       "checks": {
         "agent_invoked": "copilot-studio:Copilot Studio Author",
-
+        "skill_invoked": "copilot-studio:add-knowledge",
         "files_created": [
           {"pattern": "knowledge/*.knowledge.mcs.yml", "min_count": 1}
         ],
@@ -30,7 +30,7 @@
       "mock_scripts": [],
       "checks": {
         "agent_invoked": "copilot-studio:Copilot Studio Author",
-
+        "skill_invoked": "copilot-studio:add-knowledge",
         "files_created": [
           {"pattern": "knowledge/*.knowledge.mcs.yml", "min_count": 1}
         ],
@@ -51,7 +51,7 @@
       "mock_scripts": [],
       "checks": {
         "agent_invoked": "copilot-studio:Copilot Studio Author",
-
+        "skill_invoked": "copilot-studio:add-knowledge",
         "files_created": [
           {"pattern": "knowledge/*.knowledge.mcs.yml", "min_count": 1}
         ],

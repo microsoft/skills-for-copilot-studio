@@ -9,7 +9,7 @@
       "mock_scripts": [],
       "checks": {
         "agent_invoked": "copilot-studio:Copilot Studio Author",
-
+        "skill_invoked": "copilot-studio:edit-agent",
         "files_created": [
           {"pattern": "agent.mcs.yml", "min_count": 1}
         ],
@@ -29,7 +29,7 @@
       "mock_scripts": [],
       "checks": {
         "agent_invoked": "copilot-studio:Copilot Studio Author",
-
+        "skill_invoked": "copilot-studio:edit-agent",
         "files_created": [
           {"pattern": "agent.mcs.yml", "min_count": 1}
         ],
@@ -50,7 +50,7 @@
       "mock_scripts": [],
       "checks": {
         "agent_invoked": "copilot-studio:Copilot Studio Author",
-
+        "skill_invoked": "copilot-studio:edit-agent",
         "files_created": [
           {"pattern": "settings.mcs.yml", "min_count": 1}
         ],
