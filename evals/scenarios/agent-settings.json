@@ -1,13 +1,15 @@
 {
-  "skill_name": "edit-agent",
+  "scenario_name": "agent-settings",
   "evals": [
     {
       "id": 1,
       "name": "Change agent instructions",
-      "prompt": "Use the edit-agent skill to change the agent's instructions to: 'You are a customer support agent for Contoso Electronics. Be friendly, concise, and always offer to escalate to a human agent if the customer is frustrated.'",
+      "prompt": "Change the agent's instructions to: 'You are a customer support agent for Contoso Electronics. Be friendly, concise, and always offer to escalate to a human agent if the customer is frustrated.'",
       "fixture": "basic-agent",
       "mock_scripts": [],
       "checks": {
+        "agent_invoked": "copilot-studio:Copilot Studio Author",
+        "skill_invoked": "copilot-studio:edit-agent",
         "files_created": [
           {"pattern": "agent.mcs.yml", "min_count": 1}
         ],
@@ -22,10 +24,12 @@
     {
       "id": 2,
       "name": "Update display name and conversation starters",
-      "prompt": "Use the edit-agent skill to change the agent's display name to 'Contoso Support Bot' and update the conversation starters to: 'Track my order', 'Return a product', and 'Speak to an agent'.",
+      "prompt": "Change the agent's display name to 'Contoso Support Bot' and update the conversation starters to: 'Track my order', 'Return a product', and 'Speak to an agent'.",
       "fixture": "basic-agent",
       "mock_scripts": [],
       "checks": {
+        "agent_invoked": "copilot-studio:Copilot Studio Author",
+        "skill_invoked": "copilot-studio:edit-agent",
         "files_created": [
           {"pattern": "agent.mcs.yml", "min_count": 1}
         ],
@@ -40,11 +44,13 @@
     },
     {
       "id": 3,
-      "name": "Enable generative actions in settings",
-      "prompt": "Use the edit-agent skill to enable generative actions on the agent (set GenerativeActionsEnabled to true in settings.mcs.yml).",
+      "name": "Enable generative orchestration",
+      "prompt": "Enable generative orchestration on the agent.",
       "fixture": "basic-agent",
       "mock_scripts": [],
       "checks": {
+        "agent_invoked": "copilot-studio:Copilot Studio Author",
+        "skill_invoked": "copilot-studio:edit-agent",
         "files_created": [
           {"pattern": "settings.mcs.yml", "min_count": 1}
         ],

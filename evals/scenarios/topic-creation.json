@@ -1,13 +1,15 @@
 {
-  "skill_name": "new-topic",
+  "scenario_name": "topic-creation",
   "evals": [
     {
       "id": 1,
       "name": "IT support topic with OnRecognizedIntent trigger",
-      "prompt": "Use the new-topic skill to create a Copilot Studio topic for handling IT support requests. The topic should ask what device the user is having trouble with (laptop, phone, or tablet), then ask them to describe the issue, then send a confirmation message saying their request has been logged.",
+      "prompt": "Create a topic for handling IT support requests. The topic should ask what device the user is having trouble with (laptop, phone, or tablet), then ask them to describe the issue, then send a confirmation message saying their request has been logged.",
       "fixture": "basic-agent",
       "mock_scripts": [],
       "checks": {
+        "agent_invoked": "copilot-studio:Copilot Studio Author",
+        "skill_invoked": "copilot-studio:new-topic",
         "files_created": [
           {"pattern": "topics/*.topic.mcs.yml", "min_count": 1}
         ],
@@ -24,10 +26,12 @@
     {
       "id": 2,
       "name": "Welcome topic with OnConversationStart trigger",
-      "prompt": "Use the new-topic skill to create a Copilot Studio welcome topic called 'WelcomeNewUser' that fires on conversation start. It should greet the user with 3 different message variations and mention the company name 'Contoso'.",
+      "prompt": "Create a welcome topic called 'WelcomeNewUser' that fires on conversation start. It should greet the user with 3 different message variations and mention the company name 'Contoso'.",
       "fixture": "basic-agent",
       "mock_scripts": [],
       "checks": {
+        "agent_invoked": "copilot-studio:Copilot Studio Author",
+        "skill_invoked": "copilot-studio:new-topic",
         "files_created": [
           {"pattern": "topics/*.topic.mcs.yml", "min_count": 1}
         ],
@@ -43,10 +47,12 @@
     {
       "id": 3,
       "name": "Fallback topic with OnUnknownIntent trigger",
-      "prompt": "Use the new-topic skill to create a Copilot Studio fallback topic that handles unknown user input. It should apologize, suggest some topics the user can ask about (order status, refunds, and shipping), and offer to escalate to a human agent.",
+      "prompt": "Create a fallback topic that handles unknown user input. It should apologize, suggest some topics the user can ask about (order status, refunds, and shipping), and offer to escalate to a human agent.",
       "fixture": "basic-agent",
       "mock_scripts": [],
       "checks": {
+        "agent_invoked": "copilot-studio:Copilot Studio Author",
+        "skill_invoked": "copilot-studio:new-topic",
         "files_created": [
           {"pattern": "topics/*.topic.mcs.yml", "min_count": 1}
         ],
@@ -62,11 +68,11 @@
     {
       "id": 4,
       "name": "Refuse topic creation in empty workspace (no agent)",
-      "prompt": "Use the new-topic skill to create a Copilot Studio topic for handling password reset requests.",
+      "prompt": "Create a topic for handling password reset requests.",
       "fixture": "empty-workspace",
       "mock_scripts": [],
       "checks": {
-        "stdout_contains": ["No Copilot Studio agent found", "clone"],
+        "stdout_contains": ["clone"],
         "stdout_not_contains": ["kind: AdaptiveDialog"]
       }
     }
