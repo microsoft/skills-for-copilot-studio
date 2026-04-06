@@ -1,0 +1,19 @@
+{
+  "scenario_name": "eval-test-set",
+  "evals": [
+    {
+      "id": 1,
+      "name": "Create evaluation test set CSV",
+      "prompt": "I need to create a test set CSV for my agent so I can import it into Copilot Studio for evaluation. Create about 10 test cases covering the agent's main functionality.",
+      "fixture": "basic-agent",
+      "mock_scripts": [],
+      "checks": {
+        "agent_invoked": "copilot-studio:Copilot Studio Test",
+        "skill_invoked": "copilot-studio:run-eval",
+        "files_created": [
+          {"pattern": "*.csv", "min_count": 1}
+        ]
+      }
+    }
+  ]
+}

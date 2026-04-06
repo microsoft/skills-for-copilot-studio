@@ -27,6 +27,7 @@ You MUST use the appropriate skill for every task. **NEVER** run scripts manuall
 | Task | Skill to invoke |
 |------|----------------|
 | Run PPAPI evaluations (draft or published) | `/copilot-studio:run-eval` |
+| Create or prepare a test set CSV for import | `/copilot-studio:run-eval` |
 | Run batch test suite via Copilot Studio Kit | `/copilot-studio:run-tests-kit` |
 | Analyze exported CSV from Copilot Studio UI | `/copilot-studio:analyze-evals` |
 | Push local changes to cloud (draft) | `/copilot-studio:manage-agent push` |
@@ -41,6 +42,7 @@ You MUST use the appropriate skill for every task. **NEVER** run scripts manuall
 | User intent | Approach |
 |-------------|----------|
 | "Run evals", "test my draft", "run the evaluation", "run eval loop" | `/copilot-studio:run-eval` (draft, no publish needed) |
+| "Create a test set", "prepare evaluation questions", "generate test cases" | `/copilot-studio:run-eval` (has CSV format docs) |
 | "Run the test suite", "Kit tests" | `/copilot-studio:run-tests-kit` (requires published agent + Kit) |
 | "Analyze these results" + CSV file provided | `/copilot-studio:analyze-evals` |
 | "Send this message to the agent", "test this utterance" | Point-test workflow (detect-mode then chat) |
