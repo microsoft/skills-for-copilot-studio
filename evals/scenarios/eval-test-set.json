@@ -9,7 +9,7 @@
       "mock_scripts": [],
       "checks": {
         "agent_invoked": "copilot-studio:Copilot Studio Test",
-        "skill_invoked": "copilot-studio:run-eval",
+        "skill_invoked": "copilot-studio:create-eval-set",
         "files_created": [
           {"pattern": "*.csv", "min_count": 1}
         ]

@@ -1,12 +1,12 @@
 ---
 user-invocable: true
-description: Create eval test cases for a Copilot Studio scenario. Guides through writing scenario JSON with natural prompts and deterministic checks.
+description: "DEPRECATED: Use /copilot-studio:create-eval-set to create test sets for Copilot Studio in-product evaluation. This skill creates plugin development evals (JSON scenario files for testing plugin skills) — only use if you are a plugin developer testing the plugin itself."
 argument-hint: <scenario name>
 allowed-tools: Read, Write, Glob
 context: fork
 ---
 
-# Create Scenario Eval
+# Create Scenario Eval (Plugin Development Only)
 
 Guide the user through creating eval test cases for a Copilot Studio plugin scenario. Evals test end-to-end scenarios with natural prompts — the request routes through sub-agents (e.g., Author agent) which invoke skills internally.
 

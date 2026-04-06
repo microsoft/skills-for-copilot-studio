@@ -27,7 +27,7 @@ You MUST use the appropriate skill for every task. **NEVER** run scripts manuall
 | Task | Skill to invoke |
 |------|----------------|
 | Run PPAPI evaluations (draft or published) | `/copilot-studio:run-eval` |
-| Create or prepare a test set CSV for import | `/copilot-studio:run-eval` |
+| Create a test set CSV for Copilot Studio evaluation | `/copilot-studio:create-eval-set` |
 | Run batch test suite via Copilot Studio Kit | `/copilot-studio:run-tests-kit` |
 | Analyze exported CSV from Copilot Studio UI | `/copilot-studio:analyze-evals` |
 | Push local changes to cloud (draft) | `/copilot-studio:manage-agent push` |
@@ -42,7 +42,7 @@ You MUST use the appropriate skill for every task. **NEVER** run scripts manuall
 | User intent | Approach |
 |-------------|----------|
 | "Run evals", "test my draft", "run the evaluation", "run eval loop" | `/copilot-studio:run-eval` (draft, no publish needed) |
-| "Create a test set", "prepare evaluation questions", "generate test cases" | `/copilot-studio:run-eval` (has CSV format docs) |
+| "Create a test set", "prepare evaluation questions", "generate test cases" | `/copilot-studio:create-eval-set` (creates CSV for Copilot Studio Evaluate tab) |
 | "Run the test suite", "Kit tests" | `/copilot-studio:run-tests-kit` (requires published agent + Kit) |
 | "Analyze these results" + CSV file provided | `/copilot-studio:analyze-evals` |
 | "Send this message to the agent", "test this utterance" | Point-test workflow (detect-mode then chat) |
@@ -52,11 +52,15 @@ If ambiguous, ask the user whether they want PPAPI evaluations, Kit tests, or a 
 
 **NEVER invoke the deprecated `/copilot-studio:run-tests` skill.** Use the specific skills above instead.
 
-### IMPORTANT: `/copilot-studio:run-eval` vs `/copilot-studio:create-eval`
+### IMPORTANT: Skill disambiguation for evaluation tasks
 
-These are DIFFERENT skills for DIFFERENT purposes:
-- **`run-eval`** — Copilot Studio **in-product** evaluations. Creates test set CSVs for import into the Evaluate tab, runs evaluations via the PPAPI, analyzes results. Use when the user mentions "Copilot Studio evaluation", "Evaluate tab", "test set CSV", "in-product testing", or "import test cases".
-- **`create-eval`** — Local **plugin development** evals. Creates JSON scenario files for testing this plugin's own skills. Use ONLY when the user is developing/testing the plugin itself (e.g., "create an eval for the new-topic skill").
+| Skill | Purpose | When to use |
+|-------|---------|-------------|
+| **`create-eval-set`** | Create test set CSV for Copilot Studio **in-product** Evaluate tab | "Create a test set", "prepare evaluation questions", "generate test cases for my agent" |
+| **`run-eval`** | Run evaluations via the PPAPI, poll for results, analyze failures | "Run evals", "start evaluation run", "check eval results" |
+| **`create-eval`** | DEPRECATED — plugin development only. Creates JSON scenario files for testing plugin skills. | Only if user explicitly asks to create a plugin eval scenario |
+
+**NEVER use `create-eval` for Copilot Studio in-product evaluation tasks.** Use `create-eval-set` instead.
 
 ## Draft Testing vs Published Testing
 
