@@ -33,6 +33,190 @@ var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__ge
 ));
 var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
+// src/shared-utils.js
+var require_shared_utils = __commonJS({
+  "src/shared-utils.js"(exports2, module2) {
+    var readline = require("readline");
+    function log2(msg) {
+      process.stderr.write(msg + "\n");
+    }
+    function die2(msg) {
+      process.stdout.write(JSON.stringify({ status: "error", error: msg }) + "\n");
+      process.exit(1);
+    }
+    var sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+    async function httpGet(url, headers) {
+      const res = await fetch(url, { headers });
+      if (!res.ok) {
+        const body = await res.text().catch(() => "");
+        die2(`HTTP ${res.status} from GET ${url}: ${body.slice(0, 200)}`);
+      }
+      return res.json();
+    }
+    async function httpPost(url, headers, body) {
+      const res = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...headers },
+        body: JSON.stringify(body)
+      });
+      if (!res.ok) {
+        const text = await res.text().catch(() => "");
+        die2(`HTTP ${res.status} from POST ${url}: ${text.slice(0, 200)}`);
+      }
+      return res.json();
+    }
+    async function fetchToken(tokenEndpointUrl) {
+      log2("Fetching DirectLine token from token endpoint...");
+      const data = await httpGet(tokenEndpointUrl, {});
+      if (!data.token) die2("Token endpoint did not return a token.");
+      return data.token;
+    }
+    async function getRegionalDomain(tokenEndpointUrl) {
+      try {
+        const parsed = new URL(tokenEndpointUrl);
+        const settingsUrl = parsed.origin + "/powervirtualagents/regionalchannelsettings?api-version=2022-03-01-preview";
+        log2("Fetching regional DirectLine domain...");
+        const data = await httpGet(settingsUrl, {});
+        const domain = data.channelUrlsById?.directline?.replace(/\/+$/, "");
+        if (domain) {
+          log2(`Regional domain: ${domain}`);
+          return domain;
+        }
+      } catch (e) {
+        log2(`Warning: Could not fetch regional domain (${e.message}). Using default.`);
+      }
+      return "https://directline.botframework.com";
+    }
+    async function startConversation(domain, token) {
+      log2("Starting DirectLine conversation...");
+      const data = await httpPost(
+        `${domain}/v3/directline/conversations`,
+        { Authorization: `Bearer ${token}` },
+        {}
+      );
+      if (!data.conversationId) die2("startConversation did not return a conversationId.");
+      return { conversationId: data.conversationId, token: data.token || token };
+    }
+    async function sendActivity(domain, conversationId, token, activity) {
+      return httpPost(
+        `${domain}/v3/directline/conversations/${conversationId}/activities`,
+        { Authorization: `Bearer ${token}` },
+        activity
+      );
+    }
+    async function pollActivities(domain, conversationId, token, watermark) {
+      let url = `${domain}/v3/directline/conversations/${conversationId}/activities`;
+      if (watermark !== void 0) {
+        url += `?watermark=${watermark}`;
+      }
+      const data = await httpGet(url, { Authorization: `Bearer ${token}` });
+      return {
+        activities: data.activities || [],
+        watermark: data.watermark
+      };
+    }
+    function findSignInCard(activities) {
+      for (const activity of activities) {
+        if (activity.type !== "message" || !activity.attachments) continue;
+        for (const att of activity.attachments) {
+          if (att.contentType === "application/vnd.microsoft.card.signin" || att.contentType === "application/vnd.microsoft.card.oauth") {
+            const url = att.content?.buttons?.[0]?.value || att.content?.tokenExchangeResource?.uri || null;
+            if (url) return { signinUrl: url };
+          }
+        }
+      }
+      return null;
+    }
+    async function promptForAuthCode(signinUrl) {
+      log2("");
+      log2("Sign-in required.");
+      log2(`Open this URL in your browser:
+  ${signinUrl}`);
+      log2("After signing in, enter the validation code below.");
+      log2("");
+      const rl = readline.createInterface({
+        input: process.stdin,
+        output: process.stderr
+      });
+      const code = await new Promise((resolve) => {
+        rl.question("Validation code: ", (answer) => {
+          resolve(answer.trim());
+        });
+      });
+      rl.close();
+      if (!code) die2("No validation code received on stdin.");
+      return code;
+    }
+    async function runPollLoop(domain, conversationId, token, opts) {
+      const timeoutMs = opts && opts.timeoutMs || 3e4;
+      const intervalMs = opts && opts.intervalMs || 1e3;
+      let watermark = opts && opts.watermark;
+      let lastActivityTime = Date.now();
+      let authHandled = false;
+      const allBotActivities = [];
+      while (true) {
+        if (Date.now() - lastActivityTime > timeoutMs) {
+          log2("Poll timeout \u2014 no more bot activities.");
+          break;
+        }
+        const result = await pollActivities(domain, conversationId, token, watermark);
+        watermark = result.watermark;
+        const botActivities = result.activities.filter(
+          (a) => a.from && a.from.role !== "user"
+        );
+        for (const activity of botActivities) {
+          lastActivityTime = Date.now();
+          if (activity.type === "endOfConversation") {
+            allBotActivities.push(activity);
+            return { activities: allBotActivities, watermark };
+          }
+          if (!authHandled) {
+            const card = findSignInCard([activity]);
+            if (card) {
+              authHandled = true;
+              if (process.stdin.isTTY) {
+                const code = await promptForAuthCode(card.signinUrl);
+                await sendActivity(domain, conversationId, token, {
+                  type: "message",
+                  from: { id: "user1", role: "user" },
+                  text: code
+                });
+                log2("Validation code sent. Waiting for authenticated response...");
+                lastActivityTime = Date.now();
+                continue;
+              } else {
+                allBotActivities.push(activity);
+                return {
+                  activities: allBotActivities,
+                  watermark,
+                  signin: { url: card.signinUrl }
+                };
+              }
+            }
+          }
+          allBotActivities.push(activity);
+        }
+        await sleep(intervalMs);
+      }
+      return { activities: allBotActivities, watermark };
+    }
+    module2.exports = {
+      log: log2,
+      die: die2,
+      sleep,
+      httpGet,
+      httpPost,
+      fetchToken,
+      getRegionalDomain,
+      startConversation,
+      sendActivity,
+      pollActivities,
+      findSignInCard,
+      runPollLoop
+    };
+  }
+});
+
 // src/msal-cache.js
 var require_msal_cache = __commonJS({
   "src/msal-cache.js"(exports2, module2) {
@@ -41,7 +225,7 @@ var require_msal_cache = __commonJS({
     var os3 = require("os");
     var CACHE_DIR = path3.join(os3.homedir(), ".copilot-studio-cli");
     var SERVICE_NAME = "copilot-studio-cli";
-    async function createCachePlugin2(accountName) {
+    async function createCachePlugin(accountName) {
       const cachePath = path3.join(CACHE_DIR, `${accountName}.cache.json`);
       const persistence = await PersistenceCreator.createPersistence({
         cachePath,
@@ -52,7 +236,7 @@ var require_msal_cache = __commonJS({
       });
       return new PersistenceCachePlugin(persistence);
     }
-    module2.exports = { createCachePlugin: createCachePlugin2 };
+    module2.exports = { createCachePlugin };
   }
 });
 
@@ -14535,22 +14719,185 @@ var init_open = __esm({
   }
 });
 
+// src/shared-auth.js
+var require_shared_auth = __commonJS({
+  "src/shared-auth.js"(exports2, module2) {
+    var { log: log2 } = require_shared_utils();
+    var { createCachePlugin } = require_msal_cache();
+    var VSCODE_CLIENT_ID2 = "51f81489-12ee-4a9e-aaae-a2591f45987d";
+    var ISLAND_RESOURCE_IDS = {
+      0: "a522f059-bb65-47c0-8934-7db6e5286414",
+      1: "a522f059-bb65-47c0-8934-7db6e5286414",
+      2: "a522f059-bb65-47c0-8934-7db6e5286414",
+      3: "a522f059-bb65-47c0-8934-7db6e5286414",
+      4: "96ff4394-9197-43aa-b393-6a41652e21f8",
+      5: "96ff4394-9197-43aa-b393-6a41652e21f8",
+      6: "9315aedd-209b-43b3-b149-2abff6a95d59",
+      7: "69c6e40c-465f-4154-987d-da5cba10734e",
+      8: "bd4a9f18-e349-4c74-a6b7-65dd465ea9ab"
+    };
+    function getIslandResourceId2(clusterCategory) {
+      const id = ISLAND_RESOURCE_IDS[clusterCategory];
+      if (!id) throw new Error(`Unknown cluster category: ${clusterCategory}`);
+      return id;
+    }
+    var _cachePlugin = null;
+    var _msalApps = /* @__PURE__ */ new Map();
+    async function getDefaultCachePlugin() {
+      if (!_cachePlugin) {
+        _cachePlugin = await createCachePlugin("manage-agent");
+      }
+      return _cachePlugin;
+    }
+    async function createMsalApp(tenantId, clientId, cacheSlot) {
+      const msal = require_msal_node();
+      if (cacheSlot) {
+        const plugin = await createCachePlugin(cacheSlot);
+        return new msal.PublicClientApplication({
+          auth: {
+            clientId,
+            authority: `https://login.microsoftonline.com/${tenantId}`
+          },
+          cache: { cachePlugin: plugin }
+        });
+      }
+      const key = `${tenantId}:${clientId}`;
+      if (_msalApps.has(key)) return _msalApps.get(key);
+      const cachePlugin = await getDefaultCachePlugin();
+      const app = new msal.PublicClientApplication({
+        auth: {
+          clientId,
+          authority: `https://login.microsoftonline.com/${tenantId}`
+        },
+        cache: { cachePlugin }
+      });
+      _msalApps.set(key, app);
+      return app;
+    }
+    function buildTokenInfo2(result) {
+      return {
+        accessToken: result.accessToken,
+        expiresOn: result.expiresOn ? result.expiresOn.toISOString() : new Date(Date.now() + 3600 * 1e3).toISOString(),
+        scopes: result.scopes,
+        account: result.account ? {
+          homeAccountId: result.account.homeAccountId,
+          environment: result.account.environment,
+          tenantId: result.account.tenantId,
+          username: result.account.username
+        } : void 0
+      };
+    }
+    async function acquireTokenDeviceCode2(tenantId, clientId, scopes, cacheSlot) {
+      const app = await createMsalApp(tenantId, clientId, cacheSlot);
+      const result = await app.acquireTokenByDeviceCode({
+        scopes,
+        deviceCodeCallback: (response) => {
+          log2("");
+          log2(`  ${response.message}`);
+          log2("");
+          process.stdout.write(
+            JSON.stringify({
+              status: "device_code",
+              userCode: response.userCode,
+              verificationUri: response.verificationUri,
+              message: response.message,
+              expiresIn: response.expiresIn
+            }) + "\n"
+          );
+        }
+      });
+      if (!result) throw new Error("Device code flow returned no result");
+      return buildTokenInfo2(result);
+    }
+    async function acquireTokenInteractive2(tenantId, clientId, scopes, cacheSlot) {
+      const app = await createMsalApp(tenantId, clientId, cacheSlot);
+      const result = await app.acquireTokenInteractive({
+        scopes,
+        openBrowser: async (url) => {
+          log2("");
+          log2(`  Open this URL to sign in: ${url}`);
+          log2("");
+          const open2 = (await Promise.resolve().then(() => (init_open(), open_exports))).default;
+          await open2(url);
+        },
+        successTemplate: "<html><body><h1>Login successful. You can close this tab.</h1></body></html>"
+      });
+      if (!result) throw new Error("Interactive flow returned no result");
+      return buildTokenInfo2(result);
+    }
+    async function acquireTokenSilent2(tenantId, clientId, scopes, cacheSlot) {
+      const app = await createMsalApp(tenantId, clientId, cacheSlot);
+      const allAccounts = await app.getTokenCache().getAllAccounts();
+      const accounts = allAccounts.filter((a) => a.tenantId === tenantId);
+      if (accounts.length > 0) {
+        try {
+          const result = await app.acquireTokenSilent({
+            scopes,
+            account: accounts[0]
+          });
+          if (result) {
+            const scopeKey = scopes[0];
+            log2(`${scopeKey}: silently refreshed (expires ${result.expiresOn?.toISOString()})`);
+            return buildTokenInfo2(result);
+          }
+        } catch (e) {
+          log2(`Silent refresh failed: ${e.message}`);
+        }
+      }
+      return null;
+    }
+    async function getOrAcquireToken2(tenantId, clientId, scopes, label, cacheSlot) {
+      const silent = await acquireTokenSilent2(tenantId, clientId, scopes, cacheSlot);
+      if (silent) {
+        log2(`${label}: using cached token (expires ${silent.expiresOn})`);
+        return silent;
+      }
+      log2(`${label}: starting interactive login...`);
+      return acquireTokenInteractive2(tenantId, clientId, scopes, cacheSlot);
+    }
+    async function getOrAcquireIslandToken2(tenantId, clusterCategory, label) {
+      const resourceId = getIslandResourceId2(clusterCategory);
+      return getOrAcquireToken2(
+        tenantId,
+        VSCODE_CLIENT_ID2,
+        [`api://${resourceId}/.default`],
+        label
+      );
+    }
+    module2.exports = {
+      VSCODE_CLIENT_ID: VSCODE_CLIENT_ID2,
+      ISLAND_RESOURCE_IDS,
+      getIslandResourceId: getIslandResourceId2,
+      createMsalApp,
+      buildTokenInfo: buildTokenInfo2,
+      acquireTokenDeviceCode: acquireTokenDeviceCode2,
+      acquireTokenInteractive: acquireTokenInteractive2,
+      acquireTokenSilent: acquireTokenSilent2,
+      getOrAcquireToken: getOrAcquireToken2,
+      getOrAcquireIslandToken: getOrAcquireIslandToken2
+    };
+  }
+});
+
 // src/manage-agent.js
 var { spawn } = require("child_process");
 var { randomUUID } = require("crypto");
 var path2 = require("path");
 var fs6 = require("fs");
 var os2 = require("os");
-var { createCachePlugin } = require_msal_cache();
-function log(msg) {
-  process.stderr.write(msg + "\n");
-}
+var { log, die } = require_shared_utils();
+var {
+  VSCODE_CLIENT_ID,
+  getIslandResourceId,
+  buildTokenInfo,
+  acquireTokenDeviceCode,
+  acquireTokenInteractive,
+  acquireTokenSilent,
+  getOrAcquireToken,
+  getOrAcquireIslandToken
+} = require_shared_auth();
 function warn(msg) {
   process.stderr.write("[WARN] " + msg + "\n");
-}
-function die(msg) {
-  process.stdout.write(JSON.stringify({ status: "error", error: msg }) + "\n");
-  process.exit(1);
 }
 function parseArgs() {
   const args = process.argv.slice(2);
@@ -14628,114 +14975,6 @@ function parseArgs() {
     );
   }
   return parsed;
-}
-var VSCODE_CLIENT_ID = "51f81489-12ee-4a9e-aaae-a2591f45987d";
-var ISLAND_RESOURCE_IDS = {
-  0: "a522f059-bb65-47c0-8934-7db6e5286414",
-  1: "a522f059-bb65-47c0-8934-7db6e5286414",
-  2: "a522f059-bb65-47c0-8934-7db6e5286414",
-  3: "a522f059-bb65-47c0-8934-7db6e5286414",
-  4: "96ff4394-9197-43aa-b393-6a41652e21f8",
-  5: "96ff4394-9197-43aa-b393-6a41652e21f8",
-  6: "9315aedd-209b-43b3-b149-2abff6a95d59",
-  7: "69c6e40c-465f-4154-987d-da5cba10734e",
-  8: "bd4a9f18-e349-4c74-a6b7-65dd465ea9ab"
-};
-function getIslandResourceId(clusterCategory) {
-  const id = ISLAND_RESOURCE_IDS[clusterCategory];
-  if (!id) throw new Error(`Unknown cluster category: ${clusterCategory}`);
-  return id;
-}
-var _cachePlugin = null;
-var _msalApps = /* @__PURE__ */ new Map();
-async function getCachePlugin() {
-  if (!_cachePlugin) {
-    _cachePlugin = await createCachePlugin("manage-agent");
-  }
-  return _cachePlugin;
-}
-async function createMsalApp(tenantId, clientId) {
-  const key = `${tenantId}:${clientId}`;
-  if (_msalApps.has(key)) return _msalApps.get(key);
-  const msal = require_msal_node();
-  const cachePlugin = await getCachePlugin();
-  const app = new msal.PublicClientApplication({
-    auth: {
-      clientId,
-      authority: `https://login.microsoftonline.com/${tenantId}`
-    },
-    cache: { cachePlugin }
-  });
-  _msalApps.set(key, app);
-  return app;
-}
-function buildTokenInfo(result) {
-  return {
-    accessToken: result.accessToken,
-    expiresOn: result.expiresOn ? result.expiresOn.toISOString() : new Date(Date.now() + 3600 * 1e3).toISOString(),
-    scopes: result.scopes,
-    account: result.account ? {
-      homeAccountId: result.account.homeAccountId,
-      environment: result.account.environment,
-      tenantId: result.account.tenantId,
-      username: result.account.username
-    } : void 0
-  };
-}
-async function acquireTokenInteractive(tenantId, clientId, scopes) {
-  const app = await createMsalApp(tenantId, clientId);
-  const result = await app.acquireTokenInteractive({
-    scopes,
-    openBrowser: async (url) => {
-      log("");
-      log(`  Open this URL to sign in: ${url}`);
-      log("");
-      const open2 = (await Promise.resolve().then(() => (init_open(), open_exports))).default;
-      await open2(url);
-    },
-    successTemplate: "<html><body><h1>Login successful. You can close this tab.</h1></body></html>"
-  });
-  if (!result) throw new Error("Interactive flow returned no result");
-  return buildTokenInfo(result);
-}
-async function acquireTokenSilent(tenantId, clientId, scopes) {
-  const app = await createMsalApp(tenantId, clientId);
-  const allAccounts = await app.getTokenCache().getAllAccounts();
-  const accounts = allAccounts.filter((a) => a.tenantId === tenantId);
-  if (accounts.length > 0) {
-    try {
-      const result = await app.acquireTokenSilent({
-        scopes,
-        account: accounts[0]
-      });
-      if (result) {
-        const scopeKey = scopes[0];
-        log(`${scopeKey}: silently refreshed (expires ${result.expiresOn?.toISOString()})`);
-        return buildTokenInfo(result);
-      }
-    } catch (e) {
-      log(`Silent refresh failed: ${e.message}`);
-    }
-  }
-  return null;
-}
-async function getOrAcquireToken(tenantId, clientId, scopes, label) {
-  const silent = await acquireTokenSilent(tenantId, clientId, scopes);
-  if (silent) {
-    log(`${label}: using cached token (expires ${silent.expiresOn})`);
-    return silent;
-  }
-  log(`${label}: starting interactive login...`);
-  return acquireTokenInteractive(tenantId, clientId, scopes);
-}
-async function getOrAcquireIslandToken(tenantId, clusterCategory, label) {
-  const resourceId = getIslandResourceId(clusterCategory);
-  return getOrAcquireToken(
-    tenantId,
-    VSCODE_CLIENT_ID,
-    [`api://${resourceId}/.default`],
-    label
-  );
 }
 var EXTENSION_ID = "ms-copilotstudio.vscode-copilotstudio";
 var BINARY_NAME = "LanguageServerHost";
@@ -15292,76 +15531,37 @@ async function cmdValidate(args) {
 var BAP_HOST = "api.bap.microsoft.com";
 var BAP_TOKEN_SCOPE = "https://service.powerapps.com/.default";
 async function httpGetJson(url, accessToken) {
-  const https = require("https");
-  return new Promise((resolve, reject) => {
-    const req = https.get(url, {
-      headers: { Authorization: `Bearer ${accessToken}` }
-    }, (res) => {
-      let data = "";
-      res.on("error", reject);
-      res.on("data", (chunk) => data += chunk);
-      res.on("end", () => {
-        if (res.statusCode >= 400) {
-          reject(new Error(`HTTP ${res.statusCode}: ${data.substring(0, 500)}`));
-        } else {
-          try {
-            resolve(JSON.parse(data));
-          } catch (e) {
-            reject(new Error(`Invalid JSON: ${e.message}`));
-          }
-        }
-      });
-    });
-    req.on("error", reject);
-    req.setTimeout(3e4, () => {
-      req.destroy();
-      reject(new Error("HTTP request timed out"));
-    });
+  const res = await fetch(url, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+    signal: AbortSignal.timeout(3e4)
   });
+  if (!res.ok) {
+    const body = await res.text().catch(() => "");
+    throw new Error(`HTTP ${res.status}: ${body.substring(0, 500)}`);
+  }
+  return res.json();
 }
 async function httpPostJson(url, accessToken, body) {
-  const https = require("https");
   const payload = body != null ? JSON.stringify(body) : "";
-  const parsed = new URL(url);
-  return new Promise((resolve, reject) => {
-    const req = https.request({
-      hostname: parsed.hostname,
-      port: parsed.port || 443,
-      path: parsed.pathname + parsed.search,
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        "Content-Type": "application/json",
-        "OData-MaxVersion": "4.0",
-        "OData-Version": "4.0",
-        "Content-Length": Buffer.byteLength(payload)
-      }
-    }, (res) => {
-      let data = "";
-      res.on("error", reject);
-      res.on("data", (chunk) => data += chunk);
-      res.on("end", () => {
-        if (res.statusCode >= 400) {
-          reject(new Error(`HTTP ${res.statusCode}: ${data.substring(0, 500)}`));
-        } else if (res.statusCode === 204 || !data.trim()) {
-          resolve(null);
-        } else {
-          try {
-            resolve(JSON.parse(data));
-          } catch (e) {
-            reject(new Error(`Invalid JSON: ${e.message}`));
-          }
-        }
-      });
-    });
-    req.on("error", reject);
-    req.setTimeout(6e4, () => {
-      req.destroy();
-      reject(new Error("HTTP request timed out"));
-    });
-    req.write(payload);
-    req.end();
+  const res = await fetch(url, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      "Content-Type": "application/json",
+      "OData-MaxVersion": "4.0",
+      "OData-Version": "4.0"
+    },
+    body: payload || void 0,
+    signal: AbortSignal.timeout(6e4)
   });
+  if (res.status === 204) return null;
+  if (!res.ok) {
+    const errBody = await res.text().catch(() => "");
+    throw new Error(`HTTP ${res.status}: ${errBody.substring(0, 500)}`);
+  }
+  const text = await res.text();
+  if (!text.trim()) return null;
+  return JSON.parse(text);
 }
 async function cmdListAgents(args) {
   if (!args.tenantId) die("--tenant-id (or CPS_TENANT_ID) is required");

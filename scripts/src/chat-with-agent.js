@@ -24,36 +24,22 @@
 const fs = require("fs");
 const path = require("path");
 const yaml = require("js-yaml");
-const { PublicClientApplication } = require("@azure/msal-node");
-const { createCachePlugin } = require("./msal-cache");
 const {
   CopilotStudioClient,
   PowerPlatformCloud,
 } = require("@microsoft/agents-copilotstudio-client");
 const { Activity, ActivityTypes } = require("@microsoft/agents-activity");
-
-// ---------------------------------------------------------------------------
-// Constants
-// ---------------------------------------------------------------------------
-
-// VS Code's first-party client ID — pre-authorized with Dataverse, no app
-// registration needed. Used only for the detect-mode Dataverse query.
-const VSCODE_CLIENT_ID = "51f81489-12ee-4a9e-aaae-a2591f45987d";
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-function log(msg) {
-  process.stderr.write(msg + "\n");
-}
-
-function die(msg) {
-  process.stdout.write(JSON.stringify({ status: "error", error: msg }) + "\n");
-  process.exit(1);
-}
-
-const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+const {
+  log, die,
+  fetchToken, getRegionalDomain,
+  startConversation, sendActivity,
+  runPollLoop,
+} = require("./shared-utils");
+const {
+  VSCODE_CLIENT_ID,
+  createMsalApp,
+  acquireTokenSilent,
+} = require("./shared-auth");
 
 // ---------------------------------------------------------------------------
 // CLI parsing
@@ -187,36 +173,18 @@ async function detectMode(config) {
   }
 
   try {
-    const cachePlugin = await createCachePlugin("manage-agent");
-    const app = new PublicClientApplication({
-      auth: {
-        clientId: VSCODE_CLIENT_ID,
-        authority: `https://login.microsoftonline.com/${config.tenantId}`,
-      },
-      cache: { cachePlugin },
-    });
-
-    const accounts = await app.getTokenCache().getAllAccounts();
-    if (accounts.length === 0) {
+    const silent = await acquireTokenSilent(
+      config.tenantId, VSCODE_CLIENT_ID, [`${envUrl}/.default`]
+    );
+    if (!silent) {
       log("No cached Dataverse tokens — cannot auto-detect mode.");
-      return null;
-    }
-
-    let tokenResult;
-    try {
-      tokenResult = await app.acquireTokenSilent({
-        scopes: [`${envUrl}/.default`],
-        account: accounts[0],
-      });
-    } catch {
-      log("Dataverse token refresh failed — cannot auto-detect mode.");
       return null;
     }
 
     log("Querying agent authentication mode...");
     const res = await fetch(
       `${envUrl}/api/data/v9.2/bots(${config.agentId})?$select=authenticationmode,schemaname,name`,
-      { headers: { Authorization: `Bearer ${tokenResult.accessToken}` } }
+      { headers: { Authorization: `Bearer ${silent.accessToken}` } }
     );
     if (!res.ok) {
       log(`Dataverse query failed (HTTP ${res.status}) — cannot auto-detect mode.`);
@@ -246,165 +214,6 @@ async function detectMode(config) {
 }
 
 // ---------------------------------------------------------------------------
-// DirectLine v3 HTTP helpers
-// ---------------------------------------------------------------------------
-
-async function dlHttpGet(url, headers) {
-  const res = await fetch(url, { headers });
-  if (!res.ok) {
-    const body = await res.text().catch(() => "");
-    die(`HTTP ${res.status} from GET ${url}: ${body.slice(0, 200)}`);
-  }
-  return res.json();
-}
-
-async function dlHttpPost(url, headers, body) {
-  const res = await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", ...headers },
-    body: JSON.stringify(body),
-  });
-  if (!res.ok) {
-    const text = await res.text().catch(() => "");
-    die(`HTTP ${res.status} from POST ${url}: ${text.slice(0, 200)}`);
-  }
-  return res.json();
-}
-
-// ---------------------------------------------------------------------------
-// DirectLine v3 protocol
-// ---------------------------------------------------------------------------
-
-async function dlFetchToken(tokenEndpointUrl) {
-  log("Fetching DirectLine token from token endpoint...");
-  const data = await dlHttpGet(tokenEndpointUrl, {});
-  if (!data.token) die("Token endpoint did not return a token.");
-  return data.token;
-}
-
-async function dlGetRegionalDomain(tokenEndpointUrl) {
-  try {
-    const parsed = new URL(tokenEndpointUrl);
-    const settingsUrl =
-      parsed.origin +
-      "/powervirtualagents/regionalchannelsettings?api-version=2022-03-01-preview";
-    log("Fetching regional DirectLine domain...");
-    const data = await dlHttpGet(settingsUrl, {});
-    const domain = data.channelUrlsById?.directline?.replace(/\/+$/, "");
-    if (domain) {
-      log(`Regional domain: ${domain}`);
-      return domain;
-    }
-  } catch (e) {
-    log(`Warning: Could not fetch regional domain (${e.message}). Using default.`);
-  }
-  return "https://directline.botframework.com";
-}
-
-async function dlStartConversation(domain, token) {
-  log("Starting DirectLine conversation...");
-  const data = await dlHttpPost(
-    `${domain}/v3/directline/conversations`,
-    { Authorization: `Bearer ${token}` },
-    {}
-  );
-  if (!data.conversationId) die("startConversation did not return a conversationId.");
-  return { conversationId: data.conversationId, token: data.token || token };
-}
-
-async function dlSendActivity(domain, conversationId, token, activity) {
-  return dlHttpPost(
-    `${domain}/v3/directline/conversations/${conversationId}/activities`,
-    { Authorization: `Bearer ${token}` },
-    activity
-  );
-}
-
-async function dlPollActivities(domain, conversationId, token, watermark) {
-  let url = `${domain}/v3/directline/conversations/${conversationId}/activities`;
-  if (watermark !== undefined) {
-    url += `?watermark=${watermark}`;
-  }
-  const data = await dlHttpGet(url, { Authorization: `Bearer ${token}` });
-  return {
-    activities: data.activities || [],
-    watermark: data.watermark,
-  };
-}
-
-function dlFindSignInCard(activities) {
-  for (const activity of activities) {
-    if (activity.type !== "message" || !activity.attachments) continue;
-    for (const att of activity.attachments) {
-      if (
-        att.contentType === "application/vnd.microsoft.card.signin" ||
-        att.contentType === "application/vnd.microsoft.card.oauth"
-      ) {
-        const url =
-          att.content?.buttons?.[0]?.value ||
-          att.content?.tokenExchangeResource?.uri ||
-          null;
-        if (url) return { signinUrl: url };
-      }
-    }
-  }
-  return null;
-}
-
-async function dlRunPollLoop(domain, conversationId, token, opts) {
-  const timeoutMs = (opts && opts.timeoutMs) || 30000;
-  const intervalMs = (opts && opts.intervalMs) || 1000;
-  let watermark = opts && opts.watermark;
-
-  let lastActivityTime = Date.now();
-  let authHandled = false;
-  const allBotActivities = [];
-
-  while (true) {
-    if (Date.now() - lastActivityTime > timeoutMs) {
-      log("Poll timeout — no more bot activities.");
-      break;
-    }
-
-    const result = await dlPollActivities(domain, conversationId, token, watermark);
-    watermark = result.watermark;
-
-    const botActivities = result.activities.filter(
-      (a) => a.from && a.from.role !== "user"
-    );
-
-    for (const activity of botActivities) {
-      lastActivityTime = Date.now();
-
-      if (activity.type === "endOfConversation") {
-        allBotActivities.push(activity);
-        return { activities: allBotActivities, watermark };
-      }
-
-      if (!authHandled) {
-        const card = dlFindSignInCard([activity]);
-        if (card) {
-          authHandled = true;
-          // Non-interactive — return sign-in info for caller to handle
-          allBotActivities.push(activity);
-          return {
-            activities: allBotActivities,
-            watermark,
-            signin: { url: card.signinUrl },
-          };
-        }
-      }
-
-      allBotActivities.push(activity);
-    }
-
-    await sleep(intervalMs);
-  }
-
-  return { activities: allBotActivities, watermark };
-}
-
-// ---------------------------------------------------------------------------
 // DirectLine chat orchestrator
 // ---------------------------------------------------------------------------
 
@@ -417,27 +226,27 @@ async function chatDirectLine(utterance, conversationId, params) {
     domain = params.directlineDomain || "https://directline.botframework.com";
     log(`Using DirectLine secret mode (domain: ${domain})`);
   } else {
-    token = await dlFetchToken(params.tokenEndpoint);
-    domain = await dlGetRegionalDomain(params.tokenEndpoint);
+    token = await fetchToken(params.tokenEndpoint);
+    domain = await getRegionalDomain(params.tokenEndpoint);
   }
 
   let startActivities = [];
   let watermark;
 
   if (conversationId === null) {
-    const conv = await dlStartConversation(domain, token);
+    const conv = await startConversation(domain, token);
     conversationId = conv.conversationId;
     token = conv.token;
     log(`Conversation started: ${conversationId}`);
 
-    await dlSendActivity(domain, conversationId, token, {
+    await sendActivity(domain, conversationId, token, {
       type: "event",
       name: "startConversation",
       from: { id: "user1", role: "user" },
     });
     log("startConversation event sent.");
 
-    const startResult = await dlRunPollLoop(domain, conversationId, token, {
+    const startResult = await runPollLoop(domain, conversationId, token, {
       timeoutMs: 30000,
       intervalMs: 1000,
     });
@@ -471,7 +280,7 @@ async function chatDirectLine(utterance, conversationId, params) {
       token = params.directlineToken;
       log("Using provided DirectLine token.");
     } else if (!params.directlineSecret) {
-      token = await dlFetchToken(params.tokenEndpoint);
+      token = await fetchToken(params.tokenEndpoint);
     }
     if (params.watermark) {
       watermark = params.watermark;
@@ -479,14 +288,14 @@ async function chatDirectLine(utterance, conversationId, params) {
     }
   }
 
-  await dlSendActivity(domain, conversationId, token, {
+  await sendActivity(domain, conversationId, token, {
     type: "message",
     from: { id: "user1", role: "user" },
     text: utterance,
   });
   log(`Sent: "${utterance}"`);
 
-  const responseResult = await dlRunPollLoop(domain, conversationId, token, {
+  const responseResult = await runPollLoop(domain, conversationId, token, {
     timeoutMs: 30000,
     intervalMs: 1000,
     watermark,
@@ -533,19 +342,11 @@ function activityToDict(activity) {
 }
 
 async function getSdkAccessToken(tenantId, clientId) {
-  const cachePlugin = await createCachePlugin("chat");
-
-  const app = new PublicClientApplication({
-    auth: {
-      clientId,
-      authority: `https://login.microsoftonline.com/${tenantId}`,
-    },
-    cache: { cachePlugin },
-  });
-
+  const app = await createMsalApp(tenantId, clientId, "chat");
   const scope = "https://api.powerplatform.com/.default";
 
-  const accounts = await app.getTokenCache().getAllAccounts();
+  const allAccounts = await app.getTokenCache().getAllAccounts();
+  const accounts = allAccounts.filter(a => a.tenantId === tenantId);
   if (accounts.length > 0) {
     try {
       const result = await app.acquireTokenSilent({
