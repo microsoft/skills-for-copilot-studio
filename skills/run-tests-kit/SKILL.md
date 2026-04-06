@@ -1,43 +1,20 @@
 ---
 user-invocable: false
-description: "DEPRECATED: Use /copilot-studio:run-eval (PPAPI evaluations), /copilot-studio:run-tests-kit (Kit batch tests), or /copilot-studio:analyze-evals (CSV analysis) instead."
-allowed-tools: Read
+description: >
+  Run a batch test suite via the Copilot Studio Kit (Dataverse API).
+  Uses the Power CAT Copilot Studio Kit to execute test cases against a published agent
+  and produces pass/fail results with latencies. Requires the Kit installed in the
+  environment, an App Registration with Dataverse permissions, and a published agent.
+allowed-tools: Bash(node *run-tests.js *), Bash(npm install *), Read, Write, Glob, Grep, Edit
 context: fork
 agent: copilot-studio-test
 ---
 
-# Run Tests (Deprecated)
+# Run Tests via Copilot Studio Kit
 
-This skill has been split into three specialized skills:
+Run a batch test suite against a **published** Copilot Studio agent using the [Power CAT Copilot Studio Kit](https://github.com/microsoft/Power-CAT-Copilot-Studio-Kit).
 
-| Skill | Use when |
-|-------|----------|
-| `/copilot-studio:run-eval` | Run evaluations via the Power Platform API (supports draft testing — no publish needed) |
-| `/copilot-studio:run-tests-kit` | Run batch tests via the Copilot Studio Kit (requires published agent) |
-| `/copilot-studio:analyze-evals` | Analyze exported CSV evaluation results from Copilot Studio UI |
-
-Please invoke the appropriate skill instead.
-
-Test a published Copilot Studio agent and analyze results. Supports two modes:
-
-| Mode | How it works | Requires |
-|------|-------------|----------|
-| **Copilot Studio Kit** | Runs a batch test suite via the Dataverse API using the [Power CAT Copilot Studio Kit](https://github.com/microsoft/Power-CAT-Copilot-Studio-Kit) (open-source, by the Power CAT team). Produces pass/fail results with latencies. | Kit installed in the environment + Azure App Registration with Dataverse permissions |
-| **Analyze evaluations** | User runs evaluations in the Copilot Studio UI, exports results as CSV, and shares the file for analysis. No additional setup required. | Agent published + evaluations run in Copilot Studio UI |
-
-## Phase 0: Choose Mode
-
-If the user's intent is clear, skip straight to the right phase:
-- User says "run tests", "run the test suite" → **Phase 1A** (Kit)
-- User shares a CSV file, says "analyze these results", "here are my eval results" → **Phase 1B** (Analyze evaluations)
-
-If ambiguous (e.g., "test the agent"), **ask the user** which mode they want.
-
----
-
-## Mode A: Copilot Studio Kit
-
-### Prerequisites
+## Prerequisites
 
 The user must have:
 1. The **[Copilot Studio Kit](https://github.com/microsoft/Power-CAT-Copilot-Studio-Kit)** installed in their Power Platform environment
@@ -45,7 +22,7 @@ The user must have:
 3. **Created a test set** in the Copilot Studio Kit
 4. An **Azure App Registration** with Dataverse permissions
 
-### Phase 1A: Configure Settings
+## Phase 1: Configure Settings
 
 1. **Read `tests/settings.json`** (relative to the user's project CWD) and check for missing or placeholder values (containing `YOUR_`).
 
@@ -79,9 +56,9 @@ The user must have:
    }
    ```
 
-5. If all values are already configured and valid, proceed to Phase 2A.
+5. If all values are already configured and valid, proceed to Phase 2.
 
-### Phase 2A: Run Tests
+## Phase 2: Run Tests
 
 1. **Ensure `tests/package.json` exists** in the user's project. If not, copy it:
    ```bash
@@ -122,9 +99,9 @@ The user must have:
 
 7. **Read the final output** to get the success rate and CSV filename.
 
-8. Proceed to **Phase 3A**.
+8. Proceed to **Phase 3**.
 
-### Phase 3A: Analyze Kit Results
+## Phase 3: Analyze Results
 
 1. **Get the results**: `Glob: tests/test-results-*.csv` — read the most recent CSV file (newest by modification time).
 
@@ -148,47 +125,7 @@ The user must have:
 
 4. Proceed to **Phase 4** (Propose Fixes).
 
----
-
-## Mode B: Analyze Copilot Studio Evaluations
-
-### Phase 1B: Get Results
-
-1. **Ask the user for the CSV file path** if not already provided. The file is typically exported from Copilot Studio's Evaluate tab and named `Evaluate <agent name> <date>.csv` in their Downloads folder.
-
-2. **Read the CSV file**. The in-product evaluation CSV has these columns:
-
-   | Column | Meaning |
-   |--------|---------|
-   | `question` | The test utterance |
-   | `expectedResponse` | Expected response (may be empty) |
-   | `actualResponse` | What the agent responded |
-   | `testMethodType_1` | Eval method (e.g., `GeneralQuality`) |
-   | `result_1` | `Pass` or `Fail` |
-   | `passingScore_1` | Score threshold (may be empty) |
-   | `explanation_1` | Why it passed/failed (e.g., "Seems relevant; Seems incomplete; Knowledge sources not cited") |
-
-   The `_1` suffix indicates the first eval method. There may be additional methods (`_2`, `_3`, etc.) with the same column pattern.
-
-3. Proceed to **Phase 3B**.
-
-### Phase 3B: Analyze Evaluation Results
-
-1. **Focus on failed evaluations** (`result_1` = `Fail`, or any `result_N` = `Fail`).
-
-2. For each failure, use the `explanation` column to understand the issue:
-   - **"Question not answered"** — The agent couldn't handle the question. Check if there's a matching topic or knowledge source.
-   - **"Knowledge sources not cited"** — The agent responded but didn't cite sources. Check knowledge source configuration and `SearchAndSummarizeContent` nodes.
-   - **"Seems incomplete"** — The response was partial. Check topic flow for early exits, missing branches, or incomplete `SendActivity` messages.
-   - **Error messages in `actualResponse`** (e.g., `GenAIToolPlannerRateLimitReached`) — These are runtime errors, not authoring issues. Flag them to the user as transient failures to retry.
-
-3. Proceed to **Phase 4** (Propose Fixes).
-
----
-
 ## Phase 4: Propose Fixes
-
-Shared by both modes.
 
 1. **For each failure, identify the relevant YAML file(s)**:
    - Auto-discover the agent: `Glob: **/agent.mcs.yml`
@@ -207,7 +144,7 @@ Shared by both modes.
 
 4. **Apply accepted changes** using the Edit tool. After applying, remind the user to push and publish again before re-running tests.
 
-## Test Result Codes Reference (Kit mode only)
+## Test Result Codes Reference
 
 ```
 Result: 1=Success, 2=Failed, 3=Unknown, 4=Error, 5=Pending
