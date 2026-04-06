@@ -2882,6 +2882,7 @@ var require_connectionSettings = __commonJS({
     var ConnectionOptions = class {
       constructor() {
         this.useExperimentalEndpoint = false;
+        this.enableDiagnostics = false;
       }
     };
     var ConnectionSettings = class extends ConnectionOptions {
@@ -2908,7 +2909,7 @@ var require_connectionSettings = __commonJS({
     };
     exports2.ConnectionSettings = ConnectionSettings;
     var loadCopilotStudioConnectionSettingsFromEnv = () => {
-      var _a, _b, _c, _d, _e, _f, _g;
+      var _a, _b, _c, _d, _e, _f, _g, _h;
       return new ConnectionSettings({
         appClientId: (_a = process.env.appClientId) !== null && _a !== void 0 ? _a : "",
         tenantId: (_b = process.env.tenantId) !== null && _b !== void 0 ? _b : "",
@@ -2920,7 +2921,8 @@ var require_connectionSettings = __commonJS({
         customPowerPlatformCloud: process.env.customPowerPlatformCloud,
         copilotAgentType: process.env.copilotAgentType,
         directConnectUrl: process.env.directConnectUrl,
-        useExperimentalEndpoint: ((_g = process.env.useExperimentalEndpoint) === null || _g === void 0 ? void 0 : _g.toLowerCase()) === "true"
+        useExperimentalEndpoint: ((_g = process.env.useExperimentalEndpoint) === null || _g === void 0 ? void 0 : _g.toLowerCase()) === "true",
+        enableDiagnostics: ((_h = process.env.enableDiagnostics) === null || _h === void 0 ? void 0 : _h.toLowerCase()) === "true"
       });
     };
     exports2.loadCopilotStudioConnectionSettingsFromEnv = loadCopilotStudioConnectionSettingsFromEnv;
@@ -4010,6 +4012,7 @@ var require_powerPlatformEnvironment = __commonJS({
     "use strict";
     Object.defineProperty(exports2, "__esModule", { value: true });
     exports2.getCopilotStudioConnectionUrl = getCopilotStudioConnectionUrl;
+    exports2.getCopilotStudioSubscribeUrl = getCopilotStudioSubscribeUrl;
     exports2.getTokenAudience = getTokenAudience;
     var agentType_1 = require_agentType();
     var logger_1 = require_logger();
@@ -4027,10 +4030,6 @@ var require_powerPlatformEnvironment = __commonJS({
         logger.debug(`Using direct connection: ${settings.directConnectUrl}`);
         if (!isValidUri(settings.directConnectUrl)) {
           throw new Error("directConnectUrl must be a valid URL");
-        }
-        if (settings.directConnectUrl.toLowerCase().includes("tenants/00000000-0000-0000-0000-000000000000")) {
-          logger.warn(`Direct connection cannot be used, forcing default settings flow. Tenant ID is missing in the URL: ${settings.directConnectUrl}`);
-          return getCopilotStudioConnectionUrl({ ...settings, directConnectUrl: "" }, conversationId);
         }
         return createURL(settings.directConnectUrl, conversationId).href;
       }
@@ -4061,6 +4060,17 @@ var require_powerPlatformEnvironment = __commonJS({
       const url = strategy.getConversationUrl(conversationId);
       logger.debug(`Generated Copilot Studio connection URL: ${url}`);
       return url;
+    }
+    function getCopilotStudioSubscribeUrl(settings, conversationId) {
+      if (!conversationId || !conversationId.trim()) {
+        throw new Error("conversationId is required for subscribe URL");
+      }
+      const baseUrl = getCopilotStudioConnectionUrl(settings, conversationId);
+      const url = new URL(baseUrl);
+      url.pathname = url.pathname.endsWith("/") ? `${url.pathname}subscribe` : `${url.pathname}/subscribe`;
+      const subscribeUrl = url.href;
+      logger.debug(`Generated Copilot Studio subscribe URL: ${subscribeUrl}`);
+      return subscribeUrl;
     }
     function getTokenAudience(settings, cloud = powerPlatformCloud_1.PowerPlatformCloud.Unknown, cloudBaseAddress = "", directConnectUrl = "") {
       var _a, _b;
@@ -10220,9 +10230,11 @@ var require_executeTurnRequest = __commonJS({
       /**
        * Creates an instance of ExecuteTurnRequest.
        * @param activity The activity to be executed.
+       * @param conversationId Optional conversation ID.
        */
-      constructor(activity) {
+      constructor(activity, conversationId) {
         this.activity = activity;
+        this.conversationId = conversationId;
       }
     };
     exports2.ExecuteTurnRequest = ExecuteTurnRequest;
@@ -10234,7 +10246,7 @@ var require_package = __commonJS({
   "node_modules/@microsoft/agents-copilotstudio-client/dist/package.json"(exports2, module2) {
     module2.exports = {
       name: "@microsoft/agents-copilotstudio-client",
-      version: "1.3.1",
+      version: "1.4.2",
       homepage: "https://github.com/microsoft/Agents-for-js",
       repository: {
         type: "git",
@@ -10261,7 +10273,7 @@ var require_package = __commonJS({
         "build:browser": "esbuild --platform=browser --target=es2019 --format=esm --bundle --sourcemap --minify --outfile=dist/src/browser.mjs src/index.ts"
       },
       dependencies: {
-        "@microsoft/agents-activity": "1.3.1",
+        "@microsoft/agents-activity": "1.4.2",
         "eventsource-client": "^1.2.0",
         rxjs: "7.8.2",
         uuid: "^11.1.0"
@@ -10293,13 +10305,103 @@ var require_package = __commonJS({
   }
 });
 
-// node_modules/@microsoft/agents-copilotstudio-client/dist/src/copilotStudioClient.js
-var require_copilotStudioClient = __commonJS({
-  "node_modules/@microsoft/agents-copilotstudio-client/dist/src/copilotStudioClient.js"(exports2) {
+// node_modules/@microsoft/agents-copilotstudio-client/dist/src/userAgentHelper.js
+var require_userAgentHelper = __commonJS({
+  "node_modules/@microsoft/agents-copilotstudio-client/dist/src/userAgentHelper.js"(exports2) {
     "use strict";
     var __importDefault = exports2 && exports2.__importDefault || function(mod) {
       return mod && mod.__esModule ? mod : { "default": mod };
     };
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.UserAgentHelper = void 0;
+    var package_json_1 = require_package();
+    var os_1 = __importDefault(require("os"));
+    var UserAgentHelper = class {
+      /**
+       * Generates a user agent string appropriate for the current environment.
+       * - For browser environments, includes the browser's user agent.
+       * - For Node.js environments, includes Node version, platform, architecture, and release.
+       * @returns A user agent string for HTTP headers.
+       */
+      static getProductInfo() {
+        const versionString = `CopilotStudioClient.agents-sdk-js/${package_json_1.version}`;
+        let userAgent;
+        if (typeof window !== "undefined" && window.navigator) {
+          userAgent = `${versionString} ${navigator.userAgent}`;
+        } else {
+          userAgent = `${versionString} nodejs/${process.version} ${os_1.default.platform()}-${os_1.default.arch()}/${os_1.default.release()}`;
+        }
+        return userAgent;
+      }
+      /**
+       * Gets just the version string without environment details.
+       * @returns The version string (e.g., "CopilotStudioClient.agents-sdk-js/0.1.0")
+       */
+      static getVersionString() {
+        return `CopilotStudioClient.agents-sdk-js/${package_json_1.version}`;
+      }
+      /**
+       * Gets the SDK version number.
+       * @returns The version number (e.g., "0.1.0")
+       */
+      static getVersion() {
+        return package_json_1.version;
+      }
+    };
+    exports2.UserAgentHelper = UserAgentHelper;
+  }
+});
+
+// node_modules/@microsoft/agents-copilotstudio-client/dist/src/scopeHelper.js
+var require_scopeHelper = __commonJS({
+  "node_modules/@microsoft/agents-copilotstudio-client/dist/src/scopeHelper.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.ScopeHelper = void 0;
+    var powerPlatformEnvironment_1 = require_powerPlatformEnvironment();
+    var ScopeHelper = class {
+      /**
+       * Returns the scope URL needed to connect to Copilot Studio from the connection settings.
+       * This is used for authentication token audience configuration.
+       * @param settings Copilot Studio connection settings.
+       * @returns The scope URL for token audience (e.g., "https://api.powerplatform.com/.default").
+       */
+      static getScopeFromSettings(settings) {
+        return (0, powerPlatformEnvironment_1.getTokenAudience)(settings);
+      }
+    };
+    exports2.ScopeHelper = ScopeHelper;
+  }
+});
+
+// node_modules/@microsoft/agents-copilotstudio-client/dist/src/responses.js
+var require_responses = __commonJS({
+  "node_modules/@microsoft/agents-copilotstudio-client/dist/src/responses.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.createStartResponse = createStartResponse;
+    exports2.createExecuteTurnResponse = createExecuteTurnResponse;
+    function createStartResponse(activities, conversationId) {
+      return {
+        activities,
+        conversationId,
+        isNewConversation: true
+      };
+    }
+    function createExecuteTurnResponse(activities, conversationId) {
+      return {
+        activities,
+        conversationId,
+        activityCount: activities.length
+      };
+    }
+  }
+});
+
+// node_modules/@microsoft/agents-copilotstudio-client/dist/src/copilotStudioClient.js
+var require_copilotStudioClient = __commonJS({
+  "node_modules/@microsoft/agents-copilotstudio-client/dist/src/copilotStudioClient.js"(exports2) {
+    "use strict";
     Object.defineProperty(exports2, "__esModule", { value: true });
     exports2.CopilotStudioClient = void 0;
     var eventsource_client_1 = require_node();
@@ -10307,8 +10409,9 @@ var require_copilotStudioClient = __commonJS({
     var agents_activity_1 = require_src2();
     var executeTurnRequest_1 = require_executeTurnRequest();
     var logger_1 = require_logger();
-    var package_json_1 = require_package();
-    var os_1 = __importDefault(require("os"));
+    var userAgentHelper_1 = require_userAgentHelper();
+    var scopeHelper_1 = require_scopeHelper();
+    var responses_1 = require_responses();
     var logger = (0, logger_1.debug)("copilot-studio:client");
     var CopilotStudioClient2 = class _CopilotStudioClient {
       /**
@@ -10322,6 +10425,16 @@ var require_copilotStudioClient = __commonJS({
         this.token = token;
       }
       /**
+       * Logs a diagnostic message if diagnostics are enabled.
+       * @param message The message to log.
+       * @param args Additional arguments to log.
+       */
+      logDiagnostic(message, ...args) {
+        if (this.settings.enableDiagnostics) {
+          logger.info(`[DIAGNOSTICS] ${message}`, ...args);
+        }
+      }
+      /**
        * Streams activities from the Copilot Studio service using eventsource-client.
        * @param url The connection URL for Copilot Studio.
        * @param body Optional. The request body (for POST).
@@ -10330,13 +10443,16 @@ var require_copilotStudioClient = __commonJS({
        */
       async *postRequestAsync(url, body, method = "POST") {
         var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k;
+        this.logDiagnostic(`Request URL: ${url}`);
+        this.logDiagnostic(`Request Method: ${method}`);
+        this.logDiagnostic("Request Body:", body ? JSON.stringify(body, null, 2) : "none");
         logger.debug(`>>> SEND TO ${url}`);
         const streamMap = /* @__PURE__ */ new Map();
         const eventSource = (0, eventsource_client_1.createEventSource)({
           url,
           headers: {
             Authorization: `Bearer ${this.token}`,
-            "User-Agent": _CopilotStudioClient.getProductInfo(),
+            "User-Agent": userAgentHelper_1.UserAgentHelper.getProductInfo(),
             "Content-Type": "application/json",
             Accept: "text/event-stream"
           },
@@ -10402,23 +10518,6 @@ var require_copilotStudioClient = __commonJS({
           eventSource.close();
         }
       }
-      /**
-       * Appends this package.json version to the User-Agent header.
-       * - For browser environments, it includes the user agent of the browser.
-       * - For Node.js environments, it includes the Node.js version, platform, architecture, and release.
-       * @returns A string containing the product information, including version and user agent.
-       */
-      static getProductInfo() {
-        const versionString = `CopilotStudioClient.agents-sdk-js/${package_json_1.version}`;
-        let userAgent;
-        if (typeof window !== "undefined" && window.navigator) {
-          userAgent = `${versionString} ${navigator.userAgent}`;
-        } else {
-          userAgent = `${versionString} nodejs/${process.version} ${os_1.default.platform()}-${os_1.default.arch()}/${os_1.default.release()}`;
-        }
-        logger.debug(`User-Agent: ${userAgent}`);
-        return userAgent;
-      }
       processResponseHeaders(responseHeaders) {
         var _a, _b;
         if (this.settings.useExperimentalEndpoint && !((_a = this.settings.directConnectUrl) === null || _a === void 0 ? void 0 : _a.trim())) {
@@ -10438,17 +10537,30 @@ var require_copilotStudioClient = __commonJS({
             sanitizedHeaders.set(key, value);
           }
         });
-        logger.debug("Headers received:", sanitizedHeaders);
+        this.logDiagnostic("Response Headers:", sanitizedHeaders);
       }
       /**
-       * Starts a new conversation with the Copilot Studio service.
-       * @param emitStartConversationEvent Whether to emit a start conversation event. Defaults to true.
-       * @returns An async generator yielding the Agent's Activities.
+       * Implementation of startConversationStreaming with overloads.
        */
-      async *startConversationStreaming(emitStartConversationEvent = true) {
-        const uriStart = (0, powerPlatformEnvironment_1.getCopilotStudioConnectionUrl)(this.settings);
-        const body = { emitStartConversationEvent };
-        logger.info("Starting conversation ...");
+      async *startConversationStreaming(requestOrFlag) {
+        var _a;
+        let request;
+        if (typeof requestOrFlag === "boolean" || requestOrFlag === void 0) {
+          request = {
+            emitStartConversationEvent: requestOrFlag !== null && requestOrFlag !== void 0 ? requestOrFlag : true
+          };
+        } else {
+          request = requestOrFlag;
+        }
+        const uriStart = (0, powerPlatformEnvironment_1.getCopilotStudioConnectionUrl)(this.settings, request.conversationId);
+        const body = {
+          emitStartConversationEvent: (_a = request.emitStartConversationEvent) !== null && _a !== void 0 ? _a : true
+        };
+        if (request.locale) {
+          body.locale = request.locale;
+        }
+        logger.info("Starting conversation ...", request);
+        this.logDiagnostic("Start conversation request:", body);
         yield* this.postRequestAsync(uriStart, body, "POST");
       }
       /**
@@ -10466,14 +10578,48 @@ var require_copilotStudioClient = __commonJS({
         yield* this.postRequestAsync(uriExecute, qbody, "POST");
       }
       /**
-       * Starts a new conversation with the Copilot Studio service.
-       * @param emitStartConversationEvent Whether to emit a start conversation event. Defaults to true.
-       * @returns A promise yielding an array of activities.
-       * @deprecated Use startConversationStreaming instead.
+       * Executes a turn in an existing conversation by sending an activity.
+       * This method provides explicit control over the conversation ID.
+       * @param activity The activity to send.
+       * @param conversationId The ID of the conversation. Required.
+       * @returns An async generator yielding the Agent's Activities.
+       * @throws Error if conversationId is not provided.
        */
-      async startConversationAsync(emitStartConversationEvent = true) {
+      async *executeStreaming(activity, conversationId) {
+        if (!conversationId || !conversationId.trim()) {
+          throw new Error("conversationId is required for executeStreaming");
+        }
+        const uriExecute = (0, powerPlatformEnvironment_1.getCopilotStudioConnectionUrl)(this.settings, conversationId);
+        const request = new executeTurnRequest_1.ExecuteTurnRequest(activity, conversationId);
+        logger.info("Executing turn with conversation ID:", conversationId);
+        this.logDiagnostic("Execute turn request:", {
+          conversationId,
+          activityType: activity.type,
+          activityText: activity.text
+        });
+        yield* this.postRequestAsync(uriExecute, request, "POST");
+      }
+      /**
+       * Executes a turn in an existing conversation by sending an activity.
+       * @param activity The activity to send.
+       * @param conversationId The ID of the conversation. Required.
+       * @returns A promise yielding an array of activities.
+       * @throws Error if conversationId is not provided.
+       * @deprecated Use executeStreaming instead.
+       */
+      async execute(activity, conversationId) {
         const result = [];
-        for await (const value of this.startConversationStreaming(emitStartConversationEvent)) {
+        for await (const value of this.executeStreaming(activity, conversationId)) {
+          result.push(value);
+        }
+        return result;
+      }
+      /**
+       * Implementation of startConversationAsync with overloads.
+       */
+      async startConversationAsync(requestOrFlag) {
+        const result = [];
+        for await (const value of this.startConversationStreaming(requestOrFlag)) {
           result.push(value);
         }
         return result;
@@ -10516,11 +10662,99 @@ var require_copilotStudioClient = __commonJS({
         }
         return result;
       }
+      /**
+       * Starts a new conversation and returns a typed response.
+       * @param request The request parameters for starting the conversation.
+       * @returns A promise yielding a StartResponse with activities and conversation metadata.
+       */
+      async startConversationWithResponse(request) {
+        var _a;
+        const activities = [];
+        let finalConversationId = "";
+        for await (const activity of this.startConversationStreaming(request)) {
+          activities.push(activity);
+          if ((_a = activity.conversation) === null || _a === void 0 ? void 0 : _a.id) {
+            finalConversationId = activity.conversation.id;
+          }
+        }
+        finalConversationId = finalConversationId || this.conversationId;
+        return (0, responses_1.createStartResponse)(activities, finalConversationId);
+      }
+      /**
+       * Executes a turn and returns a typed response.
+       * @param activity The activity to send.
+       * @param conversationId The conversation ID.
+       * @returns A promise yielding an ExecuteTurnResponse with activities and metadata.
+       */
+      async executeWithResponse(activity, conversationId) {
+        const activities = [];
+        for await (const value of this.executeStreaming(activity, conversationId)) {
+          activities.push(value);
+        }
+        return (0, responses_1.createExecuteTurnResponse)(activities, conversationId);
+      }
+      /**
+       * Subscribes to a conversation to receive events via Server-Sent Events (SSE).
+       * This method allows resumption from a specific event ID.
+       * @param conversationId The ID of the conversation to subscribe to.
+       * @param lastReceivedEventId Optional. The last received event ID for resumption.
+       * @returns An async generator yielding SubscribeEvent objects containing activities and event IDs.
+       */
+      async *subscribeAsync(conversationId, lastReceivedEventId) {
+        if (!conversationId || !conversationId.trim()) {
+          throw new Error("conversationId is required for subscribeAsync");
+        }
+        const url = (0, powerPlatformEnvironment_1.getCopilotStudioSubscribeUrl)(this.settings, conversationId);
+        logger.info("Subscribing to conversation:", conversationId);
+        this.logDiagnostic("Subscribe request:", { conversationId, lastReceivedEventId, url });
+        const eventSource = (0, eventsource_client_1.createEventSource)({
+          url,
+          headers: {
+            Authorization: `Bearer ${this.token}`,
+            "User-Agent": userAgentHelper_1.UserAgentHelper.getProductInfo(),
+            Accept: "text/event-stream",
+            ...lastReceivedEventId && { "Last-Event-ID": lastReceivedEventId }
+          },
+          method: "GET",
+          fetch: async (url2, init) => {
+            const response = await fetch(url2, init);
+            this.processResponseHeaders(response.headers);
+            return response;
+          }
+        });
+        try {
+          for await (const { data, event, id } of eventSource) {
+            if (data && event === "activity") {
+              try {
+                const activity = agents_activity_1.Activity.fromJson(data);
+                const subscribeEvent = {
+                  activity,
+                  eventId: id
+                };
+                logger.debug(`Received activity via subscription, event ID: ${id}`);
+                this.logDiagnostic("Subscribe event received:", { eventId: id, activityType: activity.type });
+                yield subscribeEvent;
+              } catch (error) {
+                logger.error("Failed to parse activity in subscription:", error);
+              }
+            } else if (event === "end") {
+              logger.debug("Subscription stream complete");
+              break;
+            }
+            if (eventSource.readyState === "closed") {
+              logger.debug("Subscription connection closed");
+              break;
+            }
+          }
+        } finally {
+          eventSource.close();
+        }
+      }
     };
     exports2.CopilotStudioClient = CopilotStudioClient2;
     CopilotStudioClient2.conversationIdHeaderKey = "x-ms-conversationid";
     CopilotStudioClient2.islandExperimentalUrlHeaderKey = "x-ms-d2e-experimental";
-    CopilotStudioClient2.scopeFromSettings = powerPlatformEnvironment_1.getTokenAudience;
+    CopilotStudioClient2.scopeFromSettings = scopeHelper_1.ScopeHelper.getScopeFromSettings;
   }
 });
 
@@ -20583,30 +20817,43 @@ var require_copilotStudioWebChat = __commonJS({
          * ```
          */
       static createConnection(client, settings) {
+        var _a;
         logger.info("--> Creating connection between Copilot Studio and WebChat ...");
+        const normalizedConversationId = (settings === null || settings === void 0 ? void 0 : settings.conversationId) && settings.conversationId.trim() !== "" ? settings.conversationId.trim() : void 0;
+        const shouldStart = (_a = settings === null || settings === void 0 ? void 0 : settings.startConversation) !== null && _a !== void 0 ? _a : !normalizedConversationId;
         let sequence = 0;
         let activitySubscriber;
         let conversation;
+        let activeConversationId = normalizedConversationId;
+        let ended = false;
+        let started = false;
         const connectionStatus$ = new rxjs_1.BehaviorSubject(0);
         const activity$ = createObservable(async (subscriber) => {
+          var _a2;
           activitySubscriber = subscriber;
           const handleAcknowledgementOnce = once(async () => {
             connectionStatus$.next(2);
             await Promise.resolve();
           });
+          if (!shouldStart || started) {
+            await handleAcknowledgementOnce();
+            return;
+          }
+          started = true;
           logger.debug("--> Connection established.");
           notifyTyping();
-          if (connectionStatus$.value < 2) {
-            for await (const activity of client.startConversationStreaming()) {
-              delete activity.replyToId;
-              if (!conversation && activity.conversation) {
-                conversation = activity.conversation;
-                await handleAcknowledgementOnce();
-              }
-              notifyActivity(activity);
+          for await (const activity of client.startConversationStreaming()) {
+            delete activity.replyToId;
+            if (!conversation && activity.conversation) {
+              conversation = activity.conversation;
+            }
+            if ((_a2 = activity.conversation) === null || _a2 === void 0 ? void 0 : _a2.id) {
+              activeConversationId = activity.conversation.id;
             }
             await handleAcknowledgementOnce();
+            notifyActivity(activity);
           }
+          await handleAcknowledgementOnce();
         });
         const notifyActivity = (activity) => {
           const newActivity = {
@@ -20631,15 +20878,22 @@ var require_copilotStudioWebChat = __commonJS({
         return {
           connectionStatus$,
           activity$,
+          get conversationId() {
+            return activeConversationId;
+          },
           postActivity(activity) {
             logger.info("--> Preparing to send activity to Copilot Studio ...");
             if (!activity) {
               throw new Error("Activity cannot be null.");
             }
+            if (ended) {
+              throw new Error("Connection has been ended.");
+            }
             if (!activitySubscriber) {
               throw new Error("Activity subscriber is not initialized.");
             }
             return createObservable(async (subscriber) => {
+              var _a2;
               try {
                 logger.info("--> Sending activity to Copilot Studio ...");
                 const newActivity = agents_activity_1.Activity.fromObject({
@@ -20650,7 +20904,10 @@ var require_copilotStudioWebChat = __commonJS({
                 notifyActivity(newActivity);
                 notifyTyping();
                 subscriber.next(newActivity.id);
-                for await (const responseActivity of client.sendActivityStreaming(newActivity)) {
+                for await (const responseActivity of client.sendActivityStreaming(newActivity, activeConversationId)) {
+                  if (!activeConversationId && ((_a2 = responseActivity.conversation) === null || _a2 === void 0 ? void 0 : _a2.id)) {
+                    activeConversationId = responseActivity.conversation.id;
+                  }
                   notifyActivity(responseActivity);
                   logger.info("<-- Activity received correctly from Copilot Studio.");
                 }
@@ -20663,6 +20920,7 @@ var require_copilotStudioWebChat = __commonJS({
           },
           end() {
             logger.info("--> Ending connection between Copilot Studio and WebChat ...");
+            ended = true;
             connectionStatus$.complete();
             if (activitySubscriber) {
               activitySubscriber.complete();
@@ -20724,6 +20982,30 @@ var require_copilotStudioWebChat = __commonJS({
   }
 });
 
+// node_modules/@microsoft/agents-copilotstudio-client/dist/src/startRequest.js
+var require_startRequest = __commonJS({
+  "node_modules/@microsoft/agents-copilotstudio-client/dist/src/startRequest.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.createStartRequest = createStartRequest;
+    function createStartRequest(emitStartConversationEvent = true, locale, conversationId) {
+      return {
+        emitStartConversationEvent,
+        locale,
+        conversationId
+      };
+    }
+  }
+});
+
+// node_modules/@microsoft/agents-copilotstudio-client/dist/src/subscribeEvent.js
+var require_subscribeEvent = __commonJS({
+  "node_modules/@microsoft/agents-copilotstudio-client/dist/src/subscribeEvent.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+  }
+});
+
 // node_modules/@microsoft/agents-copilotstudio-client/dist/src/index.js
 var require_src3 = __commonJS({
   "node_modules/@microsoft/agents-copilotstudio-client/dist/src/index.js"(exports2) {
@@ -20753,6 +21035,11 @@ var require_src3 = __commonJS({
     __exportStar(require_executeTurnRequest(), exports2);
     __exportStar(require_powerPlatformCloud(), exports2);
     __exportStar(require_powerPlatformEnvironment(), exports2);
+    __exportStar(require_responses(), exports2);
+    __exportStar(require_scopeHelper(), exports2);
+    __exportStar(require_startRequest(), exports2);
+    __exportStar(require_subscribeEvent(), exports2);
+    __exportStar(require_userAgentHelper(), exports2);
   }
 });
 
@@ -25130,7 +25417,8 @@ var require_msal_node = __commonJS({
             refresh_on: atEntity.refreshOn,
             key_id: atEntity.keyId,
             token_type: atEntity.tokenType,
-            userAssertionHash: atEntity.userAssertionHash
+            userAssertionHash: atEntity.userAssertionHash,
+            resource: atEntity.resource
           };
         });
         return accessTokens;
@@ -25405,6 +25693,8 @@ var require_msal_node = __commonJS({
     var BROKER_CLIENT_ID = "brk_client_id";
     var BROKER_REDIRECT_URI = "brk_redirect_uri";
     var INSTANCE_AWARE = "instance_aware";
+    var RESOURCE = "resource";
+    var CLI_DATA = "clidata";
     function getDefaultErrorMessage(code) {
       return `See https://aka.ms/msal.js.errors#${code} for details`;
     }
@@ -25599,6 +25889,8 @@ var require_msal_node = __commonJS({
     var methodNotImplemented = "method_not_implemented";
     var nestedAppAuthBridgeDisabled = "nested_app_auth_bridge_disabled";
     var platformBrokerError = "platform_broker_error";
+    var resourceParameterRequired = "resource_parameter_required";
+    var misplacedResourceParam = "misplaced_resource_parameter";
     var ClientAuthErrorCodes = /* @__PURE__ */ Object.freeze({
       __proto__: null,
       authTimeNotFound,
@@ -25618,6 +25910,7 @@ var require_msal_node = __commonJS({
       keyIdMissing,
       maxAgeTranspired,
       methodNotImplemented,
+      misplacedResourceParam,
       multipleMatchingAppMetadata,
       multipleMatchingTokens,
       nestedAppAuthBridgeDisabled,
@@ -25631,6 +25924,7 @@ var require_msal_node = __commonJS({
       openIdConfigError,
       platformBrokerError,
       requestCannotBeMade,
+      resourceParameterRequired,
       stateMismatch,
       stateNotFound,
       tokenClaimsCnfRequiredForSignedJwt,
@@ -25945,6 +26239,9 @@ var require_msal_node = __commonJS({
     function addClientInfo(parameters) {
       parameters.set(CLIENT_INFO, "1");
     }
+    function addCliData(parameters) {
+      parameters.set(CLI_DATA, "1");
+    }
     function addInstanceAware(parameters) {
       if (!parameters.has(INSTANCE_AWARE)) {
         parameters.set(INSTANCE_AWARE, "true");
@@ -26012,6 +26309,11 @@ var require_msal_node = __commonJS({
       }
       if (!parameters.has(BROKER_REDIRECT_URI)) {
         parameters.set(BROKER_REDIRECT_URI, brokerRedirectUri);
+      }
+    }
+    function addResource(parameters, resource) {
+      if (resource) {
+        parameters.set(RESOURCE, resource);
       }
     }
     function stripLeadingHashOrQuery(responseString) {
@@ -26298,7 +26600,7 @@ var require_msal_node = __commonJS({
       }
     };
     var name$1 = "@azure/msal-common";
-    var version$1 = "16.2.0";
+    var version$1 = "16.4.1";
     var AzureCloudInstance = {
       // AzureCloudInstance is not specified.
       None: "none",
@@ -26825,6 +27127,10 @@ var require_msal_node = __commonJS({
        * Gets first tenanted AccountInfo object found based on provided filters
        */
       getAccountInfoFilteredBy(accountFilter, correlationId) {
+        if (Object.keys(accountFilter).length === 0 || Object.values(accountFilter).every((value) => value === null || value === void 0 || value === "")) {
+          this.commonLogger.warning("getAccountInfoFilteredBy: Account filter is empty or invalid, returning null", correlationId);
+          return null;
+        }
         const allAccounts = this.getAllAccounts(accountFilter, correlationId);
         if (allAccounts.length > 1) {
           const sortedAccounts = allAccounts.sort((account) => {
@@ -27891,104 +28197,31 @@ var require_msal_node = __commonJS({
         clientCapabilities: [],
         azureCloudOptions: DEFAULT_AZURE_CLOUD_OPTIONS,
         instanceAware: false,
+        isMcp: false,
         ...authOptions
       };
     }
     function isOidcProtocolMode(config) {
       return config.authOptions.authority.options.protocolMode === ProtocolMode.OIDC;
     }
-    var ServerError = class _ServerError extends AuthError {
-      constructor(errorCode, errorMessage, subError, errorNo, status) {
-        super(errorCode, errorMessage, subError);
-        this.name = "ServerError";
-        this.errorNo = errorNo;
-        this.status = status;
-        Object.setPrototypeOf(this, _ServerError.prototype);
+    var TokenCacheContext = class {
+      constructor(tokenCache, hasChanged) {
+        this.cache = tokenCache;
+        this.hasChanged = hasChanged;
+      }
+      /**
+       * boolean which indicates the changes in cache
+       */
+      get cacheHasChanged() {
+        return this.hasChanged;
+      }
+      /**
+       * function to retrieve the token cache
+       */
+      get tokenCache() {
+        return this.cache;
       }
     };
-    var noTokensFound = "no_tokens_found";
-    var nativeAccountUnavailable = "native_account_unavailable";
-    var refreshTokenExpired = "refresh_token_expired";
-    var uxNotAllowed = "ux_not_allowed";
-    var interactionRequired = "interaction_required";
-    var consentRequired = "consent_required";
-    var loginRequired = "login_required";
-    var badToken = "bad_token";
-    var interruptedUser = "interrupted_user";
-    var InteractionRequiredAuthErrorCodes = /* @__PURE__ */ Object.freeze({
-      __proto__: null,
-      badToken,
-      consentRequired,
-      interactionRequired,
-      interruptedUser,
-      loginRequired,
-      nativeAccountUnavailable,
-      noTokensFound,
-      refreshTokenExpired,
-      uxNotAllowed
-    });
-    var InteractionRequiredServerErrorMessage = [
-      interactionRequired,
-      consentRequired,
-      loginRequired,
-      badToken,
-      uxNotAllowed,
-      interruptedUser
-    ];
-    var InteractionRequiredAuthSubErrorMessage = [
-      "message_only",
-      "additional_action",
-      "basic_action",
-      "user_password_expired",
-      "consent_required",
-      "bad_token",
-      "ux_not_allowed",
-      "interrupted_user"
-    ];
-    var InteractionRequiredAuthError = class _InteractionRequiredAuthError extends AuthError {
-      constructor(errorCode, errorMessage, subError, timestamp, traceId, correlationId, claims, errorNo) {
-        super(errorCode, errorMessage, subError);
-        Object.setPrototypeOf(this, _InteractionRequiredAuthError.prototype);
-        this.timestamp = timestamp || "";
-        this.traceId = traceId || "";
-        this.correlationId = correlationId || "";
-        this.claims = claims || "";
-        this.name = "InteractionRequiredAuthError";
-        this.errorNo = errorNo;
-      }
-    };
-    function isInteractionRequiredError(errorCode, errorString, subError) {
-      const isInteractionRequiredErrorCode = !!errorCode && InteractionRequiredServerErrorMessage.indexOf(errorCode) > -1;
-      const isInteractionRequiredSubError = !!subError && InteractionRequiredAuthSubErrorMessage.indexOf(subError) > -1;
-      const isInteractionRequiredErrorDesc = !!errorString && InteractionRequiredServerErrorMessage.some((irErrorCode) => {
-        return errorString.indexOf(irErrorCode) > -1;
-      });
-      return isInteractionRequiredErrorCode || isInteractionRequiredErrorDesc || isInteractionRequiredSubError;
-    }
-    function createInteractionRequiredAuthError(errorCode, errorMessage) {
-      return new InteractionRequiredAuthError(errorCode, errorMessage);
-    }
-    function parseRequestState(base64Decode, state) {
-      if (!base64Decode) {
-        throw createClientAuthError(noCryptoObject);
-      }
-      if (!state) {
-        throw createClientAuthError(invalidState);
-      }
-      try {
-        const splitState = state.split(RESOURCE_DELIM);
-        const libraryState = splitState[0];
-        const userState = splitState.length > 1 ? splitState.slice(1).join(RESOURCE_DELIM) : "";
-        const libraryStateString = base64Decode(libraryState);
-        const libraryStateObj = JSON.parse(libraryStateString);
-        return {
-          userRequestState: userState || "",
-          libraryState: libraryStateObj
-        };
-      } catch (e) {
-        throw createClientAuthError(invalidState);
-      }
-    }
     function nowSeconds() {
       return Math.round((/* @__PURE__ */ new Date()).getTime() / 1e3);
     }
@@ -28010,170 +28243,6 @@ var require_msal_node = __commonJS({
     function delay(t, value) {
       return new Promise((resolve) => setTimeout(() => resolve(value), t));
     }
-    var NetworkClientSendPostRequestAsync = "networkClientSendPostRequestAsync";
-    var RefreshTokenClientExecutePostToTokenEndpoint = "refreshTokenClientExecutePostToTokenEndpoint";
-    var AuthorizationCodeClientExecutePostToTokenEndpoint = "authorizationCodeClientExecutePostToTokenEndpoint";
-    var RefreshTokenClientExecuteTokenRequest = "refreshTokenClientExecuteTokenRequest";
-    var RefreshTokenClientAcquireToken = "refreshTokenClientAcquireToken";
-    var RefreshTokenClientAcquireTokenWithCachedRefreshToken = "refreshTokenClientAcquireTokenWithCachedRefreshToken";
-    var RefreshTokenClientCreateTokenRequestBody = "refreshTokenClientCreateTokenRequestBody";
-    var SilentFlowClientGenerateResultFromCacheRecord = "silentFlowClientGenerateResultFromCacheRecord";
-    var AuthClientExecuteTokenRequest = "authClientExecuteTokenRequest";
-    var AuthClientCreateTokenRequestBody = "authClientCreateTokenRequestBody";
-    var UpdateTokenEndpointAuthority = "updateTokenEndpointAuthority";
-    var PopTokenGenerateCnf = "popTokenGenerateCnf";
-    var HandleServerTokenResponse = "handleServerTokenResponse";
-    var AuthorityResolveEndpointsAsync = "authorityResolveEndpointsAsync";
-    var AuthorityGetCloudDiscoveryMetadataFromNetwork = "authorityGetCloudDiscoveryMetadataFromNetwork";
-    var AuthorityUpdateCloudDiscoveryMetadata = "authorityUpdateCloudDiscoveryMetadata";
-    var AuthorityGetEndpointMetadataFromNetwork = "authorityGetEndpointMetadataFromNetwork";
-    var AuthorityUpdateEndpointMetadata = "authorityUpdateEndpointMetadata";
-    var AuthorityUpdateMetadataWithRegionalInformation = "authorityUpdateMetadataWithRegionalInformation";
-    var RegionDiscoveryDetectRegion = "regionDiscoveryDetectRegion";
-    var RegionDiscoveryGetRegionFromIMDS = "regionDiscoveryGetRegionFromIMDS";
-    var RegionDiscoveryGetCurrentVersion = "regionDiscoveryGetCurrentVersion";
-    var CacheManagerGetRefreshToken = "cacheManagerGetRefreshToken";
-    var invoke = (callback, eventName, logger, telemetryClient, correlationId) => {
-      return (...args) => {
-        logger.trace(`Executing function '${eventName}'`, correlationId);
-        const inProgressEvent = telemetryClient.startMeasurement(eventName, correlationId);
-        if (correlationId) {
-          telemetryClient.incrementFields({ [`ext.${eventName}CallCount`]: 1 }, correlationId);
-        }
-        try {
-          const result = callback(...args);
-          inProgressEvent.end({
-            success: true
-          });
-          logger.trace(`Returning result from '${eventName}'`, correlationId);
-          return result;
-        } catch (e) {
-          logger.trace(`Error occurred in '${eventName}'`, correlationId);
-          try {
-            logger.trace(JSON.stringify(e), correlationId);
-          } catch (e2) {
-            logger.trace("Unable to print error message.", correlationId);
-          }
-          inProgressEvent.end({
-            success: false
-          }, e);
-          throw e;
-        }
-      };
-    };
-    var invokeAsync = (callback, eventName, logger, telemetryClient, correlationId) => {
-      return (...args) => {
-        logger.trace(`Executing function '${eventName}'`, correlationId);
-        const inProgressEvent = telemetryClient.startMeasurement(eventName, correlationId);
-        if (correlationId) {
-          telemetryClient.incrementFields({ [`ext.${eventName}CallCount`]: 1 }, correlationId);
-        }
-        return callback(...args).then((response) => {
-          logger.trace(`Returning result from '${eventName}'`, correlationId);
-          inProgressEvent.end({
-            success: true
-          });
-          return response;
-        }).catch((e) => {
-          logger.trace(`Error occurred in '${eventName}'`, correlationId);
-          try {
-            logger.trace(JSON.stringify(e), correlationId);
-          } catch (e2) {
-            logger.trace("Unable to print error message.", correlationId);
-          }
-          inProgressEvent.end({
-            success: false
-          }, e);
-          throw e;
-        });
-      };
-    };
-    var KeyLocation = {
-      SW: "sw"
-    };
-    var PopTokenGenerator = class {
-      constructor(cryptoUtils, performanceClient) {
-        this.cryptoUtils = cryptoUtils;
-        this.performanceClient = performanceClient;
-      }
-      /**
-       * Generates the req_cnf validated at the RP in the POP protocol for SHR parameters
-       * and returns an object containing the keyid, the full req_cnf string and the req_cnf string hash
-       * @param request
-       * @returns
-       */
-      async generateCnf(request, logger) {
-        const reqCnf = await invokeAsync(this.generateKid.bind(this), PopTokenGenerateCnf, logger, this.performanceClient, request.correlationId)(request);
-        const reqCnfString = this.cryptoUtils.base64UrlEncode(JSON.stringify(reqCnf));
-        return {
-          kid: reqCnf.kid,
-          reqCnfString
-        };
-      }
-      /**
-       * Generates key_id for a SHR token request
-       * @param request
-       * @returns
-       */
-      async generateKid(request) {
-        const kidThumbprint = await this.cryptoUtils.getPublicKeyThumbprint(request);
-        return {
-          kid: kidThumbprint,
-          xms_ksl: KeyLocation.SW
-        };
-      }
-      /**
-       * Signs the POP access_token with the local generated key-pair
-       * @param accessToken
-       * @param request
-       * @returns
-       */
-      async signPopToken(accessToken, keyId, request) {
-        return this.signPayload(accessToken, keyId, request);
-      }
-      /**
-       * Utility function to generate the signed JWT for an access_token
-       * @param payload
-       * @param kid
-       * @param request
-       * @param claims
-       * @returns
-       */
-      async signPayload(payload, keyId, request, claims) {
-        const { resourceRequestMethod, resourceRequestUri, shrClaims, shrNonce, shrOptions } = request;
-        const resourceUrlString = resourceRequestUri ? new UrlString(resourceRequestUri) : void 0;
-        const resourceUrlComponents = resourceUrlString?.getUrlComponents();
-        return this.cryptoUtils.signJwt({
-          at: payload,
-          ts: nowSeconds(),
-          m: resourceRequestMethod?.toUpperCase(),
-          u: resourceUrlComponents?.HostNameAndPort,
-          nonce: shrNonce || this.cryptoUtils.createNewGuid(),
-          p: resourceUrlComponents?.AbsolutePath,
-          q: resourceUrlComponents?.QueryString ? [[], resourceUrlComponents.QueryString] : void 0,
-          client_claims: shrClaims || void 0,
-          ...claims
-        }, keyId, shrOptions, request.correlationId);
-      }
-    };
-    var TokenCacheContext = class {
-      constructor(tokenCache, hasChanged) {
-        this.cache = tokenCache;
-        this.hasChanged = hasChanged;
-      }
-      /**
-       * boolean which indicates the changes in cache
-       */
-      get cacheHasChanged() {
-        return this.hasChanged;
-      }
-      /**
-       * function to retrieve the token cache
-       */
-      get tokenCache() {
-        return this.cache;
-      }
-    };
     function createIdTokenEntity(homeAccountId, environment, idToken, clientId, tenantId) {
       const idTokenEntity = {
         credentialType: CredentialType.ID_TOKEN,
@@ -28325,6 +28394,244 @@ var require_msal_node = __commonJS({
     function isAuthorityMetadataExpired(metadata) {
       return metadata.expiresAt <= nowSeconds();
     }
+    var NetworkClientSendPostRequestAsync = "networkClientSendPostRequestAsync";
+    var RefreshTokenClientExecutePostToTokenEndpoint = "refreshTokenClientExecutePostToTokenEndpoint";
+    var AuthorizationCodeClientExecutePostToTokenEndpoint = "authorizationCodeClientExecutePostToTokenEndpoint";
+    var RefreshTokenClientExecuteTokenRequest = "refreshTokenClientExecuteTokenRequest";
+    var RefreshTokenClientAcquireToken = "refreshTokenClientAcquireToken";
+    var RefreshTokenClientAcquireTokenWithCachedRefreshToken = "refreshTokenClientAcquireTokenWithCachedRefreshToken";
+    var RefreshTokenClientCreateTokenRequestBody = "refreshTokenClientCreateTokenRequestBody";
+    var SilentFlowClientGenerateResultFromCacheRecord = "silentFlowClientGenerateResultFromCacheRecord";
+    var AuthClientExecuteTokenRequest = "authClientExecuteTokenRequest";
+    var AuthClientCreateTokenRequestBody = "authClientCreateTokenRequestBody";
+    var UpdateTokenEndpointAuthority = "updateTokenEndpointAuthority";
+    var PopTokenGenerateCnf = "popTokenGenerateCnf";
+    var HandleServerTokenResponse = "handleServerTokenResponse";
+    var AuthorityResolveEndpointsAsync = "authorityResolveEndpointsAsync";
+    var AuthorityGetCloudDiscoveryMetadataFromNetwork = "authorityGetCloudDiscoveryMetadataFromNetwork";
+    var AuthorityUpdateCloudDiscoveryMetadata = "authorityUpdateCloudDiscoveryMetadata";
+    var AuthorityGetEndpointMetadataFromNetwork = "authorityGetEndpointMetadataFromNetwork";
+    var AuthorityUpdateEndpointMetadata = "authorityUpdateEndpointMetadata";
+    var AuthorityUpdateMetadataWithRegionalInformation = "authorityUpdateMetadataWithRegionalInformation";
+    var RegionDiscoveryDetectRegion = "regionDiscoveryDetectRegion";
+    var RegionDiscoveryGetRegionFromIMDS = "regionDiscoveryGetRegionFromIMDS";
+    var RegionDiscoveryGetCurrentVersion = "regionDiscoveryGetCurrentVersion";
+    var CacheManagerGetRefreshToken = "cacheManagerGetRefreshToken";
+    var invoke = (callback, eventName, logger, telemetryClient, correlationId) => {
+      return (...args) => {
+        logger.trace(`Executing function '${eventName}'`, correlationId);
+        const inProgressEvent = telemetryClient.startMeasurement(eventName, correlationId);
+        if (correlationId) {
+          telemetryClient.incrementFields({ [`ext.${eventName}CallCount`]: 1 }, correlationId);
+        }
+        try {
+          const result = callback(...args);
+          inProgressEvent.end({
+            success: true
+          });
+          logger.trace(`Returning result from '${eventName}'`, correlationId);
+          return result;
+        } catch (e) {
+          logger.trace(`Error occurred in '${eventName}'`, correlationId);
+          try {
+            logger.trace(JSON.stringify(e), correlationId);
+          } catch (e2) {
+            logger.trace("Unable to print error message.", correlationId);
+          }
+          inProgressEvent.end({
+            success: false
+          }, e);
+          throw e;
+        }
+      };
+    };
+    var invokeAsync = (callback, eventName, logger, telemetryClient, correlationId) => {
+      return (...args) => {
+        logger.trace(`Executing function '${eventName}'`, correlationId);
+        const inProgressEvent = telemetryClient.startMeasurement(eventName, correlationId);
+        if (correlationId) {
+          telemetryClient.incrementFields({ [`ext.${eventName}CallCount`]: 1 }, correlationId);
+        }
+        return callback(...args).then((response) => {
+          logger.trace(`Returning result from '${eventName}'`, correlationId);
+          inProgressEvent.end({
+            success: true
+          });
+          return response;
+        }).catch((e) => {
+          logger.trace(`Error occurred in '${eventName}'`, correlationId);
+          try {
+            logger.trace(JSON.stringify(e), correlationId);
+          } catch (e2) {
+            logger.trace("Unable to print error message.", correlationId);
+          }
+          inProgressEvent.end({
+            success: false
+          }, e);
+          throw e;
+        });
+      };
+    };
+    var KeyLocation = {
+      SW: "sw"
+    };
+    var PopTokenGenerator = class {
+      constructor(cryptoUtils, performanceClient) {
+        this.cryptoUtils = cryptoUtils;
+        this.performanceClient = performanceClient;
+      }
+      /**
+       * Generates the req_cnf validated at the RP in the POP protocol for SHR parameters
+       * and returns an object containing the keyid, the full req_cnf string and the req_cnf string hash
+       * @param request
+       * @returns
+       */
+      async generateCnf(request, logger) {
+        const reqCnf = await invokeAsync(this.generateKid.bind(this), PopTokenGenerateCnf, logger, this.performanceClient, request.correlationId)(request);
+        const reqCnfString = this.cryptoUtils.base64UrlEncode(JSON.stringify(reqCnf));
+        return {
+          kid: reqCnf.kid,
+          reqCnfString
+        };
+      }
+      /**
+       * Generates key_id for a SHR token request
+       * @param request
+       * @returns
+       */
+      async generateKid(request) {
+        const kidThumbprint = await this.cryptoUtils.getPublicKeyThumbprint(request);
+        return {
+          kid: kidThumbprint,
+          xms_ksl: KeyLocation.SW
+        };
+      }
+      /**
+       * Signs the POP access_token with the local generated key-pair
+       * @param accessToken
+       * @param request
+       * @returns
+       */
+      async signPopToken(accessToken, keyId, request) {
+        return this.signPayload(accessToken, keyId, request);
+      }
+      /**
+       * Utility function to generate the signed JWT for an access_token
+       * @param payload
+       * @param kid
+       * @param request
+       * @param claims
+       * @returns
+       */
+      async signPayload(payload, keyId, request, claims) {
+        const { resourceRequestMethod, resourceRequestUri, shrClaims, shrNonce, shrOptions } = request;
+        const resourceUrlString = resourceRequestUri ? new UrlString(resourceRequestUri) : void 0;
+        const resourceUrlComponents = resourceUrlString?.getUrlComponents();
+        return this.cryptoUtils.signJwt({
+          at: payload,
+          ts: nowSeconds(),
+          m: resourceRequestMethod?.toUpperCase(),
+          u: resourceUrlComponents?.HostNameAndPort,
+          nonce: shrNonce || this.cryptoUtils.createNewGuid(),
+          p: resourceUrlComponents?.AbsolutePath,
+          q: resourceUrlComponents?.QueryString ? [[], resourceUrlComponents.QueryString] : void 0,
+          client_claims: shrClaims || void 0,
+          ...claims
+        }, keyId, shrOptions, request.correlationId);
+      }
+    };
+    var noTokensFound = "no_tokens_found";
+    var nativeAccountUnavailable = "native_account_unavailable";
+    var refreshTokenExpired = "refresh_token_expired";
+    var uxNotAllowed = "ux_not_allowed";
+    var interactionRequired = "interaction_required";
+    var consentRequired = "consent_required";
+    var loginRequired = "login_required";
+    var badToken = "bad_token";
+    var interruptedUser = "interrupted_user";
+    var InteractionRequiredAuthErrorCodes = /* @__PURE__ */ Object.freeze({
+      __proto__: null,
+      badToken,
+      consentRequired,
+      interactionRequired,
+      interruptedUser,
+      loginRequired,
+      nativeAccountUnavailable,
+      noTokensFound,
+      refreshTokenExpired,
+      uxNotAllowed
+    });
+    var InteractionRequiredServerErrorMessage = [
+      interactionRequired,
+      consentRequired,
+      loginRequired,
+      badToken,
+      uxNotAllowed,
+      interruptedUser
+    ];
+    var InteractionRequiredAuthSubErrorMessage = [
+      "message_only",
+      "additional_action",
+      "basic_action",
+      "user_password_expired",
+      "consent_required",
+      "bad_token",
+      "ux_not_allowed",
+      "interrupted_user"
+    ];
+    var InteractionRequiredAuthError = class _InteractionRequiredAuthError extends AuthError {
+      constructor(errorCode, errorMessage, subError, timestamp, traceId, correlationId, claims, errorNo) {
+        super(errorCode, errorMessage, subError);
+        Object.setPrototypeOf(this, _InteractionRequiredAuthError.prototype);
+        this.timestamp = timestamp || "";
+        this.traceId = traceId || "";
+        this.correlationId = correlationId || "";
+        this.claims = claims || "";
+        this.name = "InteractionRequiredAuthError";
+        this.errorNo = errorNo;
+      }
+    };
+    function isInteractionRequiredError(errorCode, errorString, subError) {
+      const isInteractionRequiredErrorCode = !!errorCode && InteractionRequiredServerErrorMessage.indexOf(errorCode) > -1;
+      const isInteractionRequiredSubError = !!subError && InteractionRequiredAuthSubErrorMessage.indexOf(subError) > -1;
+      const isInteractionRequiredErrorDesc = !!errorString && InteractionRequiredServerErrorMessage.some((irErrorCode) => {
+        return errorString.indexOf(irErrorCode) > -1;
+      });
+      return isInteractionRequiredErrorCode || isInteractionRequiredErrorDesc || isInteractionRequiredSubError;
+    }
+    function createInteractionRequiredAuthError(errorCode, errorMessage) {
+      return new InteractionRequiredAuthError(errorCode, errorMessage);
+    }
+    var ServerError = class _ServerError extends AuthError {
+      constructor(errorCode, errorMessage, subError, errorNo, status) {
+        super(errorCode, errorMessage, subError);
+        this.name = "ServerError";
+        this.errorNo = errorNo;
+        this.status = status;
+        Object.setPrototypeOf(this, _ServerError.prototype);
+      }
+    };
+    function parseRequestState(base64Decode, state) {
+      if (!base64Decode) {
+        throw createClientAuthError(noCryptoObject);
+      }
+      if (!state) {
+        throw createClientAuthError(invalidState);
+      }
+      try {
+        const splitState = state.split(RESOURCE_DELIM);
+        const libraryState = splitState[0];
+        const userState = splitState.length > 1 ? splitState.slice(1).join(RESOURCE_DELIM) : "";
+        const libraryStateString = base64Decode(libraryState);
+        const libraryStateObj = JSON.parse(libraryStateString);
+        return {
+          userRequestState: userState || "",
+          libraryState: libraryStateObj
+        };
+      } catch (e) {
+        throw createClientAuthError(invalidState);
+      }
+    }
     var ResponseHandler = class _ResponseHandler {
       constructor(clientId, cacheStorage, cryptoObj, logger, performanceClient, serializableCache, persistencePlugin) {
         this.clientId = clientId;
@@ -28448,7 +28755,8 @@ ${serverError}`, correlationId);
             authCodePayload,
             void 0,
             // nativeAccountId
-            this.logger
+            this.logger,
+            this.performanceClient
           );
         }
         let cachedAccessToken = null;
@@ -28461,6 +28769,10 @@ ${serverError}`, correlationId);
           const extendedTokenExpirationSeconds = tokenExpirationSeconds + extExpiresIn;
           const refreshOnSeconds = refreshIn && refreshIn > 0 ? reqTimestamp + refreshIn : void 0;
           cachedAccessToken = createAccessTokenEntity(this.homeAccountIdentifier, env, serverTokenResponse.access_token, this.clientId, claimsTenantId || authority.tenant || "", responseScopes.printScopes(), tokenExpirationSeconds, extendedTokenExpirationSeconds, this.cryptoObj.base64Decode, refreshOnSeconds, serverTokenResponse.token_type, userAssertionHash, serverTokenResponse.key_id);
+          const resource = request.resource || null;
+          if (resource) {
+            cachedAccessToken.resource = resource;
+          }
         }
         let cachedRefreshToken = null;
         if (serverTokenResponse.refresh_token) {
@@ -28563,16 +28875,15 @@ ${serverError}`, correlationId);
         };
       }
     };
-    function buildAccountToCache(cacheStorage, authority, homeAccountId, base64Decode, correlationId, idTokenClaims, clientInfo, environment, claimsTenantId, authCodePayload, nativeAccountId, logger) {
+    function buildAccountToCache(cacheStorage, authority, homeAccountId, base64Decode, correlationId, idTokenClaims, clientInfo, environment, claimsTenantId, authCodePayload, nativeAccountId, logger, performanceClient) {
       logger?.verbose("setCachedAccount called", correlationId);
-      const accountKeys = cacheStorage.getAccountKeys();
-      const baseAccountKey = accountKeys.find((accountKey) => {
-        return accountKey.startsWith(homeAccountId);
-      });
-      let cachedAccount = null;
-      if (baseAccountKey) {
-        cachedAccount = cacheStorage.getAccount(baseAccountKey, correlationId);
+      const accountEnvironment = environment || authority.getPreferredCache();
+      const matchedAccounts = cacheStorage.getAccountsFilteredBy({ homeAccountId, environment: accountEnvironment }, correlationId);
+      performanceClient?.addFields({ cacheMatchedAccounts: matchedAccounts.length }, correlationId);
+      if (matchedAccounts.length > 1) {
+        logger?.warning("Multiple base accounts matched homeAccountId. Ignoring cached account and creating a new base account.", correlationId);
       }
+      const cachedAccount = matchedAccounts.length === 1 ? matchedAccounts[0] : null;
       const baseAccount = cachedAccount || createAccountEntity({
         homeAccountId,
         idTokenClaims,
@@ -29666,6 +29977,7 @@ Error Description: '${typedError.message}'`, this.correlationId);
           addRedirectUri(parameters, request.redirectUri);
         }
         addScopes(parameters, request.scopes, true, this.oidcDefaultScopes);
+        addResource(parameters, request.resource);
         addAuthorizationCode(parameters, request.code);
         addLibraryInfo(parameters, this.config.libraryInfo);
         addApplicationTelemetry(parameters, this.config.telemetry.application);
@@ -29998,6 +30310,11 @@ Error Description: '${typedError.message}'`, this.correlationId);
         } else if (wasClockTurnedBack(cachedAccessToken.cachedAt) || isTokenExpired(cachedAccessToken.expiresOn, this.config.systemOptions.tokenRenewalOffsetSeconds)) {
           this.setCacheOutcome(CacheOutcome.CACHED_ACCESS_TOKEN_EXPIRED, request.correlationId);
           throw createClientAuthError(tokenRefreshRequired);
+        } else if (request.resource) {
+          if (cachedAccessToken.resource !== request.resource) {
+            this.setCacheOutcome(CacheOutcome.NO_CACHED_ACCESS_TOKEN, request.correlationId);
+            throw createClientAuthError(tokenRefreshRequired);
+          }
         } else if (cachedAccessToken.refreshOn && isTokenExpired(cachedAccessToken.refreshOn, 0)) {
           lastCacheOutcome = CacheOutcome.PROACTIVELY_REFRESHED;
         }
@@ -30055,10 +30372,12 @@ Error Description: '${typedError.message}'`, this.correlationId);
         ...request.extraScopesToConsent || []
       ];
       addScopes(parameters, requestScopes, true, authOptions.authority.options.OIDCOptions?.defaultScopes);
+      addResource(parameters, request.resource);
       addRedirectUri(parameters, request.redirectUri);
       addCorrelationId(parameters, correlationId);
       addResponseMode(parameters, request.responseMode);
       addClientInfo(parameters);
+      addCliData(parameters);
       if (request.prompt) {
         addPrompt(parameters, request.prompt);
       }
@@ -30142,6 +30461,23 @@ Error Description: '${typedError.message}'`, this.correlationId);
     }
     function extractLoginHint(account) {
       return account.loginHint || account.idTokenClaims?.login_hint || null;
+    }
+    function enforceResourceParameter(isMcp, request) {
+      if (!isMcp) {
+        return;
+      }
+      if (request.resource && (containsResourceParam(request.extraParameters) || containsResourceParam(request.extraQueryParameters))) {
+        throw createClientAuthError(misplacedResourceParam);
+      }
+      if (!request.resource) {
+        throw createClientAuthError(resourceParameterRequired);
+      }
+    }
+    function containsResourceParam(params) {
+      if (!params) {
+        return false;
+      }
+      return Object.prototype.hasOwnProperty.call(params, "resource");
     }
     var unexpectedError = "unexpected_error";
     var postRequestFailed = "post_request_failed";
@@ -30462,6 +30798,7 @@ Error Description: '${typedError.message}'`, this.correlationId);
               keyId: serializedAT.key_id,
               tokenType: serializedAT.token_type,
               userAssertionHash: serializedAT.userAssertionHash,
+              resource: serializedAT.resource,
               lastUpdatedAt: Date.now().toString()
             };
             atObjects[key] = accessToken;
@@ -30948,7 +31285,8 @@ Error Description: '${typedError.message}'`, this.correlationId);
       azureCloudOptions: {
         azureCloudInstance: AzureCloudInstance.None,
         tenant: ""
-      }
+      },
+      isMcp: false
     };
     var DEFAULT_LOGGER_OPTIONS = {
       loggerCallback: () => {
@@ -31971,7 +32309,7 @@ Error Description: '${typedError.message}'`, this.correlationId);
       }
     };
     var name = "@azure/msal-node";
-    var version2 = "5.0.6";
+    var version2 = "5.1.2";
     var BaseClient = class {
       constructor(configuration) {
         this.config = buildClientConfiguration(configuration);
@@ -32354,7 +32692,8 @@ Error Description: '${typedError.message}'`, this.correlationId);
             clientId: this.config.auth.clientId,
             authority: discoveredAuthority,
             clientCapabilities: this.config.auth.clientCapabilities,
-            redirectUri
+            redirectUri,
+            isMcp: this.config.auth.isMcp
           },
           loggerOptions: {
             logLevel: this.config.system.loggerOptions.logLevel,
@@ -32743,6 +33082,7 @@ Error Description: '${typedError.message}'`, this.correlationId);
        */
       async acquireTokenByDeviceCode(request) {
         this.logger.info("acquireTokenByDeviceCode called", request.correlationId || "");
+        enforceResourceParameter(this.config.auth.isMcp, request);
         const validRequest = Object.assign(request, await this.initializeBaseRequest(request));
         const serverTelemetryManager = this.initializeServerTelemetryManager(ApiId.acquireTokenByDeviceCode, validRequest.correlationId);
         try {
@@ -32765,6 +33105,7 @@ Error Description: '${typedError.message}'`, this.correlationId);
       async acquireTokenInteractive(request) {
         const correlationId = request.correlationId || this.cryptoProvider.createNewGuid();
         this.logger.trace("acquireTokenInteractive called", correlationId);
+        enforceResourceParameter(this.config.auth.isMcp, request);
         const { openBrowser, successTemplate, errorTemplate, windowHandle, loopbackClient: customLoopbackClient, ...remainingProperties } = request;
         if (this.nativeBrokerPlugin) {
           const brokerRequest = {
@@ -32840,6 +33181,7 @@ Error Description: '${typedError.message}'`, this.correlationId);
       async acquireTokenSilent(request) {
         const correlationId = request.correlationId || this.cryptoProvider.createNewGuid();
         this.logger.trace("acquireTokenSilent called", correlationId);
+        enforceResourceParameter(this.config.auth.isMcp, request);
         if (this.nativeBrokerPlugin) {
           const brokerRequest = {
             ...request,
@@ -32865,6 +33207,22 @@ Error Description: '${typedError.message}'`, this.correlationId);
           request.redirectUri = "";
         }
         return super.acquireTokenSilent(request);
+      }
+      /**
+       * Acquires a token by exchanging the authorization code received from the first step of OAuth 2.0 Authorization Code Flow.
+       * In MCP mode, a resource parameter is required on the request.
+       */
+      async acquireTokenByCode(request, authCodePayLoad) {
+        enforceResourceParameter(this.config.auth.isMcp, request);
+        return super.acquireTokenByCode(request, authCodePayLoad);
+      }
+      /**
+       * Acquires a token by exchanging the refresh token provided for a new set of tokens.
+       * In MCP mode, a resource parameter is required on the request.
+       */
+      async acquireTokenByRefreshToken(request) {
+        enforceResourceParameter(this.config.auth.isMcp, request);
+        return super.acquireTokenByRefreshToken(request);
       }
       /**
        * Removes cache artifacts associated with the given account
@@ -35332,6 +35690,19 @@ var require_shared_auth = __commonJS({
     var { log: log2 } = require_shared_utils();
     var { createCachePlugin } = require_msal_cache();
     var VSCODE_CLIENT_ID2 = "51f81489-12ee-4a9e-aaae-a2591f45987d";
+    var AZURE_PS_CLIENT_ID = "1950a258-227b-4e31-a9cf-717495945fc2";
+    var PAC_CLI_CLIENT_ID2 = "9cee029c-6210-4654-90bb-17e6e9d36617";
+    function getDefaultClientId(cloud, scope) {
+      if (cloud === "gcc" || cloud === "gcchigh") {
+        if (scope && scope.startsWith("api://")) {
+          return AZURE_PS_CLIENT_ID;
+        }
+        if (scope && !scope.includes(".dynamics.com") && !scope.includes(".dynamics.us")) {
+          return PAC_CLI_CLIENT_ID2;
+        }
+      }
+      return VSCODE_CLIENT_ID2;
+    }
     var ISLAND_RESOURCE_IDS = {
       0: "a522f059-bb65-47c0-8934-7db6e5286414",
       1: "a522f059-bb65-47c0-8934-7db6e5286414",
@@ -35356,26 +35727,25 @@ var require_shared_auth = __commonJS({
       }
       return _cachePlugin;
     }
-    async function createMsalApp2(tenantId, clientId, cacheSlot) {
+    function getLoginAuthority(cloud) {
+      if (cloud === "gcchigh") return "https://login.microsoftonline.us";
+      return "https://login.microsoftonline.com";
+    }
+    async function createMsalApp2(tenantId, clientId, cacheSlot, cloud) {
       const msal = require_msal_node();
+      const authority = `${getLoginAuthority(cloud || "public")}/${tenantId}`;
       if (cacheSlot) {
         const plugin = await createCachePlugin(cacheSlot);
         return new msal.PublicClientApplication({
-          auth: {
-            clientId,
-            authority: `https://login.microsoftonline.com/${tenantId}`
-          },
+          auth: { clientId, authority },
           cache: { cachePlugin: plugin }
         });
       }
-      const key = `${tenantId}:${clientId}`;
+      const key = `${tenantId}:${clientId}:${cloud || "public"}`;
       if (_msalApps.has(key)) return _msalApps.get(key);
       const cachePlugin = await getDefaultCachePlugin();
       const app = new msal.PublicClientApplication({
-        auth: {
-          clientId,
-          authority: `https://login.microsoftonline.com/${tenantId}`
-        },
+        auth: { clientId, authority },
         cache: { cachePlugin }
       });
       _msalApps.set(key, app);
@@ -35394,8 +35764,8 @@ var require_shared_auth = __commonJS({
         } : void 0
       };
     }
-    async function acquireTokenDeviceCode(tenantId, clientId, scopes, cacheSlot) {
-      const app = await createMsalApp2(tenantId, clientId, cacheSlot);
+    async function acquireTokenDeviceCode(tenantId, clientId, scopes, cacheSlot, cloud) {
+      const app = await createMsalApp2(tenantId, clientId, cacheSlot, cloud);
       const result = await app.acquireTokenByDeviceCode({
         scopes,
         deviceCodeCallback: (response) => {
@@ -35416,8 +35786,8 @@ var require_shared_auth = __commonJS({
       if (!result) throw new Error("Device code flow returned no result");
       return buildTokenInfo(result);
     }
-    async function acquireTokenInteractive(tenantId, clientId, scopes, cacheSlot) {
-      const app = await createMsalApp2(tenantId, clientId, cacheSlot);
+    async function acquireTokenInteractive(tenantId, clientId, scopes, cacheSlot, cloud) {
+      const app = await createMsalApp2(tenantId, clientId, cacheSlot, cloud);
       const result = await app.acquireTokenInteractive({
         scopes,
         openBrowser: async (url) => {
@@ -35432,8 +35802,8 @@ var require_shared_auth = __commonJS({
       if (!result) throw new Error("Interactive flow returned no result");
       return buildTokenInfo(result);
     }
-    async function acquireTokenSilent2(tenantId, clientId, scopes, cacheSlot) {
-      const app = await createMsalApp2(tenantId, clientId, cacheSlot);
+    async function acquireTokenSilent2(tenantId, clientId, scopes, cacheSlot, cloud) {
+      const app = await createMsalApp2(tenantId, clientId, cacheSlot, cloud);
       const allAccounts = await app.getTokenCache().getAllAccounts();
       const accounts = allAccounts.filter((a) => a.tenantId === tenantId);
       if (accounts.length > 0) {
@@ -35453,28 +35823,35 @@ var require_shared_auth = __commonJS({
       }
       return null;
     }
-    async function getOrAcquireToken(tenantId, clientId, scopes, label, cacheSlot) {
-      const silent = await acquireTokenSilent2(tenantId, clientId, scopes, cacheSlot);
+    async function getOrAcquireToken(tenantId, clientId, scopes, label, cacheSlot, cloud) {
+      const silent = await acquireTokenSilent2(tenantId, clientId, scopes, cacheSlot, cloud);
       if (silent) {
         log2(`${label}: using cached token (expires ${silent.expiresOn})`);
         return silent;
       }
       log2(`${label}: starting interactive login...`);
-      return acquireTokenInteractive(tenantId, clientId, scopes, cacheSlot);
+      return acquireTokenInteractive(tenantId, clientId, scopes, cacheSlot, cloud);
     }
-    async function getOrAcquireIslandToken(tenantId, clusterCategory, label) {
+    async function getOrAcquireIslandToken(tenantId, clusterCategory, label, cloud) {
       const resourceId = getIslandResourceId(clusterCategory);
+      const scope = `api://${resourceId}/.default`;
       return getOrAcquireToken(
         tenantId,
-        VSCODE_CLIENT_ID2,
-        [`api://${resourceId}/.default`],
-        label
+        getDefaultClientId(cloud || "public", scope),
+        [scope],
+        label,
+        void 0,
+        cloud
       );
     }
     module2.exports = {
       VSCODE_CLIENT_ID: VSCODE_CLIENT_ID2,
+      AZURE_PS_CLIENT_ID,
+      PAC_CLI_CLIENT_ID: PAC_CLI_CLIENT_ID2,
       ISLAND_RESOURCE_IDS,
       getIslandResourceId,
+      getDefaultClientId,
+      getLoginAuthority,
       createMsalApp: createMsalApp2,
       buildTokenInfo,
       acquireTokenDeviceCode,
@@ -35506,9 +35883,44 @@ var {
 } = require_shared_utils();
 var {
   VSCODE_CLIENT_ID,
+  PAC_CLI_CLIENT_ID,
   createMsalApp,
   acquireTokenSilent
 } = require_shared_auth();
+var CLOUD_CONFIG = {
+  public: {
+    powerPlatformScope: "https://api.powerplatform.com/.default",
+    loginAuthority: "https://login.microsoftonline.com",
+    ppEnvironmentDomain: "environment.api.powerplatform.com",
+    defaultClientId: PAC_CLI_CLIENT_ID
+  },
+  gcc: {
+    powerPlatformScope: "https://api.gov.powerplatform.microsoft.us/.default",
+    loginAuthority: "https://login.microsoftonline.com",
+    ppEnvironmentDomain: "environment.api.gov.powerplatform.microsoft.us",
+    defaultClientId: PAC_CLI_CLIENT_ID
+  },
+  gcchigh: {
+    powerPlatformScope: "https://api.high.powerplatform.microsoft.us/.default",
+    loginAuthority: "https://login.microsoftonline.us",
+    ppEnvironmentDomain: "environment.api.high.powerplatform.microsoft.us",
+    defaultClientId: PAC_CLI_CLIENT_ID
+  }
+};
+function getChatCloudConfig(cloud) {
+  const config = CLOUD_CONFIG[cloud];
+  if (!config) {
+    die(`Unknown cloud: ${cloud}. Use: public, gcc, or gcchigh`);
+  }
+  return config;
+}
+function detectCloud(envUrl, explicitCloud) {
+  if (explicitCloud && explicitCloud !== "public") return explicitCloud;
+  if (!envUrl) return explicitCloud || "public";
+  if (envUrl.includes(".crm9.dynamics.com")) return "gcc";
+  if (envUrl.includes(".crm.microsoftdynamics.us")) return "gcchigh";
+  return explicitCloud || "public";
+}
 function parseArgs() {
   const args = process.argv.slice(2);
   const parsed = {
@@ -35522,7 +35934,8 @@ function parseArgs() {
     directlineSecret: null,
     directlineDomain: null,
     directlineToken: null,
-    watermark: null
+    watermark: null,
+    cloud: process.env.CPS_CLOUD || "public"
   };
   for (let i = 0; i < args.length; i++) {
     switch (args[i]) {
@@ -35552,6 +35965,9 @@ function parseArgs() {
         break;
       case "--detect-only":
         parsed.detectOnly = true;
+        break;
+      case "--cloud":
+        parsed.cloud = args[++i];
         break;
       default:
         if (!args[i].startsWith("--")) {
@@ -35608,7 +36024,7 @@ function loadAgentConfig(agentDir) {
   if (!agentIdentifier) die("schemaName not found in settings.mcs.yml");
   return { environmentId, tenantId, agentIdentifier, dataverseEndpoint, agentId };
 }
-async function detectMode(config) {
+async function detectMode(config, cloud = "public") {
   const envUrl = (config.dataverseEndpoint || "").replace(/\/+$/, "");
   if (!envUrl || !config.agentId) {
     log("Cannot detect mode: missing Dataverse endpoint or agent ID.");
@@ -35618,7 +36034,9 @@ async function detectMode(config) {
     const silent = await acquireTokenSilent(
       config.tenantId,
       VSCODE_CLIENT_ID,
-      [`${envUrl}/.default`]
+      [`${envUrl}/.default`],
+      void 0,
+      cloud
     );
     if (!silent) {
       log("No cached Dataverse tokens \u2014 cannot auto-detect mode.");
@@ -35640,7 +36058,9 @@ async function detectMode(config) {
       const envIdNoDashes = config.environmentId.replace(/-/g, "");
       const prefix = envIdNoDashes.slice(0, -2);
       const suffix = envIdNoDashes.slice(-2);
-      const tokenEndpoint = `https://${prefix}.${suffix}.environment.api.powerplatform.com/powervirtualagents/botsbyschema/${schemaName}/directline/token?api-version=2022-03-01-preview`;
+      const cloudConfig = getChatCloudConfig(cloud);
+      const ppDomain = cloudConfig.ppEnvironmentDomain;
+      const tokenEndpoint = `https://${prefix}.${suffix}.${ppDomain}/powervirtualagents/botsbyschema/${schemaName}/directline/token?api-version=2022-03-01-preview`;
       log(`Agent uses ${authMode === 1 ? "no auth" : "manual auth"} \u2192 DirectLine mode`);
       return { mode: "directline", authenticationmode: authMode, tokenEndpoint, schemaName };
     } else {
@@ -35755,9 +36175,10 @@ async function chatDirectLine(utterance, conversationId, params) {
 function activityToDict(activity) {
   return JSON.parse(JSON.stringify(activity));
 }
-async function getSdkAccessToken(tenantId, clientId) {
-  const app = await createMsalApp(tenantId, clientId, "chat");
-  const scope = "https://api.powerplatform.com/.default";
+async function getSdkAccessToken(tenantId, clientId, cloud = "public") {
+  const cloudConfig = getChatCloudConfig(cloud);
+  const app = await createMsalApp(tenantId, clientId, "chat", cloud);
+  const scope = cloudConfig.powerPlatformScope;
   const allAccounts = await app.getTokenCache().getAllAccounts();
   const accounts = allAccounts.filter((a) => a.tenantId === tenantId);
   if (accounts.length > 0) {
@@ -35779,11 +36200,12 @@ async function getSdkAccessToken(tenantId, clientId) {
   });
   return result.accessToken;
 }
-async function chatSdk(utterance, conversationId, config, token) {
+async function chatSdk(utterance, conversationId, config, token, cloud = "public") {
+  const ppCloud = cloud === "gcc" ? PowerPlatformCloud.Gov : cloud === "gcchigh" ? PowerPlatformCloud.High : PowerPlatformCloud.Prod;
   const settings = {
     environmentId: config.environmentId,
     agentIdentifier: config.agentIdentifier,
-    cloud: PowerPlatformCloud.Prod,
+    cloud: ppCloud,
     tenantId: config.tenantId
   };
   const client = new CopilotStudioClient(settings, token);
@@ -35840,7 +36262,8 @@ async function main() {
     log(`Agent directory: ${path2.relative(process.cwd(), agentDir2) || "."}`);
     const config2 = loadAgentConfig(agentDir2);
     log(`Using agent: ${config2.agentIdentifier}`);
-    const modeResult2 = await detectMode(config2);
+    const cloud2 = detectCloud(config2.dataverseEndpoint, args.cloud);
+    const modeResult2 = await detectMode(config2, cloud2);
     if (!modeResult2) {
       die("Could not detect authentication mode. Ensure Dataverse tokens are cached (run a push/pull first) or provide --token-endpoint / --client-id explicitly.");
     }
@@ -35885,7 +36308,8 @@ async function main() {
   log(`Agent directory: ${path2.relative(process.cwd(), agentDir) || "."}`);
   const config = loadAgentConfig(agentDir);
   log(`Using agent: ${config.agentIdentifier}`);
-  const modeResult = await detectMode(config);
+  const cloud = detectCloud(config.dataverseEndpoint, args.cloud);
+  const modeResult = await detectMode(config, cloud);
   if (modeResult && modeResult.mode === "directline") {
     const params = {
       tokenEndpoint: modeResult.tokenEndpoint,
@@ -35899,19 +36323,22 @@ async function main() {
       die(`Unexpected error: ${e.message}`);
     }
   } else {
-    if (!args.clientId) {
+    const cloudConfig = getChatCloudConfig(cloud);
+    const clientId = args.clientId || cloudConfig.defaultClientId;
+    if (!clientId) {
       die(
         "This agent uses integrated authentication (Entra ID SSO) which requires an App Registration Client ID. Pass --client-id <id> with an app that has CopilotStudio.Copilots.Invoke permission and redirect URI http://localhost."
       );
     }
     log("Authenticating...");
-    const token = await getSdkAccessToken(config.tenantId, args.clientId);
+    const token = await getSdkAccessToken(config.tenantId, clientId, cloud);
     try {
       const result = await chatSdk(
         args.utterance,
         args.conversationId,
         config,
-        token
+        token,
+        cloud
       );
       process.stdout.write(JSON.stringify(result, null, 2) + "\n");
     } catch (e) {
@@ -35926,6 +36353,6 @@ safe-buffer/index.js:
   (*! safe-buffer. MIT License. Feross Aboukhadijeh <https://feross.org/opensource> *)
 
 @azure/msal-node/lib/msal-node.cjs:
-  (*! @azure/msal-node v5.0.6 2026-03-02 *)
-  (*! @azure/msal-common v16.2.0 2026-03-02 *)
+  (*! @azure/msal-node v5.1.2 2026-04-01 *)
+  (*! @azure/msal-common v16.4.1 2026-04-01 *)
 */

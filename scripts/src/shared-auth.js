@@ -20,6 +20,33 @@ const { createCachePlugin } = require("./msal-cache");
 // and Dataverse. No separate app registration needed.
 const VSCODE_CLIENT_ID = "51f81489-12ee-4a9e-aaae-a2591f45987d";
 
+// Azure PowerShell well-known client ID — pre-authorized for the Island API
+// gateway in GCC where the VS Code client ID is not consented.
+const AZURE_PS_CLIENT_ID = "1950a258-227b-4e31-a9cf-717495945fc2";
+
+// PAC CLI (Power Platform CLI) client ID — pre-authorized for BAP and
+// CopilotStudio.Copilots.Invoke in government clouds.
+const PAC_CLI_CLIENT_ID = "9cee029c-6210-4654-90bb-17e6e9d36617";
+
+// Select the appropriate default client ID for the cloud and scope.
+// In GCC/GCC-High, no single client ID works for all resources:
+//   - VS Code:       Dataverse ✓  BAP ✗  Island API ✗  CopilotStudio.Invoke ✗
+//   - Azure PS:      Dataverse ✓  BAP ✓  Island API ✓  CopilotStudio.Invoke ✗
+//   - PAC CLI:       Dataverse ✓  BAP ✓  Island API ✗  CopilotStudio.Invoke ✓
+function getDefaultClientId(cloud, scope) {
+  if (cloud === "gcc" || cloud === "gcchigh") {
+    if (scope && scope.startsWith("api://")) {
+      // Island API resource (api://9315aedd... etc) — needs Azure PS
+      return AZURE_PS_CLIENT_ID;
+    }
+    if (scope && !scope.includes(".dynamics.com") && !scope.includes(".dynamics.us")) {
+      // BAP / PowerApps scopes — PAC CLI works
+      return PAC_CLI_CLIENT_ID;
+    }
+  }
+  return VSCODE_CLIENT_ID;
+}
+
 // Island API resource IDs by cluster category (from the VS Code extension).
 const ISLAND_RESOURCE_IDS = {
   0: "a522f059-bb65-47c0-8934-7db6e5286414",
@@ -56,6 +83,14 @@ async function getDefaultCachePlugin() {
 }
 
 /**
+ * Get the login authority base URL for a given cloud.
+ */
+function getLoginAuthority(cloud) {
+  if (cloud === "gcchigh") return "https://login.microsoftonline.us";
+  return "https://login.microsoftonline.com";
+}
+
+/**
  * Create or retrieve a cached MSAL PublicClientApplication.
  *
  * @param {string} tenantId - Azure AD tenant ID
@@ -63,32 +98,28 @@ async function getDefaultCachePlugin() {
  * @param {string} [cacheSlot] - Optional cache slot name. When omitted, uses the
  *   default "manage-agent" singleton. When provided (e.g., "chat"), creates a
  *   separate non-singleton MSAL app with its own cache.
+ * @param {string} [cloud="public"] - Cloud environment (public, gcc, gcchigh)
  */
-async function createMsalApp(tenantId, clientId, cacheSlot) {
+async function createMsalApp(tenantId, clientId, cacheSlot, cloud) {
   const msal = require("@azure/msal-node");
+  const authority = `${getLoginAuthority(cloud || "public")}/${tenantId}`;
 
   if (cacheSlot) {
     // Non-default slot: create a standalone app (not cached in the singleton map)
     const plugin = await createCachePlugin(cacheSlot);
     return new msal.PublicClientApplication({
-      auth: {
-        clientId,
-        authority: `https://login.microsoftonline.com/${tenantId}`,
-      },
+      auth: { clientId, authority },
       cache: { cachePlugin: plugin },
     });
   }
 
-  // Default path — singleton keyed by tenantId:clientId
-  const key = `${tenantId}:${clientId}`;
+  // Default path — singleton keyed by tenantId:clientId:cloud
+  const key = `${tenantId}:${clientId}:${cloud || "public"}`;
   if (_msalApps.has(key)) return _msalApps.get(key);
 
   const cachePlugin = await getDefaultCachePlugin();
   const app = new msal.PublicClientApplication({
-    auth: {
-      clientId,
-      authority: `https://login.microsoftonline.com/${tenantId}`,
-    },
+    auth: { clientId, authority },
     cache: { cachePlugin },
   });
   _msalApps.set(key, app);
@@ -121,8 +152,8 @@ function buildTokenInfo(result) {
 // Token acquisition flows
 // ---------------------------------------------------------------------------
 
-async function acquireTokenDeviceCode(tenantId, clientId, scopes, cacheSlot) {
-  const app = await createMsalApp(tenantId, clientId, cacheSlot);
+async function acquireTokenDeviceCode(tenantId, clientId, scopes, cacheSlot, cloud) {
+  const app = await createMsalApp(tenantId, clientId, cacheSlot, cloud);
 
   const result = await app.acquireTokenByDeviceCode({
     scopes,
@@ -147,8 +178,8 @@ async function acquireTokenDeviceCode(tenantId, clientId, scopes, cacheSlot) {
   return buildTokenInfo(result);
 }
 
-async function acquireTokenInteractive(tenantId, clientId, scopes, cacheSlot) {
-  const app = await createMsalApp(tenantId, clientId, cacheSlot);
+async function acquireTokenInteractive(tenantId, clientId, scopes, cacheSlot, cloud) {
+  const app = await createMsalApp(tenantId, clientId, cacheSlot, cloud);
 
   const result = await app.acquireTokenInteractive({
     scopes,
@@ -167,8 +198,8 @@ async function acquireTokenInteractive(tenantId, clientId, scopes, cacheSlot) {
   return buildTokenInfo(result);
 }
 
-async function acquireTokenSilent(tenantId, clientId, scopes, cacheSlot) {
-  const app = await createMsalApp(tenantId, clientId, cacheSlot);
+async function acquireTokenSilent(tenantId, clientId, scopes, cacheSlot, cloud) {
+  const app = await createMsalApp(tenantId, clientId, cacheSlot, cloud);
   const allAccounts = await app.getTokenCache().getAllAccounts();
   // Filter to accounts matching this tenant to avoid cross-tenant errors
   const accounts = allAccounts.filter(a => a.tenantId === tenantId);
@@ -193,25 +224,28 @@ async function acquireTokenSilent(tenantId, clientId, scopes, cacheSlot) {
 /**
  * Get a token silently, falling back to interactive browser login.
  */
-async function getOrAcquireToken(tenantId, clientId, scopes, label, cacheSlot) {
-  const silent = await acquireTokenSilent(tenantId, clientId, scopes, cacheSlot);
+async function getOrAcquireToken(tenantId, clientId, scopes, label, cacheSlot, cloud) {
+  const silent = await acquireTokenSilent(tenantId, clientId, scopes, cacheSlot, cloud);
   if (silent) {
     log(`${label}: using cached token (expires ${silent.expiresOn})`);
     return silent;
   }
   log(`${label}: starting interactive login...`);
-  return acquireTokenInteractive(tenantId, clientId, scopes, cacheSlot);
+  return acquireTokenInteractive(tenantId, clientId, scopes, cacheSlot, cloud);
 }
 
 /**
- * Get a token for the Island API gateway using VSCODE_CLIENT_ID.
+ * Get a token for the Island API gateway, using the appropriate client ID for the cloud.
  */
-async function getOrAcquireIslandToken(tenantId, clusterCategory, label) {
+async function getOrAcquireIslandToken(tenantId, clusterCategory, label, cloud) {
   const resourceId = getIslandResourceId(clusterCategory);
+  const scope = `api://${resourceId}/.default`;
   return getOrAcquireToken(
-    tenantId, VSCODE_CLIENT_ID,
-    [`api://${resourceId}/.default`],
-    label
+    tenantId, getDefaultClientId(cloud || "public", scope),
+    [scope],
+    label,
+    undefined,
+    cloud
   );
 }
 
@@ -221,8 +255,12 @@ async function getOrAcquireIslandToken(tenantId, clusterCategory, label) {
 
 module.exports = {
   VSCODE_CLIENT_ID,
+  AZURE_PS_CLIENT_ID,
+  PAC_CLI_CLIENT_ID,
   ISLAND_RESOURCE_IDS,
   getIslandResourceId,
+  getDefaultClientId,
+  getLoginAuthority,
   createMsalApp,
   buildTokenInfo,
   acquireTokenDeviceCode,
