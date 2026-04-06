@@ -53,6 +53,47 @@ On the first call, the script will initiate a **device code flow**. Present the 
 
 After authentication, the token is cached and subsequent calls are silent.
 
+## Test Set CSV Format (for import into Copilot Studio)
+
+Test sets **cannot** be created via the API — they must be imported through the Copilot Studio UI
+(agent > **Evaluate** tab > **New test set** > **Import**).
+
+If the user needs help creating a test set CSV, generate one in this format:
+
+```csv
+"# Test set name: <name>"
+"# Test methods: GeneralQuality"
+"#"
+"question","expectedResponse"
+"User question 1","Expected agent response 1"
+"User question 2","Expected agent response 2"
+"User question without expected response",
+```
+
+### CSV rules
+- **Columns**: `question` (required), `expectedResponse` (optional — leave empty after the comma if not needed)
+- **Max 100 questions** per test set
+- **Max 500 characters** per question (including spaces)
+- **Max 1000 characters** per expected response
+- **Header comments** (lines starting with `#`) are metadata — the `# Test methods:` line sets the default grading method
+- **Test methods** are configured in the UI after import, not in the CSV. Available methods:
+  - `GeneralQuality` — AI-graded quality (relevance, completeness, groundedness, abstention)
+  - `ExactMatch` — Exact string match against expected response
+  - `CompareMeaning` — AI-graded semantic similarity
+  - `TextSimilarity` — Text similarity score (0.0–1.0)
+  - `AllKeywordMatch` — All expected keywords must appear in response
+  - `AnyKeywordMatch` — At least one expected keyword must appear
+  - `CapabilityUse` — Validates expected tool/topic invocations
+  - `CustomLabels` — Custom label-based grading
+- **Expected responses** are required for ExactMatch, CompareMeaning, TextSimilarity, and keyword methods. GeneralQuality and CapabilityUse work without them.
+
+### When the user asks to create a test set
+
+1. Help them write the CSV (use the Edit or Write tool to create it)
+2. Tell them to import it: agent > **Evaluate** tab > **New test set** > **Import** > select the CSV
+3. After import, configure test methods in the UI if the defaults aren't sufficient
+4. Then proceed with running the evaluation
+
 ## Phase 1: Resolve Configuration
 
 Find `conn.json` by searching for `.mcs/conn.json` under the workspace.
