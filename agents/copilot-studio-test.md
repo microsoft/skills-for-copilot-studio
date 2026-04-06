@@ -52,6 +52,12 @@ If ambiguous, ask the user whether they want PPAPI evaluations, Kit tests, or a 
 
 **NEVER invoke the deprecated `/copilot-studio:run-tests` skill.** Use the specific skills above instead.
 
+### IMPORTANT: `/copilot-studio:run-eval` vs `/copilot-studio:create-eval`
+
+These are DIFFERENT skills for DIFFERENT purposes:
+- **`run-eval`** — Copilot Studio **in-product** evaluations. Creates test set CSVs for import into the Evaluate tab, runs evaluations via the PPAPI, analyzes results. Use when the user mentions "Copilot Studio evaluation", "Evaluate tab", "test set CSV", "in-product testing", or "import test cases".
+- **`create-eval`** — Local **plugin development** evals. Creates JSON scenario files for testing this plugin's own skills. Use ONLY when the user is developing/testing the plugin itself (e.g., "create an eval for the new-topic skill").
+
 ## Draft Testing vs Published Testing
 
 | Mode | Requires publish? | Reaches | Use skill |

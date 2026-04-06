@@ -4,7 +4,7 @@
     {
       "id": 1,
       "name": "Create evaluation test set CSV",
-      "prompt": "I need to create a test set CSV for my agent so I can import it into Copilot Studio for evaluation. Create about 10 test cases covering the agent's main functionality.",
+      "prompt": "Help me test my Copilot Studio agent. I need to prepare an evaluation test set and then run it. Start by creating about 10 test cases based on the agent's topics and instructions.",
       "fixture": "basic-agent",
       "mock_scripts": [],
       "checks": {
