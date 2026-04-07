@@ -82,6 +82,16 @@ Only two columns are supported on import: `question` and `expectedResponse`. **T
 | **Capability use** | Agent called expected tools/topics | Configured in UI |
 | **Custom** | Custom instructions and labels | Configured in UI |
 
+## IMPORTANT: Execution rules
+
+- **NEVER use `run_in_background: true`** for eval-api commands. Always run them in the **foreground**.
+  The first call may trigger device code authentication which must complete before proceeding.
+  If run in the background, the auth prompt will be killed before the user can authenticate.
+- Run the **list-testsets** command first — this serves as the auth gate. If it triggers device code
+  auth, present the code to the user, wait for them to confirm, then **re-run the same command**
+  (the token is now cached and it will succeed silently).
+- Once list-testsets succeeds, all subsequent commands in the same session will use the cached token.
+
 ## Phase 1: Resolve Configuration
 
 Find `conn.json` by searching for `.mcs/conn.json` under the workspace.
