@@ -14787,7 +14787,7 @@ var require_shared_auth = __commonJS({
         } : void 0
       };
     }
-    async function acquireTokenDeviceCode2(tenantId, clientId, scopes, cacheSlot) {
+    async function acquireTokenDeviceCode(tenantId, clientId, scopes, cacheSlot) {
       const app = await createMsalApp(tenantId, clientId, cacheSlot);
       const result = await app.acquireTokenByDeviceCode({
         scopes,
@@ -14809,7 +14809,7 @@ var require_shared_auth = __commonJS({
       if (!result) throw new Error("Device code flow returned no result");
       return buildTokenInfo(result);
     }
-    async function acquireTokenInteractive(tenantId, clientId, scopes, cacheSlot) {
+    async function acquireTokenInteractive2(tenantId, clientId, scopes, cacheSlot) {
       const app = await createMsalApp(tenantId, clientId, cacheSlot);
       const result = await app.acquireTokenInteractive({
         scopes,
@@ -14853,7 +14853,7 @@ var require_shared_auth = __commonJS({
         return silent;
       }
       log2(`${label}: starting interactive login...`);
-      return acquireTokenInteractive(tenantId, clientId, scopes, cacheSlot);
+      return acquireTokenInteractive2(tenantId, clientId, scopes, cacheSlot);
     }
     async function getOrAcquireIslandToken(tenantId, clusterCategory, label) {
       const resourceId = getIslandResourceId(clusterCategory);
@@ -14870,8 +14870,8 @@ var require_shared_auth = __commonJS({
       getIslandResourceId,
       createMsalApp,
       buildTokenInfo,
-      acquireTokenDeviceCode: acquireTokenDeviceCode2,
-      acquireTokenInteractive,
+      acquireTokenDeviceCode,
+      acquireTokenInteractive: acquireTokenInteractive2,
       acquireTokenSilent: acquireTokenSilent2,
       getOrAcquireToken: getOrAcquireToken2,
       getOrAcquireIslandToken
@@ -14886,7 +14886,7 @@ var { log, die } = require_shared_utils();
 var {
   VSCODE_CLIENT_ID,
   acquireTokenSilent,
-  acquireTokenDeviceCode,
+  acquireTokenInteractive,
   getOrAcquireToken
 } = require_shared_auth();
 function parseArgs() {
@@ -14995,26 +14995,28 @@ function loadConfig(args) {
   return { environmentId, agentId, tenantId, clientId: args.clientId };
 }
 var PP_API_SCOPE = "https://api.powerplatform.com/.default";
+var TEST_AGENT_CACHE_SLOT = "test-agent";
 async function getToken(config) {
   const clientId = config.clientId || VSCODE_CLIENT_ID;
-  const silent = await acquireTokenSilent(config.tenantId, clientId, [PP_API_SCOPE]);
+  const cacheSlot = config.clientId ? TEST_AGENT_CACHE_SLOT : void 0;
+  const silent = await acquireTokenSilent(config.tenantId, clientId, [PP_API_SCOPE], cacheSlot);
   if (silent) {
     log(`Using cached Power Platform API token (expires ${silent.expiresOn})`);
     return silent.accessToken;
   }
-  if (config.clientId) {
-    log("No cached token \u2014 starting device code authentication...");
-    const token2 = await acquireTokenDeviceCode(config.tenantId, clientId, [PP_API_SCOPE]);
-    return token2.accessToken;
-  }
   log("No cached token \u2014 starting interactive login...");
-  const token = await getOrAcquireToken(
-    config.tenantId,
-    VSCODE_CLIENT_ID,
-    [PP_API_SCOPE],
-    "Power Platform API"
-  );
+  const token = await acquireTokenInteractive(config.tenantId, clientId, [PP_API_SCOPE], cacheSlot);
   return token.accessToken;
+}
+async function cmdAuth(config) {
+  if (!config.clientId) die("--client-id is required for auth. Provide an App Registration with CopilotStudio.MakerOperations.Read and CopilotStudio.Copilots.Invoke permissions.");
+  log("Authenticating with Power Platform API...");
+  const token = await getToken(config);
+  process.stdout.write(JSON.stringify({
+    status: "ok",
+    message: "Authentication successful. Token cached for subsequent commands.",
+    expiresOn: new Date(Date.now() + 3600 * 1e3).toISOString()
+  }, null, 2) + "\n");
 }
 var PP_API_VERSION = "2024-10-01";
 function buildBaseUrl(environmentId, agentId) {
@@ -15170,6 +15172,22 @@ async function cmdGetTestset(config, accessToken, args) {
 }
 async function main() {
   const args = parseArgs();
+  if (args.command === "auth") {
+    const tenantId = args.tenantId;
+    if (!tenantId) {
+      const connPath = findConnJson(args.workspace);
+      if (connPath) {
+        try {
+          const conn = JSON.parse(fs6.readFileSync(connPath, "utf8"));
+          args.tenantId = conn.AccountInfo?.TenantId;
+        } catch {
+        }
+      }
+    }
+    if (!args.tenantId) die("--tenant-id is required for auth (or --workspace with .mcs/conn.json).");
+    await cmdAuth({ tenantId: args.tenantId, clientId: args.clientId });
+    return;
+  }
   const config = loadConfig(args);
   const accessToken = await getToken(config);
   switch (args.command) {
@@ -15193,7 +15211,7 @@ async function main() {
       break;
     default:
       die(`Unknown command: ${args.command}
-Commands: list-testsets, get-testset, start-run, get-run, get-results, list-runs`);
+Commands: auth, list-testsets, get-testset, start-run, get-run, get-results, list-runs`);
   }
 }
 main().catch((e) => die(`Unexpected error: ${e.message}`));

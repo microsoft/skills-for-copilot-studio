@@ -21,37 +21,33 @@ This skill tests the **current draft** — the version you just pushed with mana
 
 ## Phase 0: Authentication Setup
 
-The Evaluation API requires an **App Registration** with the `CopilotStudio.MakerOperations.Read` delegated permission.
+The Evaluation API requires an **App Registration** with delegated permissions on the Power Platform API.
 
 ### If `--client-id` was not provided
 
-Ask the user:
+Ask the user for their App Registration Client ID. If they don't have one:
 
 > **App Registration Required**
 >
-> The Evaluation API requires an Azure App Registration with specific permissions.
-> Please provide your App Registration Client ID.
->
-> **Setup instructions:**
+> The Evaluation API requires an Azure App Registration. Setup:
 > 1. Go to [Azure Portal > App Registrations](https://portal.azure.com/#view/Microsoft_AAD_RegisteredApps/ApplicationsListBlade)
 > 2. Create or select an app registration
-> 3. Under **API permissions**, add the delegated permission: `CopilotStudio.MakerOperations.Read`
+> 3. Under **API permissions**, add these **delegated** permissions for **Power Platform API**:
+>    - `CopilotStudio.MakerOperations.Read`
+>    - `CopilotStudio.MakerOperations.ReadWrite`
+>    - `CopilotStudio.Copilots.Invoke` (also enables SDK chat)
 > 4. Under **Authentication**, add platform **Mobile and desktop applications** with redirect URI `http://localhost`
-> 5. Grant admin consent for the permission
+> 5. Grant admin consent for the permissions
 > 6. Copy the **Application (client) ID**
 
-Store the client ID for all subsequent `eval-api.bundle.js` calls in this session.
+### Authenticate
 
-### First run authentication
+Run the auth command (interactive browser login — no device code needed):
+```bash
+node ${CLAUDE_SKILL_DIR}/../../scripts/eval-api.bundle.js auth --workspace <path> --client-id <id>
+```
 
-On the first call, the script will initiate a **device code flow**. Present the device code prompt to the user:
-
-> **Authentication Required**
->
-> Open your browser to: https://microsoft.com/devicelogin
-> Enter the code: **XXXXXXXXX**
-
-After authentication, the token is cached and subsequent calls are silent.
+This caches the token in the `"test-agent"` slot (~90 day refresh). All subsequent eval-api and chat-sdk calls reuse it silently.
 
 ## Test Set CSV Format (for import into Copilot Studio)
 
@@ -82,23 +78,15 @@ Only two columns are supported on import: `question` and `expectedResponse`. **T
 | **Capability use** | Agent called expected tools/topics | Configured in UI |
 | **Custom** | Custom instructions and labels | Configured in UI |
 
-## IMPORTANT: Execution and authentication rules
+## IMPORTANT: Execution rules
 
-- **NEVER use `run_in_background: true`** for eval-api commands. Always run them in the **foreground**.
-- The first call may trigger **device code authentication**. Watch the output (both stdout and stderr) for a device code prompt. The structured JSON on stdout will include:
-  ```json
-  {"status":"device_code","userCode":"XXXXXXXXX","verificationUri":"https://login.microsoft.com/device"}
+- **NEVER use `run_in_background: true`** for eval-api commands. Always run in the **foreground**.
+- **Authenticate before running any eval commands.** If the user hasn't authenticated yet (first use), run:
+  ```bash
+  node ${CLAUDE_SKILL_DIR}/../../scripts/eval-api.bundle.js auth --workspace <path> --client-id <id>
   ```
-  When you see this, **present it prominently to the user**:
-  > **Authentication Required**
-  >
-  > Open: https://login.microsoft.com/device
-  > Enter code: **XXXXXXXXX**
-  >
-  > After signing in, the command will complete automatically.
-
-  **Wait for the command to finish** — do NOT interrupt it. The script blocks until auth completes and then returns results.
-- Once the first command succeeds with cached credentials, all subsequent commands in the same session are silent (~90 day token refresh).
+  This opens a browser for interactive sign-in — no device code needed. The token is cached in the `"test-agent"` slot and reused by all subsequent eval-api and chat-sdk calls (~90 day refresh).
+- If any command fails with HTTP 401/403, re-run the `auth` command to refresh the token.
 
 ## Phase 1: Resolve Configuration
 

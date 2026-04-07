@@ -35356,7 +35356,7 @@ var require_shared_auth = __commonJS({
       }
       return _cachePlugin;
     }
-    async function createMsalApp2(tenantId, clientId, cacheSlot) {
+    async function createMsalApp(tenantId, clientId, cacheSlot) {
       const msal = require_msal_node();
       if (cacheSlot) {
         const plugin = await createCachePlugin(cacheSlot);
@@ -35395,7 +35395,7 @@ var require_shared_auth = __commonJS({
       };
     }
     async function acquireTokenDeviceCode(tenantId, clientId, scopes, cacheSlot) {
-      const app = await createMsalApp2(tenantId, clientId, cacheSlot);
+      const app = await createMsalApp(tenantId, clientId, cacheSlot);
       const result = await app.acquireTokenByDeviceCode({
         scopes,
         deviceCodeCallback: (response) => {
@@ -35417,7 +35417,7 @@ var require_shared_auth = __commonJS({
       return buildTokenInfo(result);
     }
     async function acquireTokenInteractive(tenantId, clientId, scopes, cacheSlot) {
-      const app = await createMsalApp2(tenantId, clientId, cacheSlot);
+      const app = await createMsalApp(tenantId, clientId, cacheSlot);
       const result = await app.acquireTokenInteractive({
         scopes,
         openBrowser: async (url) => {
@@ -35433,7 +35433,7 @@ var require_shared_auth = __commonJS({
       return buildTokenInfo(result);
     }
     async function acquireTokenSilent2(tenantId, clientId, scopes, cacheSlot) {
-      const app = await createMsalApp2(tenantId, clientId, cacheSlot);
+      const app = await createMsalApp(tenantId, clientId, cacheSlot);
       const allAccounts = await app.getTokenCache().getAllAccounts();
       const accounts = allAccounts.filter((a) => a.tenantId === tenantId);
       if (accounts.length > 0) {
@@ -35475,7 +35475,7 @@ var require_shared_auth = __commonJS({
       VSCODE_CLIENT_ID: VSCODE_CLIENT_ID2,
       ISLAND_RESOURCE_IDS,
       getIslandResourceId,
-      createMsalApp: createMsalApp2,
+      createMsalApp,
       buildTokenInfo,
       acquireTokenDeviceCode,
       acquireTokenInteractive,
@@ -35506,7 +35506,6 @@ var {
 } = require_shared_utils();
 var {
   VSCODE_CLIENT_ID,
-  createMsalApp,
   acquireTokenSilent
 } = require_shared_auth();
 function parseArgs() {
@@ -35756,28 +35755,16 @@ function activityToDict(activity) {
   return JSON.parse(JSON.stringify(activity));
 }
 async function getSdkAccessToken(tenantId, clientId) {
-  const app = await createMsalApp(tenantId, clientId, "chat");
+  const { acquireTokenSilent: sharedSilent, acquireTokenInteractive: sharedInteractive } = require_shared_auth();
   const scope = "https://api.powerplatform.com/.default";
-  const allAccounts = await app.getTokenCache().getAllAccounts();
-  const accounts = allAccounts.filter((a) => a.tenantId === tenantId);
-  if (accounts.length > 0) {
-    try {
-      const result2 = await app.acquireTokenSilent({
-        scopes: [scope],
-        account: accounts[0]
-      });
-      log("Using cached token.");
-      return result2.accessToken;
-    } catch {
-    }
+  const silent = await sharedSilent(tenantId, clientId, [scope], "test-agent");
+  if (silent) {
+    log("Using cached token.");
+    return silent.accessToken;
   }
-  const result = await app.acquireTokenByDeviceCode({
-    scopes: [scope],
-    deviceCodeCallback: (response) => {
-      log(response.message);
-    }
-  });
-  return result.accessToken;
+  log("No cached token \u2014 starting interactive login...");
+  const token = await sharedInteractive(tenantId, clientId, [scope], "test-agent");
+  return token.accessToken;
 }
 async function chatSdk(utterance, conversationId, config, token) {
   const settings = {

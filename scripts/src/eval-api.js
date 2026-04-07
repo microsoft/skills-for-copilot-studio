@@ -32,7 +32,7 @@ const { log, die } = require("./shared-utils");
 const {
   VSCODE_CLIENT_ID,
   acquireTokenSilent,
-  acquireTokenDeviceCode,
+  acquireTokenInteractive,
   getOrAcquireToken,
 } = require("./shared-auth");
 
@@ -166,34 +166,40 @@ function loadConfig(args) {
 }
 
 // ---------------------------------------------------------------------------
-// Authentication — reuses "manage-agent" MSAL cache slot
+// Authentication — "test-agent" MSAL cache slot (shared with chat-sdk)
 // ---------------------------------------------------------------------------
 
 const PP_API_SCOPE = "https://api.powerplatform.com/.default";
+const TEST_AGENT_CACHE_SLOT = "test-agent";
 
 async function getToken(config) {
   const clientId = config.clientId || VSCODE_CLIENT_ID;
+  const cacheSlot = config.clientId ? TEST_AGENT_CACHE_SLOT : undefined;
 
-  // Try silent first (tokens cached from manage-agent auth/push or prior eval-api run)
-  const silent = await acquireTokenSilent(config.tenantId, clientId, [PP_API_SCOPE]);
+  // Try silent first
+  const silent = await acquireTokenSilent(config.tenantId, clientId, [PP_API_SCOPE], cacheSlot);
   if (silent) {
     log(`Using cached Power Platform API token (expires ${silent.expiresOn})`);
     return silent.accessToken;
   }
 
-  if (config.clientId) {
-    // Custom app registration — use device code flow
-    log("No cached token — starting device code authentication...");
-    const token = await acquireTokenDeviceCode(config.tenantId, clientId, [PP_API_SCOPE]);
-    return token.accessToken;
-  }
-
-  // VS Code 1P client — use interactive browser login
+  // No cached token — use interactive browser login
   log("No cached token — starting interactive login...");
-  const token = await getOrAcquireToken(
-    config.tenantId, VSCODE_CLIENT_ID, [PP_API_SCOPE], "Power Platform API"
-  );
+  const token = await acquireTokenInteractive(config.tenantId, clientId, [PP_API_SCOPE], cacheSlot);
   return token.accessToken;
+}
+
+async function cmdAuth(config) {
+  if (!config.clientId) die("--client-id is required for auth. Provide an App Registration with CopilotStudio.MakerOperations.Read and CopilotStudio.Copilots.Invoke permissions.");
+
+  log("Authenticating with Power Platform API...");
+  const token = await getToken(config);
+
+  process.stdout.write(JSON.stringify({
+    status: "ok",
+    message: "Authentication successful. Token cached for subsequent commands.",
+    expiresOn: new Date(Date.now() + 3600 * 1000).toISOString(),
+  }, null, 2) + "\n");
 }
 
 // ---------------------------------------------------------------------------
@@ -387,6 +393,25 @@ async function cmdGetTestset(config, accessToken, args) {
 
 async function main() {
   const args = parseArgs();
+
+  // Auth command only needs tenant ID and client ID, not environment/agent
+  if (args.command === "auth") {
+    const tenantId = args.tenantId;
+    if (!tenantId) {
+      // Try conn.json for tenant ID
+      const connPath = findConnJson(args.workspace);
+      if (connPath) {
+        try {
+          const conn = JSON.parse(fs.readFileSync(connPath, "utf8"));
+          args.tenantId = conn.AccountInfo?.TenantId;
+        } catch {}
+      }
+    }
+    if (!args.tenantId) die("--tenant-id is required for auth (or --workspace with .mcs/conn.json).");
+    await cmdAuth({ tenantId: args.tenantId, clientId: args.clientId });
+    return;
+  }
+
   const config = loadConfig(args);
   const accessToken = await getToken(config);
 
@@ -410,7 +435,7 @@ async function main() {
       await cmdGetTestset(config, accessToken, args);
       break;
     default:
-      die(`Unknown command: ${args.command}\nCommands: list-testsets, get-testset, start-run, get-run, get-results, list-runs`);
+      die(`Unknown command: ${args.command}\nCommands: auth, list-testsets, get-testset, start-run, get-run, get-results, list-runs`);
   }
 }
 
