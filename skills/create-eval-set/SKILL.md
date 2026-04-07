@@ -39,31 +39,35 @@ Create test cases that cover:
 
 Aim for 10–25 test cases with good coverage across categories.
 
-## Phase 3: Choose Test Methods
+## Phase 3: Write the Expected Responses
 
-Select the appropriate test method for each test case:
+The CSV import only supports two columns: `question` and `expectedResponse`. **Test methods cannot be set via CSV import** — they are configured in the UI after import. The default test method (General quality) is applied to all imported test cases.
 
-| Test method | CSV value | When to use | Requires expected response? |
-|-------------|-----------|------------|---------------------------|
-| **General quality** | `General quality` | Open-ended questions, generative/knowledge responses where wording varies | No (but recommended as a rubric) |
-| **Compare meaning** | `Compare meaning` | System topics with predictable responses, where meaning should match but exact wording may differ | Yes |
-| **Exact match** | `Exact match` | Short, precise answers: numbers, codes, fixed phrases | Yes |
-| **Text similarity** | `Similarity` | Responses where both wording and meaning should be close | Yes |
-| **Keyword match** | `Keyword match` | Responses that must contain specific terms or phrases (keywords configured in UI after import) | Yes (keywords in UI) |
+Write expected responses with this in mind:
+- For questions where you want **General quality** grading: write behavioral descriptions ("The response should recommend hotels in Paris with relevant details")
+- For questions where you'll later switch to **Compare meaning** or **Exact match** in the UI: write realistic agent replies that the grader can compare against
+- Leave `expectedResponse` empty for questions that only need General quality (it works without expected responses)
 
-**Guidelines:**
-- Use **General quality** for generative/web-browsing responses — the expected response serves as a rubric, not an exact match target
-- Use **Compare meaning** for system topics (greeting, escalation, goodbye, thank you, fallback) where the response meaning is predictable
-- Use **Exact match** sparingly — only when the agent should return a specific fixed string
-- **Capability use** and **Custom** graders cannot be set via CSV — configure them in the UI after import
+### Available test methods (configured in UI after import)
+
+| Test method | What it measures | Requires expected response? |
+|-------------|-----------------|---------------------------|
+| **General quality** (default) | AI-graded quality: relevance, completeness, groundedness, abstention | No (but recommended as a rubric) |
+| **Compare meaning** | Semantic similarity — compares meaning/intent | Yes |
+| **Text similarity** | Cosine similarity of text | Yes, configurable pass threshold |
+| **Exact match** | Character-for-character match | Yes |
+| **Keyword match** | Response contains expected keywords/phrases | Yes (keywords added in UI) |
+| **Capability use** | Agent called expected tools/topics | Configured in UI |
+| **Custom** | Custom grader with your own instructions and labels | Configured in UI |
 
 ## Phase 4: Write the CSV
 
 Write the CSV file using the Write tool. The format must be:
 
 ```csv
-"question","expectedResponse","Testing method"
-"User question here","Expected agent response or behavioral rubric","General quality"
+"question","expectedResponse"
+"User question here","Expected agent response or behavioral rubric"
+"Question without expected response",
 ```
 
 ### Column specification
@@ -71,33 +75,33 @@ Write the CSV file using the Write tool. The format must be:
 | Column | Required | Description |
 |--------|----------|-------------|
 | `question` | Yes | The user message to send to the agent. Max **1,000 characters**. |
-| `expectedResponse` | No | The expected response. Required for Compare meaning, Similarity, Exact match. For General quality, use as a behavioral rubric (e.g., "The response should recommend hotels in Paris"). |
-| `Testing method` | No | The grader. If omitted, defaults to `General quality`. |
+| `expectedResponse` | No | The expected response or behavioral rubric. Leave empty if not needed. |
+
+**Important:** The `Testing method` column is **not supported on import** — it is ignored. All imported test cases get the default test method (General quality). Configure other test methods in the UI after import.
 
 ### Rules
 - Max **100 questions** per test set
 - Max **1,000 characters** per question (including spaces)
 - File must be `.csv` format
-- You can mix different test methods in the same file
 - Use double quotes around all values
-- For General quality test cases, write expected responses as behavioral descriptions: "The response should [describe what a good answer looks like]"
-- For Compare meaning test cases, write expected responses as realistic agent replies
+- For questions that will use General quality: write expected responses as behavioral descriptions
+- For questions that will use Compare meaning or Exact match: write expected responses as realistic agent replies
 
-### Expected response guidance
+### Expected response examples
 
-**For General quality** (behavioral rubric — evaluated by AI):
+**Behavioral rubric** (for General quality):
 ```csv
-"Find me a hotel in Paris","The response should include hotel recommendations in Paris with relevant details like names, locations, or prices.","General quality"
+"Find me a hotel in Paris","The response should include hotel recommendations in Paris with relevant details like names, locations, or prices."
 ```
 
-**For Compare meaning** (semantic match — meaning must align):
+**Realistic reply** (for Compare meaning — set method in UI after import):
 ```csv
-"Hi there","Hello! How can I help you today?","Compare meaning"
+"Hi there","Hello! How can I help you today?"
 ```
 
-**For Exact match** (character-for-character):
+**Exact expected text** (for Exact match — set method in UI after import):
 ```csv
-"What is 2+2?","4","Exact match"
+"What is 2+2?","4"
 ```
 
 ## Phase 5: Instruct the User

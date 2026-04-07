@@ -58,92 +58,29 @@ After authentication, the token is cached and subsequent calls are silent.
 Test sets **cannot** be created via the API — they must be imported through the Copilot Studio UI
 (agent > **Evaluate** tab > **New evaluation** > **Single response** > drag/browse file).
 
-If the user needs help creating a test set CSV, generate one in this format:
+To create a test set CSV, use the `/copilot-studio:create-eval-set` skill.
+
+### Import format
 
 ```csv
-"question","expectedResponse","Testing method"
-"What are your business hours?","We are open Monday to Friday, 9 AM to 5 PM.","General quality"
-"How do I reset my password?","Go to Settings > Security > Reset Password.","Exact match"
-"Tell me about the refund policy","We offer a 30-day money-back guarantee on all purchases.","Compare meaning"
-"What payment methods do you accept?","We accept credit cards, PayPal, and bank transfers.","Similarity"
-"Where is the nearest store?","","General quality"
+"question","expectedResponse"
+"What are your business hours?","We are open Monday to Friday, 9 AM to 5 PM."
+"Where is the nearest store?",
 ```
 
-### CSV columns
+Only two columns are supported on import: `question` and `expectedResponse`. **Test methods cannot be set via CSV** — the `Testing method` column is ignored on import. All imported test cases get the default method (General quality). Other methods must be configured in the UI after import.
 
-| Column | Required | Description |
-|--------|----------|-------------|
-| `question` | Yes | The user message to send to the agent. Max **1,000 characters** including spaces. |
-| `expectedResponse` | No | The expected agent response. Required for all methods except General quality and Capability use. Leave empty (but keep the comma) if not needed. |
-| `Testing method` | No | The grader to use for this test case. If omitted, General quality is used as the default. |
+### Test methods (configured in UI after import)
 
-### Testing method values (for the CSV column)
-
-Use these exact strings in the `Testing method` column:
-
-| CSV value | API type | What it measures | Requires expected response? | Scoring |
-|-----------|----------|-----------------|---------------------------|---------|
-| `General quality` | `GeneralQuality` | AI-graded quality: relevance, completeness, groundedness, abstention | No | Scored 0–100% |
-| `Compare meaning` | `CompareMeaning` | Semantic similarity — compares meaning/intent, not exact wording | Yes | Scored 0–100%, configurable pass threshold (default 50%) |
-| `Similarity` | `TextSimilarity` | Cosine similarity of text — compares wording and meaning | Yes | Scored 0.0–1.0, configurable pass threshold |
-| `Exact match` | `ExactMatch` | Character-for-character match against expected response | Yes | Pass/Fail |
-| `Keyword match` | `AllKeywordMatch` or `AnyKeywordMatch` | Checks if response contains expected keywords/phrases | Yes (keywords configured in UI after import) | Pass/Fail |
-
-**Note:** Capability use (tool/topic use) and Custom graders **cannot** be set via CSV — they must be configured in the UI after import.
-
-### Test method details
-
-**General quality** (default, no expected response needed):
-- Uses an LLM to assess the response on four criteria:
-  - **Relevance**: Does the response address the question?
-  - **Groundedness**: Is the response based on provided context/knowledge?
-  - **Completeness**: Does the response cover all aspects of the question?
-  - **Abstention**: Did the agent attempt to answer?
-- A response must meet ALL criteria to pass. If any criterion fails, the response is flagged.
-
-**Compare meaning** (requires expected response):
-- Compares intent/meaning, not exact wording. Good when answers can be phrased in different correct ways.
-- Pass threshold is configurable (default 50%). Set in the UI after import.
-
-**Text similarity** (requires expected response):
-- Uses cosine similarity to compare wording and meaning.
-- Score ranges 0.0 (no match) to 1.0 (identical). Pass threshold configurable in UI.
-
-**Exact match** (requires expected response):
-- Character-for-character, word-for-word comparison. Pass or fail, no partial credit.
-- Best for short, precise answers: numbers, codes, fixed phrases.
-
-**Keyword match** (keywords configured in UI):
-- Checks if the response contains specific words or phrases.
-- Two modes: **Any** (at least one keyword matches) or **All** (every keyword must match).
-- Keywords are added per test case in the UI after import, not in the CSV.
-
-**Capability use** (configured in UI only):
-- Tests if the agent called specific tools or topics to generate the answer.
-- Expected capabilities are selected per test case in the UI.
-
-**Custom** (configured in UI only):
-- Customizable grader with your own evaluation instructions and labels (e.g., "Compliant" / "Non-Compliant").
-- Labels have pass/fail assignments. Uses an LLM to classify responses.
-
-### CSV rules
-- Max **100 questions** per test set
-- Max **1,000 characters** per question (including spaces)
-- File must be `.csv` or `.txt` format
-- Header comments (lines starting with `"#"`) are optional metadata
-- You can mix different test methods in the same file — each row can have a different method
-- After import, you can add more test methods, edit expected responses, and configure pass thresholds in the UI
-
-### When the user asks to create a test set
-
-1. Help them write the CSV (use the Write tool to create it in their workspace or Downloads folder)
-2. Tell them to import it: agent > **Evaluate** tab > **New evaluation** > **Single response** > drag or browse for the CSV
-3. After import, configure in the UI:
-   - Pass thresholds for Compare meaning and Text similarity
-   - Keywords for Keyword match test cases
-   - Expected capabilities for Capability use test cases
-   - Custom grader instructions and labels
-4. Then proceed with running the evaluation
+| Test method | What it measures | Requires expected response? |
+|-------------|-----------------|---------------------------|
+| **General quality** (default) | AI-graded: relevance, completeness, groundedness, abstention | No |
+| **Compare meaning** | Semantic similarity of meaning/intent | Yes |
+| **Text similarity** | Cosine similarity of text | Yes |
+| **Exact match** | Character-for-character match | Yes |
+| **Keyword match** | Response contains expected keywords | Yes (keywords in UI) |
+| **Capability use** | Agent called expected tools/topics | Configured in UI |
+| **Custom** | Custom instructions and labels | Configured in UI |
 
 ## Phase 1: Resolve Configuration
 
