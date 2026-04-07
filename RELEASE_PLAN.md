@@ -3,8 +3,8 @@
 **Owner:** CAT-CAPE Copilot Acceleration Team
 **Repo:** https://github.com/microsoft/skills-for-copilot-studio
 **Current version:** 1.0.7
-**Cadence:** Weekly (every Friday)
-**Status:** Draft — pending team review
+**Cadence:** Weekly (every Wednesday)
+**Status:** Approved by team (2026-04-07)
 
 ---
 
@@ -43,18 +43,18 @@ We use **6 labels** to classify PRs. Each PR should have exactly one `type/` lab
 
 ## 4. Release Process (Weekly)
 
-### Friday release checklist
+### Wednesday release checklist
 
 1. **Check open PRs** — merge or label `release/blocked` anything not ready.
-2. **Run evals** — `node evals/run.js` — confirm no regressions.
-3. **Bump version** — update `version` in `.claude-plugin/plugin.json`.
-4. **Tag and release** — create a GitHub Release from `main`:
+2. **Bump version** — update `version` in `.claude-plugin/plugin.json`.
+3. **Tag and release** — create a GitHub Release from `main`:
    ```bash
    # Example for v1.1.0
    gh release create v1.1.0 --generate-notes --latest
    ```
    GitHub auto-generates notes from merged PRs using `.github/release.yml` categories.
-5. **Announce** — post in Teams channel with link to the release.
+4. **Write release summary** — draft a short, plain-language summary of what changed and why it matters (for non-technical audiences).
+5. **Announce** — post the summary with a link to the release in Teams and on LinkedIn.
 
 ### Automation (future)
 
@@ -89,12 +89,14 @@ Everything merged to `main` since the last release tag is included, unless label
 
 There are no feature branches or release branches. `main` is always the release branch.
 
+**Important:** The Claude plugin marketplace auto-pulls from `main`. PRs that are not ready for release must NOT be merged to `main` — keep them on feature branches or label them `release/blocked` to prevent premature merge.
+
 ## 7. Hotfix Process
 
 If a critical bug is found after a release:
 
 1. Fix it on `main` with a PR labeled `type/fix`.
-2. Create an out-of-band patch release (e.g., v1.1.1) immediately — don't wait for Friday.
+2. Create an out-of-band patch release (e.g., v1.1.1) immediately — don't wait for Wednesday.
 
 ## 8. Implementation Checklist
 
@@ -106,12 +108,12 @@ To activate this release plan, the following one-time setup is needed:
 - [ ] Create the first GitHub Release (v1.0.7) as the baseline
 - [ ] Share this plan with Giorgio, Adi, and Eric for feedback
 
-## 9. Open Questions
+## 9. Resolved Questions
 
-- [ ] **Release day:** Is Friday the right day, or would another day work better?
-- [ ] **Announcements:** Where should releases be announced? (Teams, LinkedIn, ?)
-- [ ] **CI gate:** Should we require evals to pass before merging? (GitHub Actions setup?)
-- [ ] **Marketplace sync:** Does the Claude plugin marketplace auto-pull from GitHub Releases, or is a separate step needed?
+- [x] **Release day:** Wednesday.
+- [x] **Announcements:** Teams and LinkedIn. Manual posting with a plain-language summary of each release.
+- [x] **CI gate:** No eval or test gating yet. The team is actively building out evals and testing — this will be revisited.
+- [x] **Marketplace sync:** The Claude plugin marketplace auto-pulls from `main`. This means `main` must always be release-ready — PRs that aren't ready must stay on feature branches.
 
 ---
 
