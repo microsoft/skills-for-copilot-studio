@@ -19,35 +19,11 @@ Run evaluations against a Copilot Studio agent using the Power Platform Evaluati
 This skill tests the **current draft** — the version you just pushed with manage-agent push.
 **No publish step is needed.** `runOnPublishedBot` defaults to `false`.
 
-## Phase 0: Authentication Setup
+## Prerequisite: Authentication
 
-The Evaluation API requires an **App Registration** with delegated permissions on the Power Platform API.
+This skill requires a `--client-id` for all eval-api commands. The client ID should be provided by the caller (test agent) after running `/copilot-studio:test-auth`.
 
-### If `--client-id` was not provided
-
-Ask the user for their App Registration Client ID. If they don't have one:
-
-> **App Registration Required**
->
-> The Evaluation API requires an Azure App Registration. Setup:
-> 1. Go to [Azure Portal > App Registrations](https://portal.azure.com/#view/Microsoft_AAD_RegisteredApps/ApplicationsListBlade)
-> 2. Create or select an app registration
-> 3. Under **API permissions**, add these **delegated** permissions for **Power Platform API**:
->    - `CopilotStudio.MakerOperations.Read`
->    - `CopilotStudio.MakerOperations.ReadWrite`
->    - `CopilotStudio.Copilots.Invoke` (also enables SDK chat)
-> 4. Under **Authentication**, add platform **Mobile and desktop applications** with redirect URI `http://localhost`
-> 5. Grant admin consent for the permissions
-> 6. Copy the **Application (client) ID**
-
-### Authenticate
-
-Run the auth command (interactive browser login — no device code needed):
-```bash
-node ${CLAUDE_SKILL_DIR}/../../scripts/eval-api.bundle.js auth --workspace <path> --client-id <id>
-```
-
-This caches the token in the `"test-agent"` slot (~90 day refresh). All subsequent eval-api and chat-sdk calls reuse it silently.
+If you don't have the client ID, tell the caller to run `test-auth` first.
 
 ## Test Set CSV Format (for import into Copilot Studio)
 

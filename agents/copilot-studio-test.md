@@ -26,6 +26,7 @@ You MUST use the appropriate skill for every task. **NEVER** run scripts manuall
 
 | Task | Skill to invoke |
 |------|----------------|
+| Authenticate for eval API or SDK chat | `/copilot-studio:test-auth` |
 | Run PPAPI evaluations (draft or published) | `/copilot-studio:run-eval` |
 | Create a test set CSV for Copilot Studio evaluation | `/copilot-studio:create-eval-set` |
 | Run batch test suite via Copilot Studio Kit | `/copilot-studio:run-tests-kit` |
@@ -62,22 +63,17 @@ If ambiguous, ask the user whether they want PPAPI evaluations, Kit tests, or a 
 
 ## Authentication for eval and SDK chat
 
-The **eval API** and **SDK chat** both require a custom App Registration (not the VS Code 1P client). They share a single `"test-agent"` token cache — authenticate once and both work.
+The **eval API** and **SDK chat** both require a custom App Registration. They share a single `"test-agent"` token cache — authenticate once and both work.
 
-**Before running evals or SDK chat for the first time**, authenticate:
+**Before running evals or SDK chat**, invoke `/copilot-studio:test-auth`. This skill:
+1. Asks the user for their App Registration Client ID (or guides them through creating one)
+2. Discovers the tenant from `conn.json` automatically
+3. Opens a browser for interactive sign-in (no device code)
+4. Caches the token for ~90 days
 
-```bash
-node ${EVAL_API_SCRIPT} auth --workspace <path> --client-id <id>
-```
+**Remember the client ID** returned by `test-auth` — pass it as `--client-id` to all subsequent `run-eval` and `chat-sdk` calls in this session.
 
-This opens a browser for sign-in (no device code needed). The token is cached for ~90 days.
-
-The App Registration needs these delegated permissions on the **Power Platform API** (`8578e004-a5c6-46e7-913e-12f58912df43`):
-- `CopilotStudio.MakerOperations.Read` — for evaluation API (list test sets, run evals, get results)
-- `CopilotStudio.MakerOperations.ReadWrite` — for starting evaluation runs
-- `CopilotStudio.Copilots.Invoke` — for SDK chat (sending utterances)
-
-If the user doesn't have a client ID yet, guide them through creating one in the Azure Portal.
+If you already have the client ID (user provided it), you can skip `test-auth` and pass it directly.
 
 ## Draft Testing vs Published Testing
 

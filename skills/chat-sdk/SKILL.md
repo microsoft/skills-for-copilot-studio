@@ -26,12 +26,7 @@ An **Azure App Registration** configured as:
      --client-id "<clientId>" "<utterance>" [--agent-dir <path>]
    ```
 
-2. **Authentication**: On first use, a browser window opens automatically for sign-in (interactive login, not device code). The token is cached in the `"test-agent"` slot and shared with the eval API — if you've already authenticated via `eval-api auth`, this step is silent.
-
-   If auth fails, run `eval-api auth` first:
-   ```bash
-   node ${CLAUDE_SKILL_DIR}/../../scripts/eval-api.bundle.js auth --workspace <path> --client-id <id>
-   ```
+2. **Authentication**: Requires prior authentication via `/copilot-studio:test-auth`. The token is cached in the `"test-agent"` slot and shared with the eval API. If auth fails or the SDK hangs, tell the caller to re-run `test-auth`.
 
 3. Parse the JSON output from stdout:
 
