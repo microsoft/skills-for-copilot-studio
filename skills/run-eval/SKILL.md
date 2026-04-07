@@ -71,7 +71,10 @@ Extract `environmentId`, `agentId`, `tenantId`. Pass `--workspace` to the script
 
 If no `conn.json` found: ask the user for `--environment-id`, `--agent-id`, `--tenant-id` directly.
 
-## Phase 2: List Test Sets
+## Phase 2: List Test Sets — MUST complete before starting a run
+
+**You MUST list test sets and let the user choose before starting any evaluation run.**
+Do NOT skip this step. Do NOT auto-select a test set when multiple exist.
 
 ```bash
 node ${CLAUDE_SKILL_DIR}/../../scripts/eval-api.bundle.js list-testsets --workspace <path> --client-id <id>
@@ -82,10 +85,19 @@ Parse the `testsets` array from the JSON output.
 - **If empty**: Tell the user:
   > No test sets found. Create test sets in the Copilot Studio UI:
   > Open your agent > **Evaluate** tab > **New test set**.
-  STOP here — this skill cannot create test sets.
+  STOP here — do not proceed.
 
-- **If one test set**: Auto-select it. Tell the user which one you're using.
-- **If multiple**: Present a numbered list, ask the user to pick.
+- **If exactly one test set**: Auto-select it. Tell the user: "Found one test set: **{name}** ({count} cases). Using it."
+
+- **If multiple test sets**: Present ALL of them as a numbered list and **ask the user to pick**:
+  > Available test sets:
+  > 1. **{name}** — {count} test cases
+  > 2. **{name}** — {count} test cases
+  > ...
+  >
+  > Which test set would you like to run?
+
+  **WAIT for the user's response before proceeding to Phase 3.**
 
 ## Phase 3: Start Run
 
