@@ -122,9 +122,7 @@ For multi-turn, pass `conversation_id`, `directline_token`, and `watermark` from
 
 ### Step 2b: Chat via Copilot Studio SDK
 
-Ask the user for their **App Registration Client ID** (must have `CopilotStudio.Copilots.Invoke` permission and redirect URI `http://localhost`).
-
-Then invoke `/copilot-studio:chat-sdk` with the client ID and the user's utterance.
+Run `/copilot-studio:test-auth` if not already authenticated, then invoke `/copilot-studio:chat-sdk` with the client ID and the user's utterance.
 
 For multi-turn, pass `conversation_id` from the previous response.
 

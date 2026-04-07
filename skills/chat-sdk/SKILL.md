@@ -12,10 +12,7 @@ Send a single utterance to a published agent via the Copilot Studio Client SDK. 
 
 ## Prerequisites
 
-An **Azure App Registration** configured as:
-- **Platform**: Public client / Native (Mobile and desktop applications) — NOT SPA
-- **Redirect URI**: `http://localhost` (HTTP, not HTTPS)
-- **API permissions**: Power Platform API → Delegated → `CopilotStudio.Copilots.Invoke`
+Requires prior authentication via `/copilot-studio:test-auth`. Do NOT ask the user for a client ID yourself — the test-auth skill handles app registration setup and authentication.
 
 ## Instructions
 
