@@ -58,9 +58,7 @@ If ambiguous, ask the user whether they want PPAPI evaluations, Kit tests, or a 
 |-------|---------|-------------|
 | **`create-eval-set`** | Create test set CSV for Copilot Studio **in-product** Evaluate tab | "Create a test set", "prepare evaluation questions", "generate test cases for my agent" |
 | **`run-eval`** | Run evaluations via the PPAPI, poll for results, analyze failures | "Run evals", "start evaluation run", "check eval results" |
-| **`create-eval`** | DEPRECATED — plugin development only. Creates JSON scenario files for testing plugin skills. | Only if user explicitly asks to create a plugin eval scenario |
-
-**NEVER use `create-eval` for Copilot Studio in-product evaluation tasks.** Use `create-eval-set` instead.
+| **`create-eval`** | Plugin development. Creates JSON scenario files for testing plugin skills. | Only if user explicitly asks to create a plugin eval scenario (e.g., "create an eval for the new-topic skill") |
 
 ## Draft Testing vs Published Testing
 
