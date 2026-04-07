@@ -102,11 +102,11 @@ If a critical bug is found after a release:
 
 To activate this release plan, the following one-time setup is needed:
 
-- [ ] Create the 6 labels on the GitHub repo
-- [ ] Create `.github/release.yml` with the config above
-- [ ] Label existing open PRs with appropriate `type/` labels
-- [ ] Create the first GitHub Release (v1.0.7) as the baseline
-- [ ] Share this plan with Giorgio, Adi, and Eric for feedback
+- [x] Create the 6 labels on the GitHub repo
+- [x] Create `.github/release.yml` with the config above
+- [x] Label existing open PRs with appropriate `type/` labels
+- [x] Create the first GitHub Release (v1.0.7) as the baseline — https://github.com/microsoft/skills-for-copilot-studio/releases/tag/v1.0.7
+- [x] Share this plan with Giorgio, Adi, and Eric for feedback — PR #134
 
 ## 9. Resolved Questions
 
