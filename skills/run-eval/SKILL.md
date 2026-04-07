@@ -12,180 +12,57 @@ agent: copilot-studio-test
 
 # Run Evaluation (PPAPI)
 
-Run evaluations against a Copilot Studio agent using the Power Platform Evaluation API.
+Run evaluations against a Copilot Studio agent's **draft** — no publish needed.
 
-## Key capability: draft testing
+The caller (test agent) must provide `--client-id` and `--workspace`. If you don't have the client ID, return immediately and tell the caller to run `test-auth` first.
 
-This skill tests the **current draft** — the version you just pushed with manage-agent push.
-**No publish step is needed.** `runOnPublishedBot` defaults to `false`.
+All eval-api commands run in the **foreground**. NEVER use `run_in_background`.
 
-## Prerequisite: Authentication
-
-This skill requires a `--client-id` for all eval-api commands. The client ID should be provided by the caller (test agent) after running `/copilot-studio:test-auth`.
-
-If you don't have the client ID, tell the caller to run `test-auth` first.
-
-## Test Set CSV Format (for import into Copilot Studio)
-
-Test sets **cannot** be created via the API — they must be imported through the Copilot Studio UI
-(agent > **Evaluate** tab > **New evaluation** > **Single response** > drag/browse file).
-
-To create a test set CSV, use the `/copilot-studio:create-eval-set` skill.
-
-### Import format
-
-```csv
-"question","expectedResponse"
-"What are your business hours?","We are open Monday to Friday, 9 AM to 5 PM."
-"Where is the nearest store?",
-```
-
-Only two columns are supported on import: `question` and `expectedResponse`. **Test methods cannot be set via CSV** — the `Testing method` column is ignored on import. All imported test cases get the default method (General quality). Other methods must be configured in the UI after import.
-
-### Test methods (configured in UI after import)
-
-| Test method | What it measures | Requires expected response? |
-|-------------|-----------------|---------------------------|
-| **General quality** (default) | AI-graded: relevance, completeness, groundedness, abstention | No |
-| **Compare meaning** | Semantic similarity of meaning/intent | Yes |
-| **Text similarity** | Cosine similarity of text | Yes |
-| **Exact match** | Character-for-character match | Yes |
-| **Keyword match** | Response contains expected keywords | Yes (keywords in UI) |
-| **Capability use** | Agent called expected tools/topics | Configured in UI |
-| **Custom** | Custom instructions and labels | Configured in UI |
-
-## IMPORTANT: Execution rules
-
-- **NEVER use `run_in_background: true`** for eval-api commands. Always run in the **foreground**.
-- **Authenticate before running any eval commands.** If the user hasn't authenticated yet (first use), run:
-  ```bash
-  node ${CLAUDE_SKILL_DIR}/../../scripts/eval-api.bundle.js auth --workspace <path> --client-id <id>
-  ```
-  This opens a browser for interactive sign-in — no device code needed. The token is cached in the `"test-agent"` slot and reused by all subsequent eval-api and chat-sdk calls (~90 day refresh).
-- If any command fails with HTTP 401/403, re-run the `auth` command to refresh the token.
-
-## Phase 1: Resolve Configuration
-
-Find `conn.json` by searching for `.mcs/conn.json` under the workspace.
-Extract `environmentId`, `agentId`, `tenantId`. Pass `--workspace` to the script.
-
-If no `conn.json` found: ask the user for `--environment-id`, `--agent-id`, `--tenant-id` directly.
-
-## Phase 2: List Test Sets — MUST complete before starting a run
-
-**You MUST list test sets and let the user choose before starting any evaluation run.**
-Do NOT skip this step. Do NOT auto-select a test set when multiple exist.
+## Step 1: List test sets and let the user choose
 
 ```bash
 node ${CLAUDE_SKILL_DIR}/../../scripts/eval-api.bundle.js list-testsets --workspace <path> --client-id <id>
 ```
 
-Parse the `testsets` array from the JSON output.
+- **No test sets found**: Tell the user to create one in Copilot Studio (Evaluate tab > New evaluation). Stop.
+- **One test set**: Tell the user which one you're using and proceed.
+- **Multiple test sets**: Show them all and ask the user to pick. Do not proceed until they answer.
 
-- **If empty**: Tell the user:
-  > No test sets found. Create test sets in the Copilot Studio UI:
-  > Open your agent > **Evaluate** tab > **New test set**.
-  STOP here — do not proceed.
-
-- **If exactly one test set**: Auto-select it. Tell the user: "Found one test set: **{name}** ({count} cases). Using it."
-
-- **If multiple test sets**: Present ALL of them as a numbered list and **ask the user to pick**:
-  > Available test sets:
-  > 1. **{name}** — {count} test cases
-  > 2. **{name}** — {count} test cases
-  > ...
-  >
-  > Which test set would you like to run?
-
-  **WAIT for the user's response before proceeding to Phase 3.**
-
-## Phase 3: Start Run
+## Step 2: Start the run
 
 ```bash
-node ${CLAUDE_SKILL_DIR}/../../scripts/eval-api.bundle.js start-run --workspace <path> --client-id <id> --testset-id <id>
+node ${CLAUDE_SKILL_DIR}/../../scripts/eval-api.bundle.js start-run --workspace <path> --client-id <id> --testset-id <id> --run-name "Draft eval <date>"
 ```
 
-Add `--run-name "Draft eval <date>"` or a user-supplied name.
-Add `--published` **only** if the user explicitly asked for published-bot testing.
+Add `--published` only if the user explicitly asked for published-bot testing.
 
-The output includes `runId`, `state` (Queued), `totalTestCases`.
+## Step 3: Poll until complete
 
-Tell the user:
-> Started evaluation run `{runId}` — {totalTestCases} test cases queued.
-
-## Phase 4: Poll for Completion
-
-Poll using:
 ```bash
 node ${CLAUDE_SKILL_DIR}/../../scripts/eval-api.bundle.js get-run --workspace <path> --client-id <id> --run-id <runId>
 ```
 
-**Poll interval**: Start at 15 seconds. For test sets with >20 cases, use 30 seconds.
+Poll every 15-30 seconds. Report progress: "Processing: 3/10 test cases..."
 
-Show progress after each poll:
-> `executionState`: ProcessingRunContent (3/10 processed)
+Stop when `state` is `Completed`, `Failed`, `Abandoned`, or `Cancelled`.
 
-Continue until `state` is one of: `Completed`, `Failed`, `Abandoned`, `Cancelled`.
-
-- **Completed**: Proceed to Phase 5.
-- **Failed/Abandoned/Cancelled**: Report the state and stop.
-- **Timeout**: If still running after 20 minutes, tell the user to check the Copilot Studio UI.
-
-## Phase 5: Fetch Full Results
+## Step 4: Fetch and analyze results
 
 ```bash
 node ${CLAUDE_SKILL_DIR}/../../scripts/eval-api.bundle.js get-results --workspace <path> --client-id <id> --run-id <runId>
 ```
 
-Parse `testCasesResults`. Each result has `testCaseId` + `metricsResults[]`.
+Present a summary table (total, passed, failed, errors). For failures:
 
-## Phase 6: Analyze Results
+| Metric | What to check |
+|--------|---------------|
+| `GeneralQuality` Fail | Which of relevance/completeness/groundedness/abstention failed |
+| `ExactMatch` Fail | Score 0.0–1.0 |
+| `CapabilityUse` Fail | `missingInvocationSteps` |
+| `Error` status | `errorReason` — often a test set config issue, not a YAML issue |
 
-Present a summary table: total, passed, failed, errors.
+## Step 5: Propose fixes (if failures found)
 
-For each **failure**, analyze using `metricsResults`:
+For YAML authoring failures: find the relevant topic, read it, propose specific edits. Wait for user approval before applying.
 
-| Metric Type | What to check |
-|-------------|---------------|
-| `GeneralQuality` Fail | `data.relevance`, `data.completeness`, `data.groundedness`, `data.abstention` — each is `Yes`/`No`/`NA` |
-| `ExactMatch` Fail | `data.score` is 0.0–1.0, response didn't match expected |
-| `CompareMeaning` Fail | Semantic similarity too low |
-| `AllKeywordMatch` / `AnyKeywordMatch` Fail | `data.matchedTermCount` vs `data.totalTermCount`, `data.matchedTerms` |
-| `CapabilityUse` Fail | `data.missingInvocationSteps` shows which tools/topics weren't called |
-| `Error` status | Check `errorReason` — many are config issues (e.g., `ExpectedOutputIsNullOrEmpty`) not YAML failures. Tell user what to fix in the test set UI |
-
-### Common error reasons (not YAML issues — tell user to fix in test set)
-
-- `ExpectedOutputIsNullOrEmpty` — No expected response set for this test case
-- `ExpectedKeywordsAreNullOrEmpty` — No keywords defined for keyword match metric
-- `ExpectedInvocationStepsAreNullOrEmpty` — No expected invocation steps defined
-- `AgentResponseIsNullOrEmpty` — Bot returned nothing (may be a runtime issue, retry)
-
-## Phase 7: Propose Fixes
-
-For failures that are YAML authoring issues (not test set config issues):
-
-1. Find the agent: `Glob: **/agent.mcs.yml`
-2. Find the relevant topic by matching the test query against trigger phrases and model descriptions
-3. Read the topic file
-4. Propose specific YAML edits
-5. Wait for user decision, then apply with the Edit tool
-
-After applying fixes:
-> Changes applied locally. Push to test again:
-> - To push: I can push for you now, or you can do it manually
-> - After pushing, re-run the evaluation to verify the fixes
-
-## Push + Re-eval Loop
-
-If the user asks to "push and re-run" or "test again":
-
-1. Push local changes:
-   ```bash
-   node ${CLAUDE_SKILL_DIR}/../../scripts/manage-agent.bundle.js push --workspace <path> --tenant-id <id> --environment-id <id> --environment-url <url> --agent-mgmt-url <url>
-   ```
-   (Read all required values from `.mcs/conn.json`)
-
-2. After push succeeds, go back to **Phase 3** (start a new run).
-
-Do **NOT** publish between iterations. Publish only when the user is satisfied.
+After applying: offer to push and re-run (go back to Step 2).
