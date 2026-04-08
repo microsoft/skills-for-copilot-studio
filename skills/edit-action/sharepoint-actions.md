@@ -148,3 +148,107 @@ SharePoint's `GetItems` and `GetFileItems` have `outputType: UnresolvedDynamicTy
 3. Warn the user to verify column internal names in SharePoint (Site Settings → List Settings → Column names)
 
 Internal names differ from display names (e.g., display name "Employee Name" → internal name "EmployeeName" or "Employee_x0020_Name" for names with spaces).
+
+## Discovering List Columns Before Writing Filters
+
+The AI **cannot guess** the column names, types, or internal names of a SharePoint list. Before building a `$filter` or configuring inputs/outputs, **always ask the user to share their list's actual columns**.
+
+The most reliable way is to ask the user to:
+1. Run a **GetItems** call (via the Copilot Studio test chat or the SharePoint connector action) with no filter and `$top` set to `1`
+2. Share the JSON response — it reveals the exact internal column names, types, and sample values
+
+Use the response to:
+- Write accurate `$filter` expressions using the real internal column names
+- Populate `AutomaticTaskInput` descriptions with the exact column names and allowed values
+- Configure outputs with the correct `propertyName` values
+
+> **Why this matters:** Column display names like "Assigned To" often have internal names like `AssignedTo` or `Assigned_x0020_To`. Choice columns have specific allowed values. Without seeing real data, the AI will guess wrong.
+
+## Person/Group Column Filtering
+
+SharePoint **Person/Group** columns (e.g., "Assigned To", "Created By", "Manager") require special handling. You **cannot** filter them by `DisplayName` — you must filter by the `EMail` sub-property.
+
+### Syntax
+
+```
+AssignedTo/EMail eq 'john.doe@contoso.com'
+```
+
+**Not** `AssignedTo eq 'John Doe'` — this will return zero results.
+
+### Common Wrong vs. Right (Person/Group)
+
+| Wrong | Right | Issue |
+|-------|-------|-------|
+| `AssignedTo eq 'John Doe'` | `AssignedTo/EMail eq 'john.doe@contoso.com'` | Must use `/EMail` sub-property |
+| `AssignedTo/DisplayName eq 'John Doe'` | `AssignedTo/EMail eq 'john.doe@contoso.com'` | `DisplayName` is not filterable in SharePoint REST |
+| `Author eq 'Jane Smith'` | `Author/EMail eq 'jane.smith@contoso.com'` | "Created By" internal name is `Author` |
+| `Editor eq 'Jane Smith'` | `Editor/EMail eq 'jane.smith@contoso.com'` | "Modified By" internal name is `Editor` |
+
+### Two-Step Pattern: Resolve User Email First
+
+When the user says "filter by assigned to me" or "show items for John", the agent needs the **email address** — not a display name. Use the **Office 365 Users** connector (`shared_office365users`) to resolve the email first, then pass it to the SharePoint filter.
+
+**Step 1 — Get the user's email** (in a topic, before calling the SharePoint action):
+
+```yaml
+# Get current user's profile
+- kind: InvokeConnectorAction
+  id: getProfile_abc123
+  connectionReference: shared_office365users
+  connectionProperties:
+    mode: Invoker
+  operationId: UserGet_V2
+  output:
+    kind: SingleVariableOutputBinding
+    variable: init:Topic.UserProfile
+
+# Extract the email
+- kind: SetVariable
+  id: setEmail_def456
+  variable: Topic.UserEmail
+  value: =Topic.UserProfile.mail
+```
+
+**Step 2 — Use the email in the SharePoint filter:**
+
+For a **TaskDialog** action with `AutomaticTaskInput`, include the email as part of the description:
+
+```yaml
+- kind: AutomaticTaskInput
+  propertyName: "'$filter'"
+  description: |-
+    OData filter for the Tasks SharePoint list.
+    To filter by person, use: AssignedTo/EMail eq '{email}'.
+    The user's email is available in the conversation context.
+    Column reference: Title (text), Status (choice: Not Started, In Progress, Completed), AssignedTo (person), DueDate (datetime).
+  entity: StringPrebuiltEntity
+  shouldPromptUser: true
+```
+
+For an **InvokeConnectorAction** inline in a topic, interpolate the email directly:
+
+```yaml
+- kind: InvokeConnectorAction
+  id: getMyTasks_ghi789
+  connectionReference: shared_sharepointonline
+  connectionProperties:
+    mode: Invoker
+  operationId: GetItems
+  input:
+    parameters/dataset: https://contoso.sharepoint.com/sites/Projects
+    parameters/table: Tasks
+    parameters/$filter: ="AssignedTo/EMail eq '" & Topic.UserEmail & "'"
+  output:
+    kind: SingleVariableOutputBinding
+    variable: init:Topic.MyTasks
+```
+
+### Other Filterable Person Sub-Properties
+
+| Sub-property | Filterable | Notes |
+|-------------|-----------|-------|
+| `EMail` | Yes | **Always use this** — most reliable |
+| `Id` | Yes | SharePoint user ID (integer) — stable but not human-readable |
+| `DisplayName` | No | **Not filterable** in SharePoint REST/OData |
+| `Title` | No | Same as DisplayName — not filterable |
