@@ -5,6 +5,8 @@ inputs:
   - kind: ManualTaskInput
     propertyName: <FixedPropertyName>
     value: <Fixed Value>
+    # NOTE: For $-prefixed OData params (SharePoint), use: propertyName: "'$filter'"
+    # The inner single quotes are required by the runtime. See edit-action/sharepoint-actions.md.
 
   - kind: AutomaticTaskInput
     propertyName: <DynamicPropertyName>

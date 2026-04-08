@@ -102,6 +102,31 @@ Connector actions (`kind: TaskDialog`) invoke external connector operations. The
 | `AutomaticTaskInput` | The AI orchestrator should provide the value based on context | Includes `description` for the AI to understand what to provide |
 | `ManualTaskInput` | A fixed/hardcoded value (e.g., timezone, folder path) | Can only hardcode **strings**. Non-string values (IDs, enums) should be reviewed by the user after pushing |
 
+### `$`-Prefixed Property Names (SharePoint, OData)
+
+Some connectors (notably SharePoint) use OData parameters like `$filter`, `$orderby`, `$top`. These require special quoting in **TaskDialog** YAML — both single and double quotes:
+
+```yaml
+# TaskDialog (actions/*.mcs.yml) — CORRECT
+- kind: ManualTaskInput
+  propertyName: "'$filter'"
+  value: "Status eq 'Active'"
+```
+
+`"'$filter'"` means: the outer `""` are YAML string delimiters; the inner `''` are part of the literal value sent to the runtime. Using `$filter`, `"$filter"`, or `'$filter'` alone will fail.
+
+**InvokeConnectorAction** (inline in topics) uses a different format — the `parameters/` prefix with no inner single quotes:
+
+```yaml
+# InvokeConnectorAction (inside topics) — CORRECT
+- kind: InvokeConnectorAction
+  operationId: GetItems
+  input:
+    parameters/$filter: "Status eq 'Active'"
+```
+
+Never mix these two formats.
+
 ## System Variables
 
 | Variable | Description |
