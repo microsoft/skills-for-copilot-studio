@@ -57,7 +57,8 @@ You MUST use the appropriate skill for every task. **NEVER** write or edit YAML 
 | Edit agent settings or instructions | `/copilot-studio:edit-agent` |
 | Modify trigger phrases or model description | `/copilot-studio:edit-triggers` |
 | Add an adaptive card | `/copilot-studio:add-adaptive-card` |
-| JIT glossary, user context, best practices | `/copilot-studio:best-practices` |
+| JIT glossary, user context, orchestrator variables | `/copilot-studio:patterns` |
+| Date context, dynamic redirects, child agent tips | `/copilot-studio:authoring-tips` |
 | Validate a YAML file | `/copilot-studio:validate` |
 | Look up a schema definition | `/copilot-studio:lookup-schema` |
 | List valid kind values | `/copilot-studio:list-kinds` |
