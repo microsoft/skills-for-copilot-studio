@@ -55,6 +55,11 @@ node ${CLAUDE_SKILL_DIR}/../../scripts/schema-lookup.bundle.js summary ModelCont
      ```
    - This gives you the complete list of available inputs and outputs for the operation
    - If the connector is not found, try broader terms. If still not found, inform the user and proceed with edits based on the existing action YAML and schema-lookup only
+   - **If the connector is SharePoint (`shared_sharepointonline`)**, read the SharePoint-specific reference before making any edits:
+     ```
+     Read: ${CLAUDE_SKILL_DIR}/sharepoint-actions.md
+     ```
+     This covers OData filter syntax, the critical `"'$filter'"` quoting pattern, which inputs should be Manual vs Automatic, and dynamic output handling.
 
 4. **Determine the action type** from the YAML:
    - If `action.kind` is `InvokeConnectorTaskAction` → regular connector action
