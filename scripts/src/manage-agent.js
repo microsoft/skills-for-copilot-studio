@@ -21,6 +21,7 @@
  *   CPS_ENVIRONMENT_URL     Dataverse environment URL (e.g. https://org123.crm.dynamics.com)
  *   CPS_AGENT_MGMT_URL      Agent management URL
  *   CPS_ENVIRONMENT_NAME    Display name for the environment
+ *   CPS_CLOUD               Cloud environment: public, gcc, or gcchigh (default: public)
  *
  * Output: JSON on stdout, diagnostics on stderr.
  */
@@ -34,6 +35,7 @@ const { log, die } = require("./shared-utils");
 const {
   VSCODE_CLIENT_ID,
   getIslandResourceId,
+  getDefaultClientId,
   buildTokenInfo,
   acquireTokenDeviceCode,
   acquireTokenInteractive,
@@ -71,6 +73,7 @@ function parseArgs() {
     owner: true, // default: filter by owner
     timeout: 300000, // default: 5 minutes for publish polling
     force: false,
+    cloud: process.env.CPS_CLOUD || "public",
   };
 
   for (let i = 0; i < args.length; i++) {
@@ -116,6 +119,9 @@ function parseArgs() {
       case "--force":
         parsed.force = true;
         break;
+      case "--cloud":
+        parsed.cloud = args[++i];
+        break;
       default:
         if (!args[i].startsWith("--") && !parsed.command) {
           parsed.command = args[i];
@@ -132,6 +138,51 @@ function parseArgs() {
   }
 
   return parsed;
+}
+
+// ---------------------------------------------------------------------------
+// Cloud-specific endpoint configuration
+// ---------------------------------------------------------------------------
+
+const CLOUD_ENDPOINTS = {
+  public: {
+    bapHost: "api.bap.microsoft.com",
+    bapTokenScope: "https://service.powerapps.com/.default",
+    powerPlatformScope: "https://api.powerplatform.com/.default",
+    loginAuthority: "https://login.microsoftonline.com",
+    clusterCategory: 5,
+  },
+  gcc: {
+    bapHost: "gov.api.bap.microsoft.us",
+    bapTokenScope: "https://gov.service.powerapps.us/.default",
+    powerPlatformScope: "https://api.gov.powerplatform.microsoft.us/.default",
+    loginAuthority: "https://login.microsoftonline.com",
+    clusterCategory: 6,
+  },
+  gcchigh: {
+    bapHost: "high.api.bap.microsoft.us",
+    bapTokenScope: "https://high.service.powerapps.us/.default",
+    powerPlatformScope: "https://api.high.powerplatform.microsoft.us/.default",
+    loginAuthority: "https://login.microsoftonline.us",
+    clusterCategory: 7,
+  },
+};
+
+function getCloudEndpoints(cloud) {
+  const endpoints = CLOUD_ENDPOINTS[cloud];
+  if (!endpoints) {
+    die(`Unknown cloud: ${cloud}. Use: public, gcc, or gcchigh`);
+  }
+  return endpoints;
+}
+
+// Auto-detect cloud from environment URL if not explicitly set.
+function detectCloud(envUrl, explicitCloud) {
+  if (explicitCloud && explicitCloud !== "public") return explicitCloud;
+  if (!envUrl) return explicitCloud || "public";
+  if (envUrl.includes(".crm9.dynamics.com")) return "gcc";
+  if (envUrl.includes(".crm.microsoftdynamics.us")) return "gcchigh";
+  return explicitCloud || "public";
 }
 
 // ---------------------------------------------------------------------------
@@ -686,23 +737,28 @@ async function cmdAuth(args) {
   if (!args.tenantId) die("--tenant-id (or CPS_TENANT_ID) is required");
   if (!args.environmentUrl) die("--environment-url (or CPS_ENVIRONMENT_URL) is required");
 
-  const clientId = args.clientId || VSCODE_CLIENT_ID;
+  args.cloud = detectCloud(args.environmentUrl, args.cloud);
+  const endpoints = getCloudEndpoints(args.cloud);
 
   log("Acquiring Copilot Studio API token...");
   const cpsToken = await getOrAcquireToken(
     args.tenantId,
-    clientId,
-    ["https://api.powerplatform.com/.default"],
-    "Copilot Studio API"
+    args.clientId || getDefaultClientId(args.cloud, endpoints.powerPlatformScope),
+    [endpoints.powerPlatformScope],
+    "Copilot Studio API",
+    undefined,
+    args.cloud
   );
 
   const envUrl = args.environmentUrl.replace(/\/+$/, "");
   log("Acquiring Dataverse API token...");
   const dvToken = await getOrAcquireToken(
     args.tenantId,
-    clientId,
+    args.clientId || getDefaultClientId(args.cloud, `${envUrl}/.default`),
     [`${envUrl}/.default`],
-    "Dataverse API"
+    "Dataverse API",
+    undefined,
+    args.cloud
   );
 
   const result = {
@@ -727,25 +783,33 @@ async function acquireLspTokens(args) {
   const tenantId = conn?.AccountInfo?.TenantId || args.tenantId;
 
   const envUrl = args.environmentUrl.replace(/\/+$/, "");
+  const cloud = detectCloud(args.environmentUrl, args.cloud);
+  const endpoints = getCloudEndpoints(cloud);
   let cpsToken, dvToken;
 
   if (clusterCategory != null) {
-    cpsToken = await getOrAcquireIslandToken(tenantId, clusterCategory, "Island API");
+    cpsToken = await getOrAcquireIslandToken(tenantId, clusterCategory, "Island API", cloud);
     dvToken = await getOrAcquireToken(
-      tenantId, VSCODE_CLIENT_ID,
+      tenantId, args.clientId || getDefaultClientId(cloud, `${envUrl}/.default`),
       [`${envUrl}/.default`],
-      "Dataverse API"
+      "Dataverse API",
+      undefined,
+      cloud
     );
   } else {
     cpsToken = await getOrAcquireToken(
-      tenantId, VSCODE_CLIENT_ID,
-      ["https://api.powerplatform.com/.default"],
-      "Copilot Studio API"
+      tenantId, args.clientId || getDefaultClientId(cloud, endpoints.powerPlatformScope),
+      [endpoints.powerPlatformScope],
+      "Copilot Studio API",
+      undefined,
+      cloud
     );
     dvToken = await getOrAcquireToken(
-      tenantId, VSCODE_CLIENT_ID,
+      tenantId, args.clientId || getDefaultClientId(cloud, `${envUrl}/.default`),
       [`${envUrl}/.default`],
-      "Dataverse API"
+      "Dataverse API",
+      undefined,
+      cloud
     );
   }
 
@@ -819,9 +883,6 @@ async function cmdValidate(args) {
 // BAP / Dataverse REST API helpers (list-envs, list-agents use REST, not LSP)
 // ---------------------------------------------------------------------------
 
-const BAP_HOST = "api.bap.microsoft.com";
-const BAP_TOKEN_SCOPE = "https://service.powerapps.com/.default";
-
 async function httpGetJson(url, accessToken) {
   const res = await fetch(url, {
     headers: { Authorization: `Bearer ${accessToken}` },
@@ -861,12 +922,15 @@ async function cmdListAgents(args) {
   if (!args.tenantId) die("--tenant-id (or CPS_TENANT_ID) is required");
   if (!args.environmentUrl) die("--environment-url (or CPS_ENVIRONMENT_URL) is required");
 
+  const cloud = detectCloud(args.environmentUrl, args.cloud);
   const envUrl = args.environmentUrl.replace(/\/+$/, "");
   const dvToken = await getOrAcquireToken(
     args.tenantId,
-    VSCODE_CLIENT_ID,
+    args.clientId || getDefaultClientId(cloud, `${envUrl}/.default`),
     [`${envUrl}/.default`],
-    "Dataverse API"
+    "Dataverse API",
+    undefined,
+    cloud
   );
 
   const ownerOnly = args.owner !== false; // default: owned by current user
@@ -910,15 +974,20 @@ async function cmdListAgents(args) {
 async function cmdListEnvs(args) {
   if (!args.tenantId) die("--tenant-id (or CPS_TENANT_ID) is required");
 
+  const cloud = detectCloud(null, args.cloud);
+  const endpoints = getCloudEndpoints(cloud);
+
   const bapToken = await getOrAcquireToken(
     args.tenantId,
-    VSCODE_CLIENT_ID,
-    [BAP_TOKEN_SCOPE],
-    "Power Platform API"
+    args.clientId || getDefaultClientId(cloud, endpoints.bapTokenScope),
+    [endpoints.bapTokenScope],
+    "Power Platform API",
+    undefined,
+    cloud
   );
 
   const filter = encodeURIComponent("properties/environmentSku ne 'Platform'");
-  const url = `https://${BAP_HOST}/providers/Microsoft.BusinessAppPlatform/environments?api-version=2024-05-01&$filter=${filter}&$expand=properties.permissions`;
+  const url = `https://${endpoints.bapHost}/providers/Microsoft.BusinessAppPlatform/environments?api-version=2024-05-01&$filter=${filter}&$expand=properties.permissions`;
 
   log("Fetching environments from BAP API...");
   const response = await httpGetJson(url, bapToken.accessToken);
@@ -964,11 +1033,14 @@ async function cmdPublish(args) {
   const botId = args.agentId || (conn && conn.AgentId);
   if (!botId) die("Cannot determine agent ID. Provide --agent-id or ensure .mcs/conn.json exists.");
 
+  const publishCloud = detectCloud(envUrl, args.cloud);
   const dvToken = await getOrAcquireToken(
     tenantId,
-    VSCODE_CLIENT_ID,
+    args.clientId || getDefaultClientId(publishCloud, `${envUrl}/.default`),
     [`${envUrl}/.default`],
-    "Dataverse API"
+    "Dataverse API",
+    undefined,
+    publishCloud
   );
 
   // Read current publishedon timestamp before triggering publish
@@ -1048,25 +1120,33 @@ async function cmdChanges(args) {
   const tenantId = conn?.AccountInfo?.TenantId || args.tenantId;
 
   const envUrl = args.environmentUrl.replace(/\/+$/, "");
+  const cloud = detectCloud(args.environmentUrl, args.cloud);
+  const endpoints = getCloudEndpoints(cloud);
   let cpsToken, dvToken;
 
   if (clusterCategory != null) {
-    cpsToken = await getOrAcquireIslandToken(tenantId, clusterCategory, "Island API");
+    cpsToken = await getOrAcquireIslandToken(tenantId, clusterCategory, "Island API", cloud);
     dvToken = await getOrAcquireToken(
-      tenantId, VSCODE_CLIENT_ID,
+      tenantId, args.clientId || getDefaultClientId(cloud, `${envUrl}/.default`),
       [`${envUrl}/.default`],
-      "Dataverse API"
+      "Dataverse API",
+      undefined,
+      cloud
     );
   } else {
     cpsToken = await getOrAcquireToken(
-      tenantId, VSCODE_CLIENT_ID,
-      ["https://api.powerplatform.com/.default"],
-      "Copilot Studio API"
+      tenantId, args.clientId || getDefaultClientId(cloud, endpoints.powerPlatformScope),
+      [endpoints.powerPlatformScope],
+      "Copilot Studio API",
+      undefined,
+      cloud
     );
     dvToken = await getOrAcquireToken(
-      tenantId, VSCODE_CLIENT_ID,
+      tenantId, args.clientId || getDefaultClientId(cloud, `${envUrl}/.default`),
       [`${envUrl}/.default`],
-      "Dataverse API"
+      "Dataverse API",
+      undefined,
+      cloud
     );
   }
 
@@ -1164,11 +1244,12 @@ async function cmdClone(args) {
 
   const envUrl = args.environmentUrl.replace(/\/+$/, "");
 
-  // Clone uses Island API token (same as push/pull) — default to Prod cluster (5)
-  const DEFAULT_CLUSTER_CATEGORY = 5;
-  const cpsToken = await getOrAcquireIslandToken(args.tenantId, DEFAULT_CLUSTER_CATEGORY, "Island API");
+  // Clone uses Island API token (same as push/pull) — cloud-aware cluster category
+  const cloud = detectCloud(envUrl, args.cloud);
+  const DEFAULT_CLUSTER_CATEGORY = cloud === "gcc" ? 6 : cloud === "gcchigh" ? 7 : 5;
+  const cpsToken = await getOrAcquireIslandToken(args.tenantId, DEFAULT_CLUSTER_CATEGORY, "Island API", cloud);
 
-  const dvToken = await getOrAcquireToken(args.tenantId, VSCODE_CLIENT_ID, [`${envUrl}/.default`], "Dataverse API");
+  const dvToken = await getOrAcquireToken(args.tenantId, args.clientId || getDefaultClientId(cloud, `${envUrl}/.default`), [`${envUrl}/.default`], "Dataverse API", undefined, cloud);
 
   // Fetch agent info and solution versions from Dataverse
   const [agentInfo, solVersions] = await Promise.all([
