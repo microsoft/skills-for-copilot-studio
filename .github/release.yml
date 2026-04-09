@@ -1,0 +1,16 @@
+changelog:
+  categories:
+    - title: "New Features"
+      labels: ["type/feature"]
+    - title: "Bug Fixes"
+      labels: ["type/fix"]
+    - title: "Documentation"
+      labels: ["type/docs"]
+    - title: "Infrastructure & Evals"
+      labels: ["type/infra"]
+    - title: "Refactoring"
+      labels: ["type/refactor"]
+    - title: "Other Changes"
+      labels: ["*"]
+  exclude:
+    labels: ["release/blocked"]
