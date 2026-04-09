@@ -87,7 +87,7 @@ changelog:
 
 Everything merged to `main` since the last release tag is included, unless labeled `release/blocked`.
 
-There are no feature branches or release branches. `main` is always the release branch.
+There are no release branches. `main` must always stay release-ready, and work that is not ready to ship should remain on feature branches until it is ready to merge.
 
 **Important:** The Claude plugin marketplace auto-pulls from `main`. PRs that are not ready for release must NOT be merged to `main` — keep them on feature branches or label them `release/blocked` to prevent premature merge.
 
