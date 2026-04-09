@@ -45,7 +45,7 @@ We use **6 labels** to classify PRs. Each PR should have exactly one `type/` lab
 
 ### Wednesday release checklist
 
-1. **Check open PRs** — merge or label `release/blocked` anything not ready.
+1. **Check open PRs** — merge only PRs that are ready. PRs that are not ready must remain unmerged and should be labeled `release/blocked` for tracking and exclusion from generated release notes.
 2. **Bump version** — update `version` in `.claude-plugin/plugin.json`.
 3. **Tag and release** — create a GitHub Release from `main`:
    ```bash
