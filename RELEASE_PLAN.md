@@ -85,11 +85,11 @@ changelog:
 
 ## 6. What Goes Into a Release
 
-Everything merged to `main` since the last release tag is included, unless labeled `release/blocked`.
+Everything merged to `main` since the last release tag is included in the release. The `release/blocked` label does **not** prevent code from shipping; it only excludes that PR from the auto-generated release notes.
 
-There are no release branches. `main` must always stay release-ready, and work that is not ready to ship should remain on feature branches until it is ready to merge.
+There are no feature branches or release branches. `main` is always the release branch.
 
-**Important:** The Claude plugin marketplace auto-pulls from `main`. PRs that are not ready for release must NOT be merged to `main` — keep them on feature branches or label them `release/blocked` to prevent premature merge.
+**Important:** The Claude plugin marketplace auto-pulls from `main`. PRs that are not ready for release must **NOT** be merged to `main` and must stay on feature branches until ready. Use `release/blocked` only to mark PRs that should be excluded from release notes; if a blocked PR is merged accidentally, revert it from `main` before the release.
 
 ## 7. Hotfix Process
 
