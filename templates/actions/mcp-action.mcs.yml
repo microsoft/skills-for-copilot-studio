@@ -1,5 +1,6 @@
-# Name: <MCP Server Name>
-# Description: <What this MCP server does>
+mcs.metadata:
+  componentName: <MCP Server Name>
+  description: "Description: <What this MCP server does>"
 kind: TaskDialog
 modelDisplayName: <Display name shown to AI>
 modelDescription: <Description of what this MCP server does for AI routing>
@@ -8,6 +9,7 @@ action:
   connectionReference: <connection-reference-logical-name>
   connectionProperties:
     mode: Invoker
+
   operationDetails:
     kind: ModelContextProtocolMetadata
     operationId: <mcp_OperationId>

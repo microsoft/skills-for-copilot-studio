@@ -1,5 +1,6 @@
-# Name: Microsoft Learn Docs MCP Server
-# Searches Microsoft Learn documentation
+mcs.metadata:
+  componentName: Microsoft Learn Docs MCP Server
+  description: Searches Microsoft Learn documentation
 kind: TaskDialog
 modelDisplayName: Microsoft Learn Docs MCP Server
 modelDescription: MCP Server to search Microsoft Learn content
@@ -8,6 +9,7 @@ action:
   connectionReference: cr26e_evalTest.shared_microsoftlearndocsmcpserver.abc123
   connectionProperties:
     mode: Invoker
+
   operationDetails:
     kind: ModelContextProtocolMetadata
     operationId: microsoft_docs_search
