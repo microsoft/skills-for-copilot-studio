@@ -336,4 +336,4 @@ Common scenarios:
 - **By department/topic** (HR vs IT vs Finance) — classify query category, route to matching source
 - **By country** — extract or infer the target country from the conversation, route to the country-specific SharePoint site, fall back to a global source for unmatched countries
 
-See [best-practices/orchestrator-variables.md](../../best-practices/orchestrator-variables.md) for full YAML examples of both patterns, including how to combine country routing with the JIT user context pattern (`Global.UserCountry` as default).
+See [patterns/orchestrator-variables.md](../../patterns/orchestrator-variables.md) for full YAML examples of both patterns, including how to combine country routing with the JIT user context pattern (`Global.UserCountry` as default).

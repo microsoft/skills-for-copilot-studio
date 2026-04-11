@@ -24,7 +24,8 @@ body:
         - add-global-variable
         - edit-agent
         - edit-triggers
-        - best-practices
+        - patterns
+        - authoring-tips
         - lookup-schema
         - list-kinds
         - list-topics
