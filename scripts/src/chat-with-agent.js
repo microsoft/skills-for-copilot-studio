@@ -37,7 +37,6 @@ const {
 } = require("./shared-utils");
 const {
   VSCODE_CLIENT_ID,
-  createMsalApp,
   acquireTokenSilent,
 } = require("./shared-auth");
 
@@ -342,32 +341,19 @@ function activityToDict(activity) {
 }
 
 async function getSdkAccessToken(tenantId, clientId) {
-  const app = await createMsalApp(tenantId, clientId, "chat");
+  const { acquireTokenSilent: sharedSilent, acquireTokenInteractive: sharedInteractive } = require("./shared-auth");
   const scope = "https://api.powerplatform.com/.default";
 
-  const allAccounts = await app.getTokenCache().getAllAccounts();
-  const accounts = allAccounts.filter(a => a.tenantId === tenantId);
-  if (accounts.length > 0) {
-    try {
-      const result = await app.acquireTokenSilent({
-        scopes: [scope],
-        account: accounts[0],
-      });
-      log("Using cached token.");
-      return result.accessToken;
-    } catch {
-      // Silent acquisition failed, fall through to device code
-    }
+  // Use "test-agent" cache slot — shared with eval-api.js so one auth covers both
+  const silent = await sharedSilent(tenantId, clientId, [scope], "test-agent");
+  if (silent) {
+    log("Using cached token.");
+    return silent.accessToken;
   }
 
-  const result = await app.acquireTokenByDeviceCode({
-    scopes: [scope],
-    deviceCodeCallback: (response) => {
-      log(response.message);
-    },
-  });
-
-  return result.accessToken;
+  log("No cached token — starting interactive login...");
+  const token = await sharedInteractive(tenantId, clientId, [scope], "test-agent");
+  return token.accessToken;
 }
 
 async function chatSdk(utterance, conversationId, config, token) {
