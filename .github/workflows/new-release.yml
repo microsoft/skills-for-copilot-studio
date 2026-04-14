@@ -2,8 +2,8 @@ name: Create weekly release branch
 
 on:
   schedule:
-    # Every Wednesday at 09:00 UTC
-    - cron: "0 9 * * 3"
+    # Every Thursday at 09:00 UTC (day after release merges to main)
+    - cron: "0 9 * * 4"
   workflow_dispatch:
     inputs:
       version_override:
