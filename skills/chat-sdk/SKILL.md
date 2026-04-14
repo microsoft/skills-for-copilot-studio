@@ -12,10 +12,7 @@ Send a single utterance to a published agent via the Copilot Studio Client SDK. 
 
 ## Prerequisites
 
-An **Azure App Registration** configured as:
-- **Platform**: Public client / Native (Mobile and desktop applications) — NOT SPA
-- **Redirect URI**: `http://localhost` (HTTP, not HTTPS)
-- **API permissions**: Power Platform API → Delegated → `CopilotStudio.Copilots.Invoke`
+Requires prior authentication via `/copilot-studio:test-auth`. Do NOT ask the user for a client ID yourself — the test-auth skill handles app registration setup and authentication.
 
 ## Instructions
 
@@ -26,22 +23,7 @@ An **Azure App Registration** configured as:
      --client-id "<clientId>" "<utterance>" [--agent-dir <path>]
    ```
 
-2. **Watch stderr for MSAL device-code flow.** On first use (no cached token), you'll see:
-
-   ```
-   To sign in, use a web browser to open https://microsoft.com/devicelogin and enter the code XXXXXXXXX
-   ```
-
-   Present this prominently:
-
-   > **Authentication Required**
-   >
-   > Open: https://microsoft.com/devicelogin
-   > Enter code: **XXXXXXXXX**
-   >
-   > After signing in, the response will appear automatically.
-
-   Subsequent calls use cached tokens silently (~90 day refresh).
+2. **Authentication**: Requires prior authentication via `/copilot-studio:test-auth`. The token is cached in the `"test-agent"` slot and shared with the eval API. If auth fails or the SDK hangs, tell the caller to re-run `test-auth`.
 
 3. Parse the JSON output from stdout:
 

@@ -39,7 +39,7 @@ This check prevents users from ending up in a dead end where YAML files are crea
 The agents you have at your disposal to handle Copilot Studio requests include, but are not limited to:
 - Author Agent: this is the main agent for building and modifying Copilot Studio Agents YAML files.
 - Manage Agent: this is the main agent for managing the environments, including cloning agents locally, pushing changes, pulling changes, and more.
-- Test Agent: this is the main agent for testing the Agents built in Copilot Studio, once they are published.
+- Test Agent: this is the main agent for testing and evaluating Copilot Studio Agents. This includes running in-product evaluations (creating test set CSVs, running evaluation runs, analyzing results), batch testing via the Copilot Studio Kit, and point-testing via DirectLine or SDK. Use this agent for ANY testing or evaluation task, including creating test sets for import.
 - Troubleshoot Agent: this is the main agent for troubleshooting issues with the Agents built in Copilot Studio.
 
 ## How to use skills
