@@ -16,11 +16,11 @@ claude plugin install /path/to/skills-for-copilot-studio --scope user
 
 ## Release workflow
 
-The plugin follows a **weekly release branch** cadence. A new branch is created every Wednesday automatically via GitHub Actions.
+The plugin follows a **weekly release branch** cadence. Release branches are merged to `main` on Wednesdays, and a new branch is created every Thursday automatically via GitHub Actions.
 
 ### How it works
 
-1. **Every Wednesday at 09:00 UTC**, the [`new-release`](.github/workflows/new-release.yml) workflow runs:
+1. **Every Thursday at 09:00 UTC**, the [`new-release`](.github/workflows/new-release.yml) workflow runs:
    - Creates a `release/YYYY-WNN` branch from `main` (e.g., `release/2026-W16`)
    - Bumps the patch version in `plugin.json` and `marketplace.json`
    - Commits and pushes the branch
