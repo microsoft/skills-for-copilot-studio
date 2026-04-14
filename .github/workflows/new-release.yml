@@ -1,0 +1,86 @@
+name: Create weekly release branch
+
+on:
+  schedule:
+    # Every Wednesday at 09:00 UTC
+    - cron: "0 9 * * 3"
+  workflow_dispatch:
+    inputs:
+      version_override:
+        description: "Override the version (e.g. 1.1.0). Leave empty for automatic patch bump."
+        required: false
+
+permissions:
+  contents: write
+
+jobs:
+  create-release-branch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Calculate release week
+        id: week
+        run: |
+          YEAR=$(date -u +%Y)
+          WEEK=$(date -u +%V)
+          RELEASE="release/${YEAR}-W${WEEK}"
+          echo "release_branch=$RELEASE" >> "$GITHUB_OUTPUT"
+          echo "Release branch: $RELEASE"
+
+      - name: Check if branch already exists
+        id: check
+        run: |
+          BRANCH="${{ steps.week.outputs.release_branch }}"
+          if git ls-remote --heads origin "$BRANCH" | grep -q "$BRANCH"; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+            echo "::notice::Branch $BRANCH already exists — skipping."
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Bump version and create branch
+        if: steps.check.outputs.exists == 'false'
+        run: |
+          BRANCH="${{ steps.week.outputs.release_branch }}"
+
+          # Read current version
+          CURRENT=$(jq -r '.version' .claude-plugin/plugin.json)
+          echo "Current version: $CURRENT"
+
+          # Determine new version
+          if [ -n "${{ github.event.inputs.version_override }}" ]; then
+            NEW_VERSION="${{ github.event.inputs.version_override }}"
+          else
+            # Bump patch: 1.0.7 -> 1.0.8
+            IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT"
+            NEW_VERSION="${MAJOR}.${MINOR}.$((PATCH + 1))"
+          fi
+          echo "New version: $NEW_VERSION"
+
+          # Update both version files
+          jq --arg v "$NEW_VERSION" '.version = $v' .claude-plugin/plugin.json > tmp.json && mv tmp.json .claude-plugin/plugin.json
+          jq --arg v "$NEW_VERSION" '.plugins[0].version = $v' .claude-plugin/marketplace.json > tmp.json && mv tmp.json .claude-plugin/marketplace.json
+
+          # Configure git
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          # Create branch, commit, and push
+          git checkout -b "$BRANCH"
+          git add .claude-plugin/plugin.json .claude-plugin/marketplace.json
+          git commit -m "chore: bump version to ${NEW_VERSION} for ${BRANCH}"
+          git push origin "$BRANCH"
+
+          # Summary
+          echo "### Release branch created :rocket:" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "| | |" >> "$GITHUB_STEP_SUMMARY"
+          echo "|---|---|" >> "$GITHUB_STEP_SUMMARY"
+          echo "| **Branch** | \`$BRANCH\` |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| **Version** | \`$CURRENT\` → \`$NEW_VERSION\` |" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "Next steps: create feature branches from \`$BRANCH\` and PR back into it." >> "$GITHUB_STEP_SUMMARY"
