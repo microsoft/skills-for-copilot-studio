@@ -37,9 +37,52 @@ const {
 } = require("./shared-utils");
 const {
   VSCODE_CLIENT_ID,
+  PAC_CLI_CLIENT_ID,
   createMsalApp,
   acquireTokenSilent,
 } = require("./shared-auth");
+
+// ---------------------------------------------------------------------------
+// Cloud-specific endpoint configuration
+// ---------------------------------------------------------------------------
+
+const CLOUD_CONFIG = {
+  public: {
+    powerPlatformScope: "https://api.powerplatform.com/.default",
+    loginAuthority: "https://login.microsoftonline.com",
+    ppEnvironmentDomain: "environment.api.powerplatform.com",
+    defaultClientId: PAC_CLI_CLIENT_ID,
+  },
+  gcc: {
+    powerPlatformScope: "https://api.gov.powerplatform.microsoft.us/.default",
+    loginAuthority: "https://login.microsoftonline.com",
+    ppEnvironmentDomain: "environment.api.gov.powerplatform.microsoft.us",
+    defaultClientId: PAC_CLI_CLIENT_ID,
+  },
+  gcchigh: {
+    powerPlatformScope: "https://api.high.powerplatform.microsoft.us/.default",
+    loginAuthority: "https://login.microsoftonline.us",
+    ppEnvironmentDomain: "environment.api.high.powerplatform.microsoft.us",
+    defaultClientId: PAC_CLI_CLIENT_ID,
+  },
+};
+
+function getChatCloudConfig(cloud) {
+  const config = CLOUD_CONFIG[cloud];
+  if (!config) {
+    die(`Unknown cloud: ${cloud}. Use: public, gcc, or gcchigh`);
+  }
+  return config;
+}
+
+// Auto-detect cloud from environment URL if not explicitly set.
+function detectCloud(envUrl, explicitCloud) {
+  if (explicitCloud && explicitCloud !== "public") return explicitCloud;
+  if (!envUrl) return explicitCloud || "public";
+  if (envUrl.includes(".crm9.dynamics.com")) return "gcc";
+  if (envUrl.includes(".crm.microsoftdynamics.us")) return "gcchigh";
+  return explicitCloud || "public";
+}
 
 // ---------------------------------------------------------------------------
 // CLI parsing
@@ -59,6 +102,7 @@ function parseArgs() {
     directlineDomain: null,
     directlineToken: null,
     watermark: null,
+    cloud: process.env.CPS_CLOUD || "public",
   };
 
   for (let i = 0; i < args.length; i++) {
@@ -89,6 +133,9 @@ function parseArgs() {
         break;
       case "--detect-only":
         parsed.detectOnly = true;
+        break;
+      case "--cloud":
+        parsed.cloud = args[++i];
         break;
       default:
         if (!args[i].startsWith("--")) {
@@ -165,7 +212,7 @@ function loadAgentConfig(agentDir) {
 // Auth mode detection — query Dataverse for authenticationmode
 // ---------------------------------------------------------------------------
 
-async function detectMode(config) {
+async function detectMode(config, cloud = "public") {
   const envUrl = (config.dataverseEndpoint || "").replace(/\/+$/, "");
   if (!envUrl || !config.agentId) {
     log("Cannot detect mode: missing Dataverse endpoint or agent ID.");
@@ -174,7 +221,7 @@ async function detectMode(config) {
 
   try {
     const silent = await acquireTokenSilent(
-      config.tenantId, VSCODE_CLIENT_ID, [`${envUrl}/.default`]
+      config.tenantId, VSCODE_CLIENT_ID, [`${envUrl}/.default`], undefined, cloud
     );
     if (!silent) {
       log("No cached Dataverse tokens — cannot auto-detect mode.");
@@ -200,7 +247,9 @@ async function detectMode(config) {
       const envIdNoDashes = config.environmentId.replace(/-/g, "");
       const prefix = envIdNoDashes.slice(0, -2);
       const suffix = envIdNoDashes.slice(-2);
-      const tokenEndpoint = `https://${prefix}.${suffix}.environment.api.powerplatform.com/powervirtualagents/botsbyschema/${schemaName}/directline/token?api-version=2022-03-01-preview`;
+      const cloudConfig = getChatCloudConfig(cloud);
+      const ppDomain = cloudConfig.ppEnvironmentDomain;
+      const tokenEndpoint = `https://${prefix}.${suffix}.${ppDomain}/powervirtualagents/botsbyschema/${schemaName}/directline/token?api-version=2022-03-01-preview`;
       log(`Agent uses ${authMode === 1 ? "no auth" : "manual auth"} → DirectLine mode`);
       return { mode: "directline", authenticationmode: authMode, tokenEndpoint, schemaName };
     } else {
@@ -341,9 +390,10 @@ function activityToDict(activity) {
   return JSON.parse(JSON.stringify(activity));
 }
 
-async function getSdkAccessToken(tenantId, clientId) {
-  const app = await createMsalApp(tenantId, clientId, "chat");
-  const scope = "https://api.powerplatform.com/.default";
+async function getSdkAccessToken(tenantId, clientId, cloud = "public") {
+  const cloudConfig = getChatCloudConfig(cloud);
+  const app = await createMsalApp(tenantId, clientId, "chat", cloud);
+  const scope = cloudConfig.powerPlatformScope;
 
   const allAccounts = await app.getTokenCache().getAllAccounts();
   const accounts = allAccounts.filter(a => a.tenantId === tenantId);
@@ -370,11 +420,17 @@ async function getSdkAccessToken(tenantId, clientId) {
   return result.accessToken;
 }
 
-async function chatSdk(utterance, conversationId, config, token) {
+async function chatSdk(utterance, conversationId, config, token, cloud = "public") {
+  // Map cloud string to PowerPlatformCloud enum
+  // SDK enum: Gov = GCC, High = GCC-High, Prod = commercial
+  const ppCloud = cloud === "gcc" ? PowerPlatformCloud.Gov
+    : cloud === "gcchigh" ? PowerPlatformCloud.High
+    : PowerPlatformCloud.Prod;
+
   const settings = {
     environmentId: config.environmentId,
     agentIdentifier: config.agentIdentifier,
-    cloud: PowerPlatformCloud.Prod,
+    cloud: ppCloud,
     tenantId: config.tenantId,
   };
 
@@ -444,7 +500,8 @@ async function main() {
     const config = loadAgentConfig(agentDir);
     log(`Using agent: ${config.agentIdentifier}`);
 
-    const modeResult = await detectMode(config);
+    const cloud = detectCloud(config.dataverseEndpoint, args.cloud);
+    const modeResult = await detectMode(config, cloud);
     if (!modeResult) {
       die("Could not detect authentication mode. Ensure Dataverse tokens are cached (run a push/pull first) or provide --token-endpoint / --client-id explicitly.");
     }
@@ -498,7 +555,8 @@ async function main() {
   log(`Using agent: ${config.agentIdentifier}`);
 
   // Detect authentication mode
-  const modeResult = await detectMode(config);
+  const cloud = detectCloud(config.dataverseEndpoint, args.cloud);
+  const modeResult = await detectMode(config, cloud);
 
   if (modeResult && modeResult.mode === "directline") {
     // DirectLine mode — no app registration needed
@@ -515,7 +573,9 @@ async function main() {
     }
   } else {
     // M365 / SDK mode — requires app registration client ID
-    if (!args.clientId) {
+    const cloudConfig = getChatCloudConfig(cloud);
+    const clientId = args.clientId || cloudConfig.defaultClientId;
+    if (!clientId) {
       die(
         "This agent uses integrated authentication (Entra ID SSO) which requires an App Registration Client ID. " +
         "Pass --client-id <id> with an app that has CopilotStudio.Copilots.Invoke permission and redirect URI http://localhost."
@@ -523,14 +583,15 @@ async function main() {
     }
 
     log("Authenticating...");
-    const token = await getSdkAccessToken(config.tenantId, args.clientId);
+    const token = await getSdkAccessToken(config.tenantId, clientId, cloud);
 
     try {
       const result = await chatSdk(
         args.utterance,
         args.conversationId,
         config,
-        token
+        token,
+        cloud
       );
       process.stdout.write(JSON.stringify(result, null, 2) + "\n");
     } catch (e) {

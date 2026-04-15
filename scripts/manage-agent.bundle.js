@@ -4523,7 +4523,8 @@ var require_msal_node = __commonJS({
             refresh_on: atEntity.refreshOn,
             key_id: atEntity.keyId,
             token_type: atEntity.tokenType,
-            userAssertionHash: atEntity.userAssertionHash
+            userAssertionHash: atEntity.userAssertionHash,
+            resource: atEntity.resource
           };
         });
         return accessTokens;
@@ -4798,6 +4799,8 @@ var require_msal_node = __commonJS({
     var BROKER_CLIENT_ID = "brk_client_id";
     var BROKER_REDIRECT_URI = "brk_redirect_uri";
     var INSTANCE_AWARE = "instance_aware";
+    var RESOURCE = "resource";
+    var CLI_DATA = "clidata";
     function getDefaultErrorMessage(code) {
       return `See https://aka.ms/msal.js.errors#${code} for details`;
     }
@@ -4992,6 +4995,8 @@ var require_msal_node = __commonJS({
     var methodNotImplemented = "method_not_implemented";
     var nestedAppAuthBridgeDisabled = "nested_app_auth_bridge_disabled";
     var platformBrokerError = "platform_broker_error";
+    var resourceParameterRequired = "resource_parameter_required";
+    var misplacedResourceParam = "misplaced_resource_parameter";
     var ClientAuthErrorCodes = /* @__PURE__ */ Object.freeze({
       __proto__: null,
       authTimeNotFound,
@@ -5011,6 +5016,7 @@ var require_msal_node = __commonJS({
       keyIdMissing,
       maxAgeTranspired,
       methodNotImplemented,
+      misplacedResourceParam,
       multipleMatchingAppMetadata,
       multipleMatchingTokens,
       nestedAppAuthBridgeDisabled,
@@ -5024,6 +5030,7 @@ var require_msal_node = __commonJS({
       openIdConfigError,
       platformBrokerError,
       requestCannotBeMade,
+      resourceParameterRequired,
       stateMismatch,
       stateNotFound,
       tokenClaimsCnfRequiredForSignedJwt,
@@ -5338,6 +5345,9 @@ var require_msal_node = __commonJS({
     function addClientInfo(parameters) {
       parameters.set(CLIENT_INFO, "1");
     }
+    function addCliData(parameters) {
+      parameters.set(CLI_DATA, "1");
+    }
     function addInstanceAware(parameters) {
       if (!parameters.has(INSTANCE_AWARE)) {
         parameters.set(INSTANCE_AWARE, "true");
@@ -5405,6 +5415,11 @@ var require_msal_node = __commonJS({
       }
       if (!parameters.has(BROKER_REDIRECT_URI)) {
         parameters.set(BROKER_REDIRECT_URI, brokerRedirectUri);
+      }
+    }
+    function addResource(parameters, resource) {
+      if (resource) {
+        parameters.set(RESOURCE, resource);
       }
     }
     function stripLeadingHashOrQuery(responseString) {
@@ -5691,7 +5706,7 @@ var require_msal_node = __commonJS({
       }
     };
     var name$1 = "@azure/msal-common";
-    var version$1 = "16.2.0";
+    var version$1 = "16.4.1";
     var AzureCloudInstance = {
       // AzureCloudInstance is not specified.
       None: "none",
@@ -6218,6 +6233,10 @@ var require_msal_node = __commonJS({
        * Gets first tenanted AccountInfo object found based on provided filters
        */
       getAccountInfoFilteredBy(accountFilter, correlationId) {
+        if (Object.keys(accountFilter).length === 0 || Object.values(accountFilter).every((value) => value === null || value === void 0 || value === "")) {
+          this.commonLogger.warning("getAccountInfoFilteredBy: Account filter is empty or invalid, returning null", correlationId);
+          return null;
+        }
         const allAccounts = this.getAllAccounts(accountFilter, correlationId);
         if (allAccounts.length > 1) {
           const sortedAccounts = allAccounts.sort((account) => {
@@ -7284,104 +7303,31 @@ var require_msal_node = __commonJS({
         clientCapabilities: [],
         azureCloudOptions: DEFAULT_AZURE_CLOUD_OPTIONS,
         instanceAware: false,
+        isMcp: false,
         ...authOptions
       };
     }
     function isOidcProtocolMode(config) {
       return config.authOptions.authority.options.protocolMode === ProtocolMode.OIDC;
     }
-    var ServerError = class _ServerError extends AuthError {
-      constructor(errorCode, errorMessage, subError, errorNo, status) {
-        super(errorCode, errorMessage, subError);
-        this.name = "ServerError";
-        this.errorNo = errorNo;
-        this.status = status;
-        Object.setPrototypeOf(this, _ServerError.prototype);
+    var TokenCacheContext = class {
+      constructor(tokenCache, hasChanged) {
+        this.cache = tokenCache;
+        this.hasChanged = hasChanged;
+      }
+      /**
+       * boolean which indicates the changes in cache
+       */
+      get cacheHasChanged() {
+        return this.hasChanged;
+      }
+      /**
+       * function to retrieve the token cache
+       */
+      get tokenCache() {
+        return this.cache;
       }
     };
-    var noTokensFound = "no_tokens_found";
-    var nativeAccountUnavailable = "native_account_unavailable";
-    var refreshTokenExpired = "refresh_token_expired";
-    var uxNotAllowed = "ux_not_allowed";
-    var interactionRequired = "interaction_required";
-    var consentRequired = "consent_required";
-    var loginRequired = "login_required";
-    var badToken = "bad_token";
-    var interruptedUser = "interrupted_user";
-    var InteractionRequiredAuthErrorCodes = /* @__PURE__ */ Object.freeze({
-      __proto__: null,
-      badToken,
-      consentRequired,
-      interactionRequired,
-      interruptedUser,
-      loginRequired,
-      nativeAccountUnavailable,
-      noTokensFound,
-      refreshTokenExpired,
-      uxNotAllowed
-    });
-    var InteractionRequiredServerErrorMessage = [
-      interactionRequired,
-      consentRequired,
-      loginRequired,
-      badToken,
-      uxNotAllowed,
-      interruptedUser
-    ];
-    var InteractionRequiredAuthSubErrorMessage = [
-      "message_only",
-      "additional_action",
-      "basic_action",
-      "user_password_expired",
-      "consent_required",
-      "bad_token",
-      "ux_not_allowed",
-      "interrupted_user"
-    ];
-    var InteractionRequiredAuthError = class _InteractionRequiredAuthError extends AuthError {
-      constructor(errorCode, errorMessage, subError, timestamp, traceId, correlationId, claims, errorNo) {
-        super(errorCode, errorMessage, subError);
-        Object.setPrototypeOf(this, _InteractionRequiredAuthError.prototype);
-        this.timestamp = timestamp || "";
-        this.traceId = traceId || "";
-        this.correlationId = correlationId || "";
-        this.claims = claims || "";
-        this.name = "InteractionRequiredAuthError";
-        this.errorNo = errorNo;
-      }
-    };
-    function isInteractionRequiredError(errorCode, errorString, subError) {
-      const isInteractionRequiredErrorCode = !!errorCode && InteractionRequiredServerErrorMessage.indexOf(errorCode) > -1;
-      const isInteractionRequiredSubError = !!subError && InteractionRequiredAuthSubErrorMessage.indexOf(subError) > -1;
-      const isInteractionRequiredErrorDesc = !!errorString && InteractionRequiredServerErrorMessage.some((irErrorCode) => {
-        return errorString.indexOf(irErrorCode) > -1;
-      });
-      return isInteractionRequiredErrorCode || isInteractionRequiredErrorDesc || isInteractionRequiredSubError;
-    }
-    function createInteractionRequiredAuthError(errorCode, errorMessage) {
-      return new InteractionRequiredAuthError(errorCode, errorMessage);
-    }
-    function parseRequestState(base64Decode, state) {
-      if (!base64Decode) {
-        throw createClientAuthError(noCryptoObject);
-      }
-      if (!state) {
-        throw createClientAuthError(invalidState);
-      }
-      try {
-        const splitState = state.split(RESOURCE_DELIM);
-        const libraryState = splitState[0];
-        const userState = splitState.length > 1 ? splitState.slice(1).join(RESOURCE_DELIM) : "";
-        const libraryStateString = base64Decode(libraryState);
-        const libraryStateObj = JSON.parse(libraryStateString);
-        return {
-          userRequestState: userState || "",
-          libraryState: libraryStateObj
-        };
-      } catch (e) {
-        throw createClientAuthError(invalidState);
-      }
-    }
     function nowSeconds() {
       return Math.round((/* @__PURE__ */ new Date()).getTime() / 1e3);
     }
@@ -7403,170 +7349,6 @@ var require_msal_node = __commonJS({
     function delay(t, value) {
       return new Promise((resolve) => setTimeout(() => resolve(value), t));
     }
-    var NetworkClientSendPostRequestAsync = "networkClientSendPostRequestAsync";
-    var RefreshTokenClientExecutePostToTokenEndpoint = "refreshTokenClientExecutePostToTokenEndpoint";
-    var AuthorizationCodeClientExecutePostToTokenEndpoint = "authorizationCodeClientExecutePostToTokenEndpoint";
-    var RefreshTokenClientExecuteTokenRequest = "refreshTokenClientExecuteTokenRequest";
-    var RefreshTokenClientAcquireToken = "refreshTokenClientAcquireToken";
-    var RefreshTokenClientAcquireTokenWithCachedRefreshToken = "refreshTokenClientAcquireTokenWithCachedRefreshToken";
-    var RefreshTokenClientCreateTokenRequestBody = "refreshTokenClientCreateTokenRequestBody";
-    var SilentFlowClientGenerateResultFromCacheRecord = "silentFlowClientGenerateResultFromCacheRecord";
-    var AuthClientExecuteTokenRequest = "authClientExecuteTokenRequest";
-    var AuthClientCreateTokenRequestBody = "authClientCreateTokenRequestBody";
-    var UpdateTokenEndpointAuthority = "updateTokenEndpointAuthority";
-    var PopTokenGenerateCnf = "popTokenGenerateCnf";
-    var HandleServerTokenResponse = "handleServerTokenResponse";
-    var AuthorityResolveEndpointsAsync = "authorityResolveEndpointsAsync";
-    var AuthorityGetCloudDiscoveryMetadataFromNetwork = "authorityGetCloudDiscoveryMetadataFromNetwork";
-    var AuthorityUpdateCloudDiscoveryMetadata = "authorityUpdateCloudDiscoveryMetadata";
-    var AuthorityGetEndpointMetadataFromNetwork = "authorityGetEndpointMetadataFromNetwork";
-    var AuthorityUpdateEndpointMetadata = "authorityUpdateEndpointMetadata";
-    var AuthorityUpdateMetadataWithRegionalInformation = "authorityUpdateMetadataWithRegionalInformation";
-    var RegionDiscoveryDetectRegion = "regionDiscoveryDetectRegion";
-    var RegionDiscoveryGetRegionFromIMDS = "regionDiscoveryGetRegionFromIMDS";
-    var RegionDiscoveryGetCurrentVersion = "regionDiscoveryGetCurrentVersion";
-    var CacheManagerGetRefreshToken = "cacheManagerGetRefreshToken";
-    var invoke = (callback, eventName, logger, telemetryClient, correlationId) => {
-      return (...args) => {
-        logger.trace(`Executing function '${eventName}'`, correlationId);
-        const inProgressEvent = telemetryClient.startMeasurement(eventName, correlationId);
-        if (correlationId) {
-          telemetryClient.incrementFields({ [`ext.${eventName}CallCount`]: 1 }, correlationId);
-        }
-        try {
-          const result = callback(...args);
-          inProgressEvent.end({
-            success: true
-          });
-          logger.trace(`Returning result from '${eventName}'`, correlationId);
-          return result;
-        } catch (e) {
-          logger.trace(`Error occurred in '${eventName}'`, correlationId);
-          try {
-            logger.trace(JSON.stringify(e), correlationId);
-          } catch (e2) {
-            logger.trace("Unable to print error message.", correlationId);
-          }
-          inProgressEvent.end({
-            success: false
-          }, e);
-          throw e;
-        }
-      };
-    };
-    var invokeAsync = (callback, eventName, logger, telemetryClient, correlationId) => {
-      return (...args) => {
-        logger.trace(`Executing function '${eventName}'`, correlationId);
-        const inProgressEvent = telemetryClient.startMeasurement(eventName, correlationId);
-        if (correlationId) {
-          telemetryClient.incrementFields({ [`ext.${eventName}CallCount`]: 1 }, correlationId);
-        }
-        return callback(...args).then((response) => {
-          logger.trace(`Returning result from '${eventName}'`, correlationId);
-          inProgressEvent.end({
-            success: true
-          });
-          return response;
-        }).catch((e) => {
-          logger.trace(`Error occurred in '${eventName}'`, correlationId);
-          try {
-            logger.trace(JSON.stringify(e), correlationId);
-          } catch (e2) {
-            logger.trace("Unable to print error message.", correlationId);
-          }
-          inProgressEvent.end({
-            success: false
-          }, e);
-          throw e;
-        });
-      };
-    };
-    var KeyLocation = {
-      SW: "sw"
-    };
-    var PopTokenGenerator = class {
-      constructor(cryptoUtils, performanceClient) {
-        this.cryptoUtils = cryptoUtils;
-        this.performanceClient = performanceClient;
-      }
-      /**
-       * Generates the req_cnf validated at the RP in the POP protocol for SHR parameters
-       * and returns an object containing the keyid, the full req_cnf string and the req_cnf string hash
-       * @param request
-       * @returns
-       */
-      async generateCnf(request, logger) {
-        const reqCnf = await invokeAsync(this.generateKid.bind(this), PopTokenGenerateCnf, logger, this.performanceClient, request.correlationId)(request);
-        const reqCnfString = this.cryptoUtils.base64UrlEncode(JSON.stringify(reqCnf));
-        return {
-          kid: reqCnf.kid,
-          reqCnfString
-        };
-      }
-      /**
-       * Generates key_id for a SHR token request
-       * @param request
-       * @returns
-       */
-      async generateKid(request) {
-        const kidThumbprint = await this.cryptoUtils.getPublicKeyThumbprint(request);
-        return {
-          kid: kidThumbprint,
-          xms_ksl: KeyLocation.SW
-        };
-      }
-      /**
-       * Signs the POP access_token with the local generated key-pair
-       * @param accessToken
-       * @param request
-       * @returns
-       */
-      async signPopToken(accessToken, keyId, request) {
-        return this.signPayload(accessToken, keyId, request);
-      }
-      /**
-       * Utility function to generate the signed JWT for an access_token
-       * @param payload
-       * @param kid
-       * @param request
-       * @param claims
-       * @returns
-       */
-      async signPayload(payload, keyId, request, claims) {
-        const { resourceRequestMethod, resourceRequestUri, shrClaims, shrNonce, shrOptions } = request;
-        const resourceUrlString = resourceRequestUri ? new UrlString(resourceRequestUri) : void 0;
-        const resourceUrlComponents = resourceUrlString?.getUrlComponents();
-        return this.cryptoUtils.signJwt({
-          at: payload,
-          ts: nowSeconds(),
-          m: resourceRequestMethod?.toUpperCase(),
-          u: resourceUrlComponents?.HostNameAndPort,
-          nonce: shrNonce || this.cryptoUtils.createNewGuid(),
-          p: resourceUrlComponents?.AbsolutePath,
-          q: resourceUrlComponents?.QueryString ? [[], resourceUrlComponents.QueryString] : void 0,
-          client_claims: shrClaims || void 0,
-          ...claims
-        }, keyId, shrOptions, request.correlationId);
-      }
-    };
-    var TokenCacheContext = class {
-      constructor(tokenCache, hasChanged) {
-        this.cache = tokenCache;
-        this.hasChanged = hasChanged;
-      }
-      /**
-       * boolean which indicates the changes in cache
-       */
-      get cacheHasChanged() {
-        return this.hasChanged;
-      }
-      /**
-       * function to retrieve the token cache
-       */
-      get tokenCache() {
-        return this.cache;
-      }
-    };
     function createIdTokenEntity(homeAccountId, environment, idToken, clientId, tenantId) {
       const idTokenEntity = {
         credentialType: CredentialType.ID_TOKEN,
@@ -7718,6 +7500,244 @@ var require_msal_node = __commonJS({
     function isAuthorityMetadataExpired(metadata) {
       return metadata.expiresAt <= nowSeconds();
     }
+    var NetworkClientSendPostRequestAsync = "networkClientSendPostRequestAsync";
+    var RefreshTokenClientExecutePostToTokenEndpoint = "refreshTokenClientExecutePostToTokenEndpoint";
+    var AuthorizationCodeClientExecutePostToTokenEndpoint = "authorizationCodeClientExecutePostToTokenEndpoint";
+    var RefreshTokenClientExecuteTokenRequest = "refreshTokenClientExecuteTokenRequest";
+    var RefreshTokenClientAcquireToken = "refreshTokenClientAcquireToken";
+    var RefreshTokenClientAcquireTokenWithCachedRefreshToken = "refreshTokenClientAcquireTokenWithCachedRefreshToken";
+    var RefreshTokenClientCreateTokenRequestBody = "refreshTokenClientCreateTokenRequestBody";
+    var SilentFlowClientGenerateResultFromCacheRecord = "silentFlowClientGenerateResultFromCacheRecord";
+    var AuthClientExecuteTokenRequest = "authClientExecuteTokenRequest";
+    var AuthClientCreateTokenRequestBody = "authClientCreateTokenRequestBody";
+    var UpdateTokenEndpointAuthority = "updateTokenEndpointAuthority";
+    var PopTokenGenerateCnf = "popTokenGenerateCnf";
+    var HandleServerTokenResponse = "handleServerTokenResponse";
+    var AuthorityResolveEndpointsAsync = "authorityResolveEndpointsAsync";
+    var AuthorityGetCloudDiscoveryMetadataFromNetwork = "authorityGetCloudDiscoveryMetadataFromNetwork";
+    var AuthorityUpdateCloudDiscoveryMetadata = "authorityUpdateCloudDiscoveryMetadata";
+    var AuthorityGetEndpointMetadataFromNetwork = "authorityGetEndpointMetadataFromNetwork";
+    var AuthorityUpdateEndpointMetadata = "authorityUpdateEndpointMetadata";
+    var AuthorityUpdateMetadataWithRegionalInformation = "authorityUpdateMetadataWithRegionalInformation";
+    var RegionDiscoveryDetectRegion = "regionDiscoveryDetectRegion";
+    var RegionDiscoveryGetRegionFromIMDS = "regionDiscoveryGetRegionFromIMDS";
+    var RegionDiscoveryGetCurrentVersion = "regionDiscoveryGetCurrentVersion";
+    var CacheManagerGetRefreshToken = "cacheManagerGetRefreshToken";
+    var invoke = (callback, eventName, logger, telemetryClient, correlationId) => {
+      return (...args) => {
+        logger.trace(`Executing function '${eventName}'`, correlationId);
+        const inProgressEvent = telemetryClient.startMeasurement(eventName, correlationId);
+        if (correlationId) {
+          telemetryClient.incrementFields({ [`ext.${eventName}CallCount`]: 1 }, correlationId);
+        }
+        try {
+          const result = callback(...args);
+          inProgressEvent.end({
+            success: true
+          });
+          logger.trace(`Returning result from '${eventName}'`, correlationId);
+          return result;
+        } catch (e) {
+          logger.trace(`Error occurred in '${eventName}'`, correlationId);
+          try {
+            logger.trace(JSON.stringify(e), correlationId);
+          } catch (e2) {
+            logger.trace("Unable to print error message.", correlationId);
+          }
+          inProgressEvent.end({
+            success: false
+          }, e);
+          throw e;
+        }
+      };
+    };
+    var invokeAsync = (callback, eventName, logger, telemetryClient, correlationId) => {
+      return (...args) => {
+        logger.trace(`Executing function '${eventName}'`, correlationId);
+        const inProgressEvent = telemetryClient.startMeasurement(eventName, correlationId);
+        if (correlationId) {
+          telemetryClient.incrementFields({ [`ext.${eventName}CallCount`]: 1 }, correlationId);
+        }
+        return callback(...args).then((response) => {
+          logger.trace(`Returning result from '${eventName}'`, correlationId);
+          inProgressEvent.end({
+            success: true
+          });
+          return response;
+        }).catch((e) => {
+          logger.trace(`Error occurred in '${eventName}'`, correlationId);
+          try {
+            logger.trace(JSON.stringify(e), correlationId);
+          } catch (e2) {
+            logger.trace("Unable to print error message.", correlationId);
+          }
+          inProgressEvent.end({
+            success: false
+          }, e);
+          throw e;
+        });
+      };
+    };
+    var KeyLocation = {
+      SW: "sw"
+    };
+    var PopTokenGenerator = class {
+      constructor(cryptoUtils, performanceClient) {
+        this.cryptoUtils = cryptoUtils;
+        this.performanceClient = performanceClient;
+      }
+      /**
+       * Generates the req_cnf validated at the RP in the POP protocol for SHR parameters
+       * and returns an object containing the keyid, the full req_cnf string and the req_cnf string hash
+       * @param request
+       * @returns
+       */
+      async generateCnf(request, logger) {
+        const reqCnf = await invokeAsync(this.generateKid.bind(this), PopTokenGenerateCnf, logger, this.performanceClient, request.correlationId)(request);
+        const reqCnfString = this.cryptoUtils.base64UrlEncode(JSON.stringify(reqCnf));
+        return {
+          kid: reqCnf.kid,
+          reqCnfString
+        };
+      }
+      /**
+       * Generates key_id for a SHR token request
+       * @param request
+       * @returns
+       */
+      async generateKid(request) {
+        const kidThumbprint = await this.cryptoUtils.getPublicKeyThumbprint(request);
+        return {
+          kid: kidThumbprint,
+          xms_ksl: KeyLocation.SW
+        };
+      }
+      /**
+       * Signs the POP access_token with the local generated key-pair
+       * @param accessToken
+       * @param request
+       * @returns
+       */
+      async signPopToken(accessToken, keyId, request) {
+        return this.signPayload(accessToken, keyId, request);
+      }
+      /**
+       * Utility function to generate the signed JWT for an access_token
+       * @param payload
+       * @param kid
+       * @param request
+       * @param claims
+       * @returns
+       */
+      async signPayload(payload, keyId, request, claims) {
+        const { resourceRequestMethod, resourceRequestUri, shrClaims, shrNonce, shrOptions } = request;
+        const resourceUrlString = resourceRequestUri ? new UrlString(resourceRequestUri) : void 0;
+        const resourceUrlComponents = resourceUrlString?.getUrlComponents();
+        return this.cryptoUtils.signJwt({
+          at: payload,
+          ts: nowSeconds(),
+          m: resourceRequestMethod?.toUpperCase(),
+          u: resourceUrlComponents?.HostNameAndPort,
+          nonce: shrNonce || this.cryptoUtils.createNewGuid(),
+          p: resourceUrlComponents?.AbsolutePath,
+          q: resourceUrlComponents?.QueryString ? [[], resourceUrlComponents.QueryString] : void 0,
+          client_claims: shrClaims || void 0,
+          ...claims
+        }, keyId, shrOptions, request.correlationId);
+      }
+    };
+    var noTokensFound = "no_tokens_found";
+    var nativeAccountUnavailable = "native_account_unavailable";
+    var refreshTokenExpired = "refresh_token_expired";
+    var uxNotAllowed = "ux_not_allowed";
+    var interactionRequired = "interaction_required";
+    var consentRequired = "consent_required";
+    var loginRequired = "login_required";
+    var badToken = "bad_token";
+    var interruptedUser = "interrupted_user";
+    var InteractionRequiredAuthErrorCodes = /* @__PURE__ */ Object.freeze({
+      __proto__: null,
+      badToken,
+      consentRequired,
+      interactionRequired,
+      interruptedUser,
+      loginRequired,
+      nativeAccountUnavailable,
+      noTokensFound,
+      refreshTokenExpired,
+      uxNotAllowed
+    });
+    var InteractionRequiredServerErrorMessage = [
+      interactionRequired,
+      consentRequired,
+      loginRequired,
+      badToken,
+      uxNotAllowed,
+      interruptedUser
+    ];
+    var InteractionRequiredAuthSubErrorMessage = [
+      "message_only",
+      "additional_action",
+      "basic_action",
+      "user_password_expired",
+      "consent_required",
+      "bad_token",
+      "ux_not_allowed",
+      "interrupted_user"
+    ];
+    var InteractionRequiredAuthError = class _InteractionRequiredAuthError extends AuthError {
+      constructor(errorCode, errorMessage, subError, timestamp, traceId, correlationId, claims, errorNo) {
+        super(errorCode, errorMessage, subError);
+        Object.setPrototypeOf(this, _InteractionRequiredAuthError.prototype);
+        this.timestamp = timestamp || "";
+        this.traceId = traceId || "";
+        this.correlationId = correlationId || "";
+        this.claims = claims || "";
+        this.name = "InteractionRequiredAuthError";
+        this.errorNo = errorNo;
+      }
+    };
+    function isInteractionRequiredError(errorCode, errorString, subError) {
+      const isInteractionRequiredErrorCode = !!errorCode && InteractionRequiredServerErrorMessage.indexOf(errorCode) > -1;
+      const isInteractionRequiredSubError = !!subError && InteractionRequiredAuthSubErrorMessage.indexOf(subError) > -1;
+      const isInteractionRequiredErrorDesc = !!errorString && InteractionRequiredServerErrorMessage.some((irErrorCode) => {
+        return errorString.indexOf(irErrorCode) > -1;
+      });
+      return isInteractionRequiredErrorCode || isInteractionRequiredErrorDesc || isInteractionRequiredSubError;
+    }
+    function createInteractionRequiredAuthError(errorCode, errorMessage) {
+      return new InteractionRequiredAuthError(errorCode, errorMessage);
+    }
+    var ServerError = class _ServerError extends AuthError {
+      constructor(errorCode, errorMessage, subError, errorNo, status) {
+        super(errorCode, errorMessage, subError);
+        this.name = "ServerError";
+        this.errorNo = errorNo;
+        this.status = status;
+        Object.setPrototypeOf(this, _ServerError.prototype);
+      }
+    };
+    function parseRequestState(base64Decode, state) {
+      if (!base64Decode) {
+        throw createClientAuthError(noCryptoObject);
+      }
+      if (!state) {
+        throw createClientAuthError(invalidState);
+      }
+      try {
+        const splitState = state.split(RESOURCE_DELIM);
+        const libraryState = splitState[0];
+        const userState = splitState.length > 1 ? splitState.slice(1).join(RESOURCE_DELIM) : "";
+        const libraryStateString = base64Decode(libraryState);
+        const libraryStateObj = JSON.parse(libraryStateString);
+        return {
+          userRequestState: userState || "",
+          libraryState: libraryStateObj
+        };
+      } catch (e) {
+        throw createClientAuthError(invalidState);
+      }
+    }
     var ResponseHandler = class _ResponseHandler {
       constructor(clientId, cacheStorage, cryptoObj, logger, performanceClient, serializableCache, persistencePlugin) {
         this.clientId = clientId;
@@ -7841,7 +7861,8 @@ ${serverError}`, correlationId);
             authCodePayload,
             void 0,
             // nativeAccountId
-            this.logger
+            this.logger,
+            this.performanceClient
           );
         }
         let cachedAccessToken = null;
@@ -7854,6 +7875,10 @@ ${serverError}`, correlationId);
           const extendedTokenExpirationSeconds = tokenExpirationSeconds + extExpiresIn;
           const refreshOnSeconds = refreshIn && refreshIn > 0 ? reqTimestamp + refreshIn : void 0;
           cachedAccessToken = createAccessTokenEntity(this.homeAccountIdentifier, env, serverTokenResponse.access_token, this.clientId, claimsTenantId || authority.tenant || "", responseScopes.printScopes(), tokenExpirationSeconds, extendedTokenExpirationSeconds, this.cryptoObj.base64Decode, refreshOnSeconds, serverTokenResponse.token_type, userAssertionHash, serverTokenResponse.key_id);
+          const resource = request.resource || null;
+          if (resource) {
+            cachedAccessToken.resource = resource;
+          }
         }
         let cachedRefreshToken = null;
         if (serverTokenResponse.refresh_token) {
@@ -7956,16 +7981,15 @@ ${serverError}`, correlationId);
         };
       }
     };
-    function buildAccountToCache(cacheStorage, authority, homeAccountId, base64Decode, correlationId, idTokenClaims, clientInfo, environment, claimsTenantId, authCodePayload, nativeAccountId, logger) {
+    function buildAccountToCache(cacheStorage, authority, homeAccountId, base64Decode, correlationId, idTokenClaims, clientInfo, environment, claimsTenantId, authCodePayload, nativeAccountId, logger, performanceClient) {
       logger?.verbose("setCachedAccount called", correlationId);
-      const accountKeys = cacheStorage.getAccountKeys();
-      const baseAccountKey = accountKeys.find((accountKey) => {
-        return accountKey.startsWith(homeAccountId);
-      });
-      let cachedAccount = null;
-      if (baseAccountKey) {
-        cachedAccount = cacheStorage.getAccount(baseAccountKey, correlationId);
+      const accountEnvironment = environment || authority.getPreferredCache();
+      const matchedAccounts = cacheStorage.getAccountsFilteredBy({ homeAccountId, environment: accountEnvironment }, correlationId);
+      performanceClient?.addFields({ cacheMatchedAccounts: matchedAccounts.length }, correlationId);
+      if (matchedAccounts.length > 1) {
+        logger?.warning("Multiple base accounts matched homeAccountId. Ignoring cached account and creating a new base account.", correlationId);
       }
+      const cachedAccount = matchedAccounts.length === 1 ? matchedAccounts[0] : null;
       const baseAccount = cachedAccount || createAccountEntity({
         homeAccountId,
         idTokenClaims,
@@ -9059,6 +9083,7 @@ Error Description: '${typedError.message}'`, this.correlationId);
           addRedirectUri(parameters, request.redirectUri);
         }
         addScopes(parameters, request.scopes, true, this.oidcDefaultScopes);
+        addResource(parameters, request.resource);
         addAuthorizationCode(parameters, request.code);
         addLibraryInfo(parameters, this.config.libraryInfo);
         addApplicationTelemetry(parameters, this.config.telemetry.application);
@@ -9391,6 +9416,11 @@ Error Description: '${typedError.message}'`, this.correlationId);
         } else if (wasClockTurnedBack(cachedAccessToken.cachedAt) || isTokenExpired(cachedAccessToken.expiresOn, this.config.systemOptions.tokenRenewalOffsetSeconds)) {
           this.setCacheOutcome(CacheOutcome.CACHED_ACCESS_TOKEN_EXPIRED, request.correlationId);
           throw createClientAuthError(tokenRefreshRequired);
+        } else if (request.resource) {
+          if (cachedAccessToken.resource !== request.resource) {
+            this.setCacheOutcome(CacheOutcome.NO_CACHED_ACCESS_TOKEN, request.correlationId);
+            throw createClientAuthError(tokenRefreshRequired);
+          }
         } else if (cachedAccessToken.refreshOn && isTokenExpired(cachedAccessToken.refreshOn, 0)) {
           lastCacheOutcome = CacheOutcome.PROACTIVELY_REFRESHED;
         }
@@ -9448,10 +9478,12 @@ Error Description: '${typedError.message}'`, this.correlationId);
         ...request.extraScopesToConsent || []
       ];
       addScopes(parameters, requestScopes, true, authOptions.authority.options.OIDCOptions?.defaultScopes);
+      addResource(parameters, request.resource);
       addRedirectUri(parameters, request.redirectUri);
       addCorrelationId(parameters, correlationId);
       addResponseMode(parameters, request.responseMode);
       addClientInfo(parameters);
+      addCliData(parameters);
       if (request.prompt) {
         addPrompt(parameters, request.prompt);
       }
@@ -9535,6 +9567,23 @@ Error Description: '${typedError.message}'`, this.correlationId);
     }
     function extractLoginHint(account) {
       return account.loginHint || account.idTokenClaims?.login_hint || null;
+    }
+    function enforceResourceParameter(isMcp, request) {
+      if (!isMcp) {
+        return;
+      }
+      if (request.resource && (containsResourceParam(request.extraParameters) || containsResourceParam(request.extraQueryParameters))) {
+        throw createClientAuthError(misplacedResourceParam);
+      }
+      if (!request.resource) {
+        throw createClientAuthError(resourceParameterRequired);
+      }
+    }
+    function containsResourceParam(params) {
+      if (!params) {
+        return false;
+      }
+      return Object.prototype.hasOwnProperty.call(params, "resource");
     }
     var unexpectedError = "unexpected_error";
     var postRequestFailed = "post_request_failed";
@@ -9855,6 +9904,7 @@ Error Description: '${typedError.message}'`, this.correlationId);
               keyId: serializedAT.key_id,
               tokenType: serializedAT.token_type,
               userAssertionHash: serializedAT.userAssertionHash,
+              resource: serializedAT.resource,
               lastUpdatedAt: Date.now().toString()
             };
             atObjects[key] = accessToken;
@@ -10341,7 +10391,8 @@ Error Description: '${typedError.message}'`, this.correlationId);
       azureCloudOptions: {
         azureCloudInstance: AzureCloudInstance.None,
         tenant: ""
-      }
+      },
+      isMcp: false
     };
     var DEFAULT_LOGGER_OPTIONS = {
       loggerCallback: () => {
@@ -11364,7 +11415,7 @@ Error Description: '${typedError.message}'`, this.correlationId);
       }
     };
     var name = "@azure/msal-node";
-    var version2 = "5.0.6";
+    var version2 = "5.1.2";
     var BaseClient = class {
       constructor(configuration) {
         this.config = buildClientConfiguration(configuration);
@@ -11747,7 +11798,8 @@ Error Description: '${typedError.message}'`, this.correlationId);
             clientId: this.config.auth.clientId,
             authority: discoveredAuthority,
             clientCapabilities: this.config.auth.clientCapabilities,
-            redirectUri
+            redirectUri,
+            isMcp: this.config.auth.isMcp
           },
           loggerOptions: {
             logLevel: this.config.system.loggerOptions.logLevel,
@@ -12136,6 +12188,7 @@ Error Description: '${typedError.message}'`, this.correlationId);
        */
       async acquireTokenByDeviceCode(request) {
         this.logger.info("acquireTokenByDeviceCode called", request.correlationId || "");
+        enforceResourceParameter(this.config.auth.isMcp, request);
         const validRequest = Object.assign(request, await this.initializeBaseRequest(request));
         const serverTelemetryManager = this.initializeServerTelemetryManager(ApiId.acquireTokenByDeviceCode, validRequest.correlationId);
         try {
@@ -12158,6 +12211,7 @@ Error Description: '${typedError.message}'`, this.correlationId);
       async acquireTokenInteractive(request) {
         const correlationId = request.correlationId || this.cryptoProvider.createNewGuid();
         this.logger.trace("acquireTokenInteractive called", correlationId);
+        enforceResourceParameter(this.config.auth.isMcp, request);
         const { openBrowser, successTemplate, errorTemplate, windowHandle, loopbackClient: customLoopbackClient, ...remainingProperties } = request;
         if (this.nativeBrokerPlugin) {
           const brokerRequest = {
@@ -12233,6 +12287,7 @@ Error Description: '${typedError.message}'`, this.correlationId);
       async acquireTokenSilent(request) {
         const correlationId = request.correlationId || this.cryptoProvider.createNewGuid();
         this.logger.trace("acquireTokenSilent called", correlationId);
+        enforceResourceParameter(this.config.auth.isMcp, request);
         if (this.nativeBrokerPlugin) {
           const brokerRequest = {
             ...request,
@@ -12258,6 +12313,22 @@ Error Description: '${typedError.message}'`, this.correlationId);
           request.redirectUri = "";
         }
         return super.acquireTokenSilent(request);
+      }
+      /**
+       * Acquires a token by exchanging the authorization code received from the first step of OAuth 2.0 Authorization Code Flow.
+       * In MCP mode, a resource parameter is required on the request.
+       */
+      async acquireTokenByCode(request, authCodePayLoad) {
+        enforceResourceParameter(this.config.auth.isMcp, request);
+        return super.acquireTokenByCode(request, authCodePayLoad);
+      }
+      /**
+       * Acquires a token by exchanging the refresh token provided for a new set of tokens.
+       * In MCP mode, a resource parameter is required on the request.
+       */
+      async acquireTokenByRefreshToken(request) {
+        enforceResourceParameter(this.config.auth.isMcp, request);
+        return super.acquireTokenByRefreshToken(request);
       }
       /**
        * Removes cache artifacts associated with the given account
@@ -14725,6 +14796,19 @@ var require_shared_auth = __commonJS({
     var { log: log2 } = require_shared_utils();
     var { createCachePlugin } = require_msal_cache();
     var VSCODE_CLIENT_ID2 = "51f81489-12ee-4a9e-aaae-a2591f45987d";
+    var AZURE_PS_CLIENT_ID = "1950a258-227b-4e31-a9cf-717495945fc2";
+    var PAC_CLI_CLIENT_ID = "9cee029c-6210-4654-90bb-17e6e9d36617";
+    function getDefaultClientId2(cloud, scope) {
+      if (cloud === "gcc" || cloud === "gcchigh") {
+        if (scope && scope.startsWith("api://")) {
+          return AZURE_PS_CLIENT_ID;
+        }
+        if (scope && !scope.includes(".dynamics.com") && !scope.includes(".dynamics.us")) {
+          return PAC_CLI_CLIENT_ID;
+        }
+      }
+      return VSCODE_CLIENT_ID2;
+    }
     var ISLAND_RESOURCE_IDS = {
       0: "a522f059-bb65-47c0-8934-7db6e5286414",
       1: "a522f059-bb65-47c0-8934-7db6e5286414",
@@ -14749,26 +14833,25 @@ var require_shared_auth = __commonJS({
       }
       return _cachePlugin;
     }
-    async function createMsalApp(tenantId, clientId, cacheSlot) {
+    function getLoginAuthority(cloud) {
+      if (cloud === "gcchigh") return "https://login.microsoftonline.us";
+      return "https://login.microsoftonline.com";
+    }
+    async function createMsalApp(tenantId, clientId, cacheSlot, cloud) {
       const msal = require_msal_node();
+      const authority = `${getLoginAuthority(cloud || "public")}/${tenantId}`;
       if (cacheSlot) {
         const plugin = await createCachePlugin(cacheSlot);
         return new msal.PublicClientApplication({
-          auth: {
-            clientId,
-            authority: `https://login.microsoftonline.com/${tenantId}`
-          },
+          auth: { clientId, authority },
           cache: { cachePlugin: plugin }
         });
       }
-      const key = `${tenantId}:${clientId}`;
+      const key = `${tenantId}:${clientId}:${cloud || "public"}`;
       if (_msalApps.has(key)) return _msalApps.get(key);
       const cachePlugin = await getDefaultCachePlugin();
       const app = new msal.PublicClientApplication({
-        auth: {
-          clientId,
-          authority: `https://login.microsoftonline.com/${tenantId}`
-        },
+        auth: { clientId, authority },
         cache: { cachePlugin }
       });
       _msalApps.set(key, app);
@@ -14787,8 +14870,8 @@ var require_shared_auth = __commonJS({
         } : void 0
       };
     }
-    async function acquireTokenDeviceCode2(tenantId, clientId, scopes, cacheSlot) {
-      const app = await createMsalApp(tenantId, clientId, cacheSlot);
+    async function acquireTokenDeviceCode2(tenantId, clientId, scopes, cacheSlot, cloud) {
+      const app = await createMsalApp(tenantId, clientId, cacheSlot, cloud);
       const result = await app.acquireTokenByDeviceCode({
         scopes,
         deviceCodeCallback: (response) => {
@@ -14809,8 +14892,8 @@ var require_shared_auth = __commonJS({
       if (!result) throw new Error("Device code flow returned no result");
       return buildTokenInfo2(result);
     }
-    async function acquireTokenInteractive2(tenantId, clientId, scopes, cacheSlot) {
-      const app = await createMsalApp(tenantId, clientId, cacheSlot);
+    async function acquireTokenInteractive2(tenantId, clientId, scopes, cacheSlot, cloud) {
+      const app = await createMsalApp(tenantId, clientId, cacheSlot, cloud);
       const result = await app.acquireTokenInteractive({
         scopes,
         openBrowser: async (url) => {
@@ -14825,8 +14908,8 @@ var require_shared_auth = __commonJS({
       if (!result) throw new Error("Interactive flow returned no result");
       return buildTokenInfo2(result);
     }
-    async function acquireTokenSilent2(tenantId, clientId, scopes, cacheSlot) {
-      const app = await createMsalApp(tenantId, clientId, cacheSlot);
+    async function acquireTokenSilent2(tenantId, clientId, scopes, cacheSlot, cloud) {
+      const app = await createMsalApp(tenantId, clientId, cacheSlot, cloud);
       const allAccounts = await app.getTokenCache().getAllAccounts();
       const accounts = allAccounts.filter((a) => a.tenantId === tenantId);
       if (accounts.length > 0) {
@@ -14846,28 +14929,35 @@ var require_shared_auth = __commonJS({
       }
       return null;
     }
-    async function getOrAcquireToken2(tenantId, clientId, scopes, label, cacheSlot) {
-      const silent = await acquireTokenSilent2(tenantId, clientId, scopes, cacheSlot);
+    async function getOrAcquireToken2(tenantId, clientId, scopes, label, cacheSlot, cloud) {
+      const silent = await acquireTokenSilent2(tenantId, clientId, scopes, cacheSlot, cloud);
       if (silent) {
         log2(`${label}: using cached token (expires ${silent.expiresOn})`);
         return silent;
       }
       log2(`${label}: starting interactive login...`);
-      return acquireTokenInteractive2(tenantId, clientId, scopes, cacheSlot);
+      return acquireTokenInteractive2(tenantId, clientId, scopes, cacheSlot, cloud);
     }
-    async function getOrAcquireIslandToken2(tenantId, clusterCategory, label) {
+    async function getOrAcquireIslandToken2(tenantId, clusterCategory, label, cloud) {
       const resourceId = getIslandResourceId2(clusterCategory);
+      const scope = `api://${resourceId}/.default`;
       return getOrAcquireToken2(
         tenantId,
-        VSCODE_CLIENT_ID2,
-        [`api://${resourceId}/.default`],
-        label
+        getDefaultClientId2(cloud || "public", scope),
+        [scope],
+        label,
+        void 0,
+        cloud
       );
     }
     module2.exports = {
       VSCODE_CLIENT_ID: VSCODE_CLIENT_ID2,
+      AZURE_PS_CLIENT_ID,
+      PAC_CLI_CLIENT_ID,
       ISLAND_RESOURCE_IDS,
       getIslandResourceId: getIslandResourceId2,
+      getDefaultClientId: getDefaultClientId2,
+      getLoginAuthority,
       createMsalApp,
       buildTokenInfo: buildTokenInfo2,
       acquireTokenDeviceCode: acquireTokenDeviceCode2,
@@ -14889,6 +14979,7 @@ var { log, die } = require_shared_utils();
 var {
   VSCODE_CLIENT_ID,
   getIslandResourceId,
+  getDefaultClientId,
   buildTokenInfo,
   acquireTokenDeviceCode,
   acquireTokenInteractive,
@@ -14917,7 +15008,8 @@ function parseArgs() {
     // default: filter by owner
     timeout: 3e5,
     // default: 5 minutes for publish polling
-    force: false
+    force: false,
+    cloud: process.env.CPS_CLOUD || "public"
   };
   for (let i = 0; i < args.length; i++) {
     switch (args[i]) {
@@ -14962,6 +15054,9 @@ function parseArgs() {
       case "--force":
         parsed.force = true;
         break;
+      case "--cloud":
+        parsed.cloud = args[++i];
+        break;
       default:
         if (!args[i].startsWith("--") && !parsed.command) {
           parsed.command = args[i];
@@ -14975,6 +15070,43 @@ function parseArgs() {
     );
   }
   return parsed;
+}
+var CLOUD_ENDPOINTS = {
+  public: {
+    bapHost: "api.bap.microsoft.com",
+    bapTokenScope: "https://service.powerapps.com/.default",
+    powerPlatformScope: "https://api.powerplatform.com/.default",
+    loginAuthority: "https://login.microsoftonline.com",
+    clusterCategory: 5
+  },
+  gcc: {
+    bapHost: "gov.api.bap.microsoft.us",
+    bapTokenScope: "https://gov.service.powerapps.us/.default",
+    powerPlatformScope: "https://api.gov.powerplatform.microsoft.us/.default",
+    loginAuthority: "https://login.microsoftonline.com",
+    clusterCategory: 6
+  },
+  gcchigh: {
+    bapHost: "high.api.bap.microsoft.us",
+    bapTokenScope: "https://high.service.powerapps.us/.default",
+    powerPlatformScope: "https://api.high.powerplatform.microsoft.us/.default",
+    loginAuthority: "https://login.microsoftonline.us",
+    clusterCategory: 7
+  }
+};
+function getCloudEndpoints(cloud) {
+  const endpoints = CLOUD_ENDPOINTS[cloud];
+  if (!endpoints) {
+    die(`Unknown cloud: ${cloud}. Use: public, gcc, or gcchigh`);
+  }
+  return endpoints;
+}
+function detectCloud(envUrl, explicitCloud) {
+  if (explicitCloud && explicitCloud !== "public") return explicitCloud;
+  if (!envUrl) return explicitCloud || "public";
+  if (envUrl.includes(".crm9.dynamics.com")) return "gcc";
+  if (envUrl.includes(".crm.microsoftdynamics.us")) return "gcchigh";
+  return explicitCloud || "public";
 }
 var EXTENSION_ID = "ms-copilotstudio.vscode-copilotstudio";
 var BINARY_NAME = "LanguageServerHost";
@@ -15415,21 +15547,26 @@ function buildSyncRequest(args, tokens) {
 async function cmdAuth(args) {
   if (!args.tenantId) die("--tenant-id (or CPS_TENANT_ID) is required");
   if (!args.environmentUrl) die("--environment-url (or CPS_ENVIRONMENT_URL) is required");
-  const clientId = args.clientId || VSCODE_CLIENT_ID;
+  args.cloud = detectCloud(args.environmentUrl, args.cloud);
+  const endpoints = getCloudEndpoints(args.cloud);
   log("Acquiring Copilot Studio API token...");
   const cpsToken = await getOrAcquireToken(
     args.tenantId,
-    clientId,
-    ["https://api.powerplatform.com/.default"],
-    "Copilot Studio API"
+    args.clientId || getDefaultClientId(args.cloud, endpoints.powerPlatformScope),
+    [endpoints.powerPlatformScope],
+    "Copilot Studio API",
+    void 0,
+    args.cloud
   );
   const envUrl = args.environmentUrl.replace(/\/+$/, "");
   log("Acquiring Dataverse API token...");
   const dvToken = await getOrAcquireToken(
     args.tenantId,
-    clientId,
+    args.clientId || getDefaultClientId(args.cloud, `${envUrl}/.default`),
     [`${envUrl}/.default`],
-    "Dataverse API"
+    "Dataverse API",
+    void 0,
+    args.cloud
   );
   const result = {
     status: "ok",
@@ -15450,27 +15587,35 @@ async function acquireLspTokens(args) {
   const clusterCategory = conn?.AccountInfo?.clusterCategory;
   const tenantId = conn?.AccountInfo?.TenantId || args.tenantId;
   const envUrl = args.environmentUrl.replace(/\/+$/, "");
+  const cloud = detectCloud(args.environmentUrl, args.cloud);
+  const endpoints = getCloudEndpoints(cloud);
   let cpsToken, dvToken;
   if (clusterCategory != null) {
-    cpsToken = await getOrAcquireIslandToken(tenantId, clusterCategory, "Island API");
+    cpsToken = await getOrAcquireIslandToken(tenantId, clusterCategory, "Island API", cloud);
     dvToken = await getOrAcquireToken(
       tenantId,
-      VSCODE_CLIENT_ID,
+      args.clientId || getDefaultClientId(cloud, `${envUrl}/.default`),
       [`${envUrl}/.default`],
-      "Dataverse API"
+      "Dataverse API",
+      void 0,
+      cloud
     );
   } else {
     cpsToken = await getOrAcquireToken(
       tenantId,
-      VSCODE_CLIENT_ID,
-      ["https://api.powerplatform.com/.default"],
-      "Copilot Studio API"
+      args.clientId || getDefaultClientId(cloud, endpoints.powerPlatformScope),
+      [endpoints.powerPlatformScope],
+      "Copilot Studio API",
+      void 0,
+      cloud
     );
     dvToken = await getOrAcquireToken(
       tenantId,
-      VSCODE_CLIENT_ID,
+      args.clientId || getDefaultClientId(cloud, `${envUrl}/.default`),
       [`${envUrl}/.default`],
-      "Dataverse API"
+      "Dataverse API",
+      void 0,
+      cloud
     );
   }
   return { copilotStudio: cpsToken, dataverse: dvToken };
@@ -15528,8 +15673,6 @@ async function cmdValidate(args) {
     await client.stop();
   }
 }
-var BAP_HOST = "api.bap.microsoft.com";
-var BAP_TOKEN_SCOPE = "https://service.powerapps.com/.default";
 async function httpGetJson(url, accessToken) {
   const res = await fetch(url, {
     headers: { Authorization: `Bearer ${accessToken}` },
@@ -15566,12 +15709,15 @@ async function httpPostJson(url, accessToken, body) {
 async function cmdListAgents(args) {
   if (!args.tenantId) die("--tenant-id (or CPS_TENANT_ID) is required");
   if (!args.environmentUrl) die("--environment-url (or CPS_ENVIRONMENT_URL) is required");
+  const cloud = detectCloud(args.environmentUrl, args.cloud);
   const envUrl = args.environmentUrl.replace(/\/+$/, "");
   const dvToken = await getOrAcquireToken(
     args.tenantId,
-    VSCODE_CLIENT_ID,
+    args.clientId || getDefaultClientId(cloud, `${envUrl}/.default`),
     [`${envUrl}/.default`],
-    "Dataverse API"
+    "Dataverse API",
+    void 0,
+    cloud
   );
   const ownerOnly = args.owner !== false;
   log("Calling WhoAmI...");
@@ -15603,14 +15749,18 @@ async function cmdListAgents(args) {
 }
 async function cmdListEnvs(args) {
   if (!args.tenantId) die("--tenant-id (or CPS_TENANT_ID) is required");
+  const cloud = detectCloud(null, args.cloud);
+  const endpoints = getCloudEndpoints(cloud);
   const bapToken = await getOrAcquireToken(
     args.tenantId,
-    VSCODE_CLIENT_ID,
-    [BAP_TOKEN_SCOPE],
-    "Power Platform API"
+    args.clientId || getDefaultClientId(cloud, endpoints.bapTokenScope),
+    [endpoints.bapTokenScope],
+    "Power Platform API",
+    void 0,
+    cloud
   );
   const filter = encodeURIComponent("properties/environmentSku ne 'Platform'");
-  const url = `https://${BAP_HOST}/providers/Microsoft.BusinessAppPlatform/environments?api-version=2024-05-01&$filter=${filter}&$expand=properties.permissions`;
+  const url = `https://${endpoints.bapHost}/providers/Microsoft.BusinessAppPlatform/environments?api-version=2024-05-01&$filter=${filter}&$expand=properties.permissions`;
   log("Fetching environments from BAP API...");
   const response = await httpGetJson(url, bapToken.accessToken);
   const environments = (response.value || []).filter((env) => {
@@ -15639,11 +15789,14 @@ async function cmdPublish(args) {
   if (!envUrl) die("--environment-url (or CPS_ENVIRONMENT_URL) is required");
   const botId = args.agentId || conn && conn.AgentId;
   if (!botId) die("Cannot determine agent ID. Provide --agent-id or ensure .mcs/conn.json exists.");
+  const publishCloud = detectCloud(envUrl, args.cloud);
   const dvToken = await getOrAcquireToken(
     tenantId,
-    VSCODE_CLIENT_ID,
+    args.clientId || getDefaultClientId(publishCloud, `${envUrl}/.default`),
     [`${envUrl}/.default`],
-    "Dataverse API"
+    "Dataverse API",
+    void 0,
+    publishCloud
   );
   log("Reading current publish timestamp...");
   const botBefore = await httpGetJson(
@@ -15709,27 +15862,35 @@ async function cmdChanges(args) {
   const clusterCategory = conn?.AccountInfo?.clusterCategory;
   const tenantId = conn?.AccountInfo?.TenantId || args.tenantId;
   const envUrl = args.environmentUrl.replace(/\/+$/, "");
+  const cloud = detectCloud(args.environmentUrl, args.cloud);
+  const endpoints = getCloudEndpoints(cloud);
   let cpsToken, dvToken;
   if (clusterCategory != null) {
-    cpsToken = await getOrAcquireIslandToken(tenantId, clusterCategory, "Island API");
+    cpsToken = await getOrAcquireIslandToken(tenantId, clusterCategory, "Island API", cloud);
     dvToken = await getOrAcquireToken(
       tenantId,
-      VSCODE_CLIENT_ID,
+      args.clientId || getDefaultClientId(cloud, `${envUrl}/.default`),
       [`${envUrl}/.default`],
-      "Dataverse API"
+      "Dataverse API",
+      void 0,
+      cloud
     );
   } else {
     cpsToken = await getOrAcquireToken(
       tenantId,
-      VSCODE_CLIENT_ID,
-      ["https://api.powerplatform.com/.default"],
-      "Copilot Studio API"
+      args.clientId || getDefaultClientId(cloud, endpoints.powerPlatformScope),
+      [endpoints.powerPlatformScope],
+      "Copilot Studio API",
+      void 0,
+      cloud
     );
     dvToken = await getOrAcquireToken(
       tenantId,
-      VSCODE_CLIENT_ID,
+      args.clientId || getDefaultClientId(cloud, `${envUrl}/.default`),
       [`${envUrl}/.default`],
-      "Dataverse API"
+      "Dataverse API",
+      void 0,
+      cloud
     );
   }
   const tokens = { copilotStudio: cpsToken, dataverse: dvToken };
@@ -15806,9 +15967,10 @@ async function cmdClone(args) {
   if (!args.agentMgmtUrl) die("--agent-mgmt-url (or CPS_AGENT_MGMT_URL) is required");
   if (!args.agentId) die("--agent-id is required for clone");
   const envUrl = args.environmentUrl.replace(/\/+$/, "");
-  const DEFAULT_CLUSTER_CATEGORY = 5;
-  const cpsToken = await getOrAcquireIslandToken(args.tenantId, DEFAULT_CLUSTER_CATEGORY, "Island API");
-  const dvToken = await getOrAcquireToken(args.tenantId, VSCODE_CLIENT_ID, [`${envUrl}/.default`], "Dataverse API");
+  const cloud = detectCloud(envUrl, args.cloud);
+  const DEFAULT_CLUSTER_CATEGORY = cloud === "gcc" ? 6 : cloud === "gcchigh" ? 7 : 5;
+  const cpsToken = await getOrAcquireIslandToken(args.tenantId, DEFAULT_CLUSTER_CATEGORY, "Island API", cloud);
+  const dvToken = await getOrAcquireToken(args.tenantId, args.clientId || getDefaultClientId(cloud, `${envUrl}/.default`), [`${envUrl}/.default`], "Dataverse API", void 0, cloud);
   const [agentInfo, solVersions] = await Promise.all([
     fetchAgentInfo(envUrl, args.agentId, dvToken.accessToken),
     fetchSolutionVersions(envUrl, dvToken.accessToken)
@@ -15897,6 +16059,6 @@ safe-buffer/index.js:
   (*! safe-buffer. MIT License. Feross Aboukhadijeh <https://feross.org/opensource> *)
 
 @azure/msal-node/lib/msal-node.cjs:
-  (*! @azure/msal-node v5.0.6 2026-03-02 *)
-  (*! @azure/msal-common v16.2.0 2026-03-02 *)
+  (*! @azure/msal-node v5.1.2 2026-04-01 *)
+  (*! @azure/msal-common v16.4.1 2026-04-01 *)
 */
