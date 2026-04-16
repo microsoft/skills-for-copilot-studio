@@ -21,6 +21,7 @@
  *   --run-id <id>            Evaluation run ID (required for get-run, get-results)
  *   --published              Test published bot (default: test draft)
  *   --run-name <name>        Custom display name for the evaluation run
+ *   --connection-id <id>     MCS connection ID for authenticated execution (knowledge sources / tools)
  *
  * Output: JSON on stdout, diagnostics on stderr.
  * Exit codes: 0 = success, 1 = error
@@ -53,6 +54,7 @@ function parseArgs() {
     runId: null,
     published: false,
     runName: null,
+    connectionId: null,
   };
 
   for (let i = 0; i < args.length; i++) {
@@ -83,6 +85,9 @@ function parseArgs() {
         break;
       case "--run-name":
         parsed.runName = args[++i];
+        break;
+      case "--connection-id":
+        parsed.connectionId = args[++i];
         break;
       default:
         if (!args[i].startsWith("--") && !parsed.command) {
@@ -294,10 +299,14 @@ async function cmdStartRun(config, accessToken, args) {
   if (args.runName) {
     body.evaluationRunName = args.runName;
   }
+  if (args.connectionId) {
+    body.mcsConnectionId = args.connectionId;
+  }
 
   log(`POST ${url}`);
   log(`  runOnPublishedBot: ${args.published}`);
   if (args.runName) log(`  evaluationRunName: ${args.runName}`);
+  if (args.connectionId) log(`  mcsConnectionId: ${args.connectionId}`);
 
   const data = await ppApiRequest("POST", url, body, accessToken);
 
