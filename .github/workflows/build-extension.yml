@@ -132,6 +132,17 @@ jobs:
             exit 1
           fi
 
+          # Verify path resolution handled all CLAUDE_SKILL_DIR variants
+          # Check for repo-root-relative (../../) and skill-local (./) patterns
+          echo "Checking resolved paths..."
+          UNRESOLVED=$(grep -rn '\${CLAUDE_SKILL_DIR}' "$STAGE_DIR/" 2>/dev/null || true)
+          if [ -n "$UNRESOLVED" ]; then
+            echo "ERROR: Unresolved CLAUDE_SKILL_DIR references:"
+            echo "$UNRESOLVED"
+            exit 1
+          fi
+          echo "   All CLAUDE_SKILL_DIR paths resolved"
+
           # Verify essential directories exist
           for dir in agents skills scripts templates reference; do
             if [ ! -d "$STAGE_DIR/$dir" ]; then
