@@ -1,5 +1,39 @@
 # Changelog
 
+## 0.1.3
+
+### Fixed
+
+- Build script now resolves skill-local `${CLAUDE_SKILL_DIR}/` path references (not just `../../` patterns), fixing CI validation failures after upstream merges
+
+### Added
+
+- Upstream sync workflow (`sync-upstream.yml`) that runs weekly to auto-merge changes from `microsoft/skills-for-copilot-studio` main, creating draft PRs or warning on conflicts
+- Dedicated `CLAUDE_SKILL_DIR` resolution check in CI that validates all staged files, not just skills
+
+### Upstream Changes
+
+#### Skills
+
+- **`edit-action`** — now supports MCP server actions (`InvokeExternalAgentTaskAction`) in addition to connector actions; adds SharePoint-specific reference (`sharepoint-actions.md`) with OData filter syntax and quoting patterns
+- **`add-action`** — adds MCP server action guidance explaining that MCP connections must be created in the Copilot Studio portal first, plus the new `mcp-action.mcs.yml` template reference
+- **`create-eval`** — new skill for self-service eval authoring with scenario-based testing, SHA-256 snapshots, and HTML reports
+- **`int-reference`** — adds documentation for `$`-prefixed OData property names (SharePoint `$filter`/`$orderby`) with correct quoting patterns for TaskDialog vs InvokeConnectorAction
+
+#### Agents
+
+- **`copilot-studio-author`** — stronger guardrails against creating agent projects from scratch; clearer messaging that `agent.mcs.yml` and `settings.mcs.yml` must not be created, only edited
+
+#### Templates
+
+- **`mcp-action.mcs.yml`** — new template for MCP server actions using `InvokeExternalAgentTaskAction` with `ModelContextProtocolMetadata`
+- **`connector-action.mcs.yml`** — adds `mcs.metadata` format fields
+
+#### Scripts
+
+- Shared auth (`shared-auth.js`) and utilities (`shared-utils.js`) extracted from duplicated script code
+- Updated bundles for `chat-with-agent`, `directline-chat`, and `manage-agent`
+
 ## 0.1.2
 
 ### Fixed
