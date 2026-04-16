@@ -369,7 +369,10 @@ fs.readdirSync(skillsDir).forEach(d => {
   fs.readdirSync(dir).filter(f => f.endsWith('.md')).forEach(f => {
     const filePath = path.join(dir, f);
     const content = fs.readFileSync(filePath, 'utf8');
-    const updated = content.replace(/\\$\\{CLAUDE_SKILL_DIR\\}\\/\\.\\.\\/\\.\\.\\//g, '../../');
+    // First replace ../../ paths (repo-root-relative), then remaining
+    // CLAUDE_SKILL_DIR paths (skill-directory-relative) with ./
+    let updated = content.replace(/\\$\\{CLAUDE_SKILL_DIR\\}\\/\\.\\.\\/\\.\\.\\//g, '../../');
+    updated = updated.replace(/\\$\\{CLAUDE_SKILL_DIR\\}\\//g, './');
     if (updated !== content) {
       fs.writeFileSync(filePath, updated);
       replaced++;
