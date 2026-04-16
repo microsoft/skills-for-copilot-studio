@@ -17,6 +17,31 @@ claude --plugin-dir /path/to/skills-for-copilot-studio
 claude plugin install /path/to/skills-for-copilot-studio --scope user
 ```
 
+## Release workflow
+
+The plugin follows a **weekly release branch** cadence. Release branches are merged to `main` on Wednesdays, and a new branch is created every Thursday automatically via GitHub Actions.
+
+### How it works
+
+1. **Every Thursday at 09:00 UTC**, the [`new-release`](.github/workflows/new-release.yml) workflow runs:
+   - Creates a `release/YYYY-WNN` branch from `main` (e.g., `release/2026-W16`)
+   - Bumps the patch version in `plugin.json` and `marketplace.json`
+   - Commits and pushes the branch
+
+2. **During the week**, fork feature branches from the release branch and PR back into it:
+   ```bash
+   git checkout release/2026-W16
+   git checkout -b feature/my-change
+   # ... make changes ...
+   # PR into release/2026-W16
+   ```
+
+3. **When ready to ship**, open a PR from `release/YYYY-WNN` into `main`.
+
+### Manual trigger
+
+You can also create a release branch on demand from the [Actions tab](../../actions/workflows/new-release.yml) using **Run workflow**. Optionally provide a version override (e.g., `1.1.0` for a minor bump).
+
 ## Rebuilding bundled scripts
 
 The plugin includes bundled Node.js scripts (schema lookup, chat-with-agent) built with [esbuild](https://esbuild.github.io/). Source is in `scripts/src/`, bundles are in `scripts/`.
