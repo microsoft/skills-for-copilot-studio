@@ -25,11 +25,14 @@ jobs:
       - name: Calculate release week
         id: week
         run: |
-          YEAR=$(date -u +%Y)
-          WEEK=$(date -u +%V)
+          # Use +7 days so Thursday (day after release) targets next week's branch.
+          # Use %G/%V (ISO year/week) to handle year boundaries correctly.
+          FUTURE=$(date -u -d "+7 days" +%Y-%m-%d)
+          YEAR=$(date -u -d "$FUTURE" +%G)
+          WEEK=$(date -u -d "$FUTURE" +%V)
           RELEASE="release/${YEAR}-W${WEEK}"
           echo "release_branch=$RELEASE" >> "$GITHUB_OUTPUT"
-          echo "Release branch: $RELEASE"
+          echo "Release branch: $RELEASE (computed from $FUTURE)"
 
       - name: Check if branch already exists
         id: check
