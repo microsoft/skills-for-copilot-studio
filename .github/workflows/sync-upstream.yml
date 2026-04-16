@@ -1,0 +1,84 @@
+name: Sync upstream
+
+on:
+  schedule:
+    # Every Monday at 06:00 UTC
+    - cron: "0 6 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout fork
+        uses: actions/checkout@v4
+        with:
+          ref: coatsy/vscode-extension
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Add upstream remote
+        run: |
+          git remote add upstream https://github.com/microsoft/skills-for-copilot-studio.git
+          git fetch upstream main
+
+      - name: Check for new commits
+        id: check
+        run: |
+          BEHIND=$(git rev-list --count HEAD..upstream/main)
+          echo "behind=$BEHIND" >> "$GITHUB_OUTPUT"
+          echo "Upstream is $BEHIND commit(s) ahead"
+
+      - name: Merge upstream
+        if: steps.check.outputs.behind != '0'
+        id: merge
+        run: |
+          BRANCH="chore/sync-upstream-$(date -u +%Y%m%d)"
+          git checkout -b "$BRANCH"
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          if git merge upstream/main --no-edit; then
+            echo "conflict=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "conflict=true" >> "$GITHUB_OUTPUT"
+            git merge --abort
+          fi
+
+          echo "branch=$BRANCH" >> "$GITHUB_OUTPUT"
+
+      - name: Push and create PR
+        if: steps.check.outputs.behind != '0' && steps.merge.outputs.conflict == 'false'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          BRANCH="${{ steps.merge.outputs.branch }}"
+          BEHIND="${{ steps.check.outputs.behind }}"
+
+          git push origin "$BRANCH"
+
+          gh pr create \
+            --base coatsy/vscode-extension \
+            --head "$BRANCH" \
+            --title "chore: sync $BEHIND commit(s) from upstream main" \
+            --body "Automated sync of upstream microsoft/skills-for-copilot-studio main into coatsy/vscode-extension.
+
+          **Commits behind**: $BEHIND
+
+          This PR was created automatically by the sync-upstream workflow." \
+            --draft
+
+      - name: Report conflict
+        if: steps.check.outputs.behind != '0' && steps.merge.outputs.conflict == 'true'
+        run: |
+          echo "::warning::Merge conflicts detected when syncing upstream. Manual resolution required."
+          echo "Run locally:"
+          echo "  git fetch upstream main"
+          echo "  git merge upstream/main"
+          echo "  # resolve conflicts"
+          echo "  git push"
