@@ -94,7 +94,7 @@ def setup_mocks(workspace: Path, mock_scripts: list[str]) -> None:
 HOOK_SCRIPT = REPO_ROOT / "evals" / "hooks" / "log-skill-use.js"
 
 
-def run_cli(cli: str, prompt: str, cwd: Path, timeout: int = 600) -> tuple[str, int, list[str], list[str], bool]:
+def run_cli(cli: str, prompt: str, cwd: Path, timeout: int = 600, plugin_dir: str | None = None) -> tuple[str, int, list[str], list[str], bool]:
     """Run claude/copilot in non-interactive mode and return (response_text, exit_code, skills_invoked, agents_invoked, skill_tracing).
 
     Supports both Claude Code and GitHub Copilot CLI JSON output formats.
@@ -118,6 +118,8 @@ def run_cli(cli: str, prompt: str, cwd: Path, timeout: int = 600) -> tuple[str, 
     else:
         cmd.extend(["--output-format", "stream-json", "--verbose"])
         cmd.extend(["--allowedTools", "Bash(node *) Read Write Glob Edit"])
+        if plugin_dir:
+            cmd.extend(["--plugin-dir", plugin_dir])
         # Inject PreToolUse hook to trace skill invocations inside sub-agents
         # Use forward slashes for cross-platform compatibility in node command
         hook_path = str(HOOK_SCRIPT).replace("\\", "/")
@@ -594,7 +596,7 @@ def run_checks(
     return all_results
 
 
-def run_eval(eval_item: dict, cli: str, verbose: bool, artifacts_dir: Path | None = None) -> dict:
+def run_eval(eval_item: dict, cli: str, verbose: bool, artifacts_dir: Path | None = None, plugin_dir: str | None = None) -> dict:
     """Run a single eval and return results."""
     eval_id = eval_item["id"]
     eval_name = eval_item.get("name", "")
@@ -636,7 +638,7 @@ def run_eval(eval_item: dict, cli: str, verbose: bool, artifacts_dir: Path | Non
         if verbose:
             print(f"Running: {cli} -p ...", file=sys.stderr)
 
-        response_text, exit_code, skills_invoked, agents_invoked, skill_tracing = run_cli(cli, prompt, cwd=agent_dir)
+        response_text, exit_code, skills_invoked, agents_invoked, skill_tracing = run_cli(cli, prompt, cwd=agent_dir, plugin_dir=plugin_dir)
 
         if verbose:
             print(f"Exit code: {exit_code}", file=sys.stderr)
@@ -722,6 +724,8 @@ def main():
     parser.add_argument("--artifacts-dir", default=None, help="Save generated files to this directory")
     parser.add_argument("--parallel", type=int, default=1, metavar="N",
                         help="Run N evals in parallel (default: 1, recommended: 3)")
+    parser.add_argument("--plugin-dir", default=None,
+                        help="Path to plugin directory (passed as --plugin-dir to claude CLI)")
     args = parser.parse_args()
 
     if args.cli == "copilot":
@@ -759,7 +763,7 @@ def main():
         results = [None] * len(evals_to_run)
         with ThreadPoolExecutor(max_workers=parallel) as pool:
             future_to_idx = {
-                pool.submit(run_eval, eval_item, args.cli, args.verbose, artifacts_dir): i
+                pool.submit(run_eval, eval_item, args.cli, args.verbose, artifacts_dir, args.plugin_dir): i
                 for i, eval_item in enumerate(evals_to_run)
             }
             for future in as_completed(future_to_idx):
@@ -768,7 +772,7 @@ def main():
     else:
         results = []
         for eval_item in evals_to_run:
-            result = run_eval(eval_item, args.cli, args.verbose, artifacts_dir)
+            result = run_eval(eval_item, args.cli, args.verbose, artifacts_dir, args.plugin_dir)
             results.append(result)
 
     duration_sec = round(time.time() - start_time, 1)
