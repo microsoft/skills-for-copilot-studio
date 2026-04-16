@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.1.3
+
+### Fixed
+
+- Build script now resolves skill-local `${CLAUDE_SKILL_DIR}/` path references (not just `../../` patterns), fixing CI validation failures after upstream merges
+
+### Added
+
+- Upstream sync workflow (`sync-upstream.yml`) that runs weekly to auto-merge changes from `microsoft/skills-for-copilot-studio` main, creating draft PRs or warning on conflicts
+- Dedicated `CLAUDE_SKILL_DIR` resolution check in CI that validates all staged files, not just skills
+
 ## 0.1.2
 
 ### Fixed
