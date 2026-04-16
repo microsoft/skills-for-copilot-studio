@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.4
+
+### Fixed
+
+- Updated skills count from 24 to 28 in README, adding missing skills: `chat-directline`, `chat-sdk`, `create-eval`, `detect-mode`, `int-project-context`, `int-reference`
+
 ## 0.1.3
 
 ### Fixed

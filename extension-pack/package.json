@@ -1,7 +1,7 @@
 {
   "name": "copilot-studio-development-bundle",
   "displayName": "Copilot Studio Development Bundle",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "description": "Extension pack that installs both the Copilot Studio Skills and Copilot Studio extensions for a complete agent development experience",
   "publisher": "coatsy",
   "repository": {
