@@ -7,7 +7,7 @@ description: "Copilot Studio YAML authoring, testing, and management skills for 
 
 Author, test, troubleshoot, and manage [Microsoft Copilot Studio](https://aka.ms/CopilotStudio) agents directly from VS Code using GitHub Copilot Chat.
 
-This extension provides **4 specialized agents** and **24 skills** that enable YAML-based authoring of Copilot Studio agents without leaving your editor.
+This extension provides **4 specialized agents** and **28 skills** that enable YAML-based authoring of Copilot Studio agents without leaving your editor.
 
 ## Features
 
@@ -22,17 +22,18 @@ Use these agents in Copilot Chat to get specialized help:
 
 ### Skills
 
-The extension includes 24 skills covering the full agent development lifecycle:
+The extension includes 28 skills covering the full agent development lifecycle:
 
 | Category | Skills |
 |----------|--------|
 | **Authoring** | new-topic, add-action, add-node, add-knowledge, add-adaptive-card, add-generative-answers, add-global-variable, add-other-agents |
 | **Editing** | edit-agent, edit-action, edit-triggers |
 | **Validation** | validate, lookup-schema, list-kinds, list-topics |
-| **Testing** | chat-with-agent, directline-chat, run-tests |
+| **Testing** | chat-with-agent, chat-directline, chat-sdk, directline-chat, run-tests, create-eval, detect-mode |
 | **Management** | manage-agent, clone-agent |
 | **Best practices** | best-practices (JIT glossary, user context, topic redirects, orchestrator patterns) |
 | **Troubleshooting** | known-issues |
+| **Internal** | int-project-context, int-reference |
 
 ## Prerequisites
 
