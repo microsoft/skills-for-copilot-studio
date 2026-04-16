@@ -28,15 +28,36 @@ node ${CLAUDE_SKILL_DIR}/../../scripts/eval-api.bundle.js list-testsets --worksp
 - **One test set**: Tell the user which one you're using and proceed.
 - **Multiple test sets**: Show them all and ask the user to pick. Do not proceed until they answer.
 
-## Step 2: Start the run
+## Step 2: Ask about authenticated execution — MANDATORY, do not skip
+
+**You MUST ask this question and wait for the user's answer before starting the run.**
+
+Ask the user:
+
+> **Does your agent use authenticated knowledge sources or connector actions (tools) that require user identity?**
+> If so, you'll need to provide a connection ID — without it, the eval runs anonymously and **tools and knowledge sources will not be used**.
+>
+> **How to obtain the connection ID:**
+> 1. Go to https://make.powerautomate.com
+> 2. Open **Connections** from the side menu
+> 3. Select the relevant **Microsoft Copilot Studio** connection
+> 4. Copy the connection ID from the URL (the GUID segment after `/connections/`)
+>
+> If your agent doesn't use authenticated knowledge or tools, you can skip this.
+
+**Do not proceed to Step 3 until the user responds.**
+
+## Step 3: Start the run
 
 ```bash
 node ${CLAUDE_SKILL_DIR}/../../scripts/eval-api.bundle.js start-run --workspace <path> --client-id <id> --testset-id <id> --run-name "Draft eval <date>"
 ```
 
+Add `--connection-id <id>` if the user provided a connection ID in Step 2.
+
 Add `--published` only if the user explicitly asked for published-bot testing.
 
-## Step 3: Poll until complete
+## Step 4: Poll until complete
 
 ```bash
 node ${CLAUDE_SKILL_DIR}/../../scripts/eval-api.bundle.js get-run --workspace <path> --client-id <id> --run-id <runId>
@@ -46,7 +67,7 @@ Poll every 15-30 seconds. Report progress: "Processing: 3/10 test cases..."
 
 Stop when `state` is `Completed`, `Failed`, `Abandoned`, or `Cancelled`.
 
-## Step 4: Fetch and analyze results
+## Step 5: Fetch and analyze results
 
 ```bash
 node ${CLAUDE_SKILL_DIR}/../../scripts/eval-api.bundle.js get-results --workspace <path> --client-id <id> --run-id <runId>
@@ -61,8 +82,8 @@ Present a summary table (total, passed, failed, errors). For failures:
 | `CapabilityUse` Fail | `missingInvocationSteps` |
 | `Error` status | `errorReason` — often a test set config issue, not a YAML issue |
 
-## Step 5: Propose fixes (if failures found)
+## Step 6: Propose fixes (if failures found)
 
 For YAML authoring failures: find the relevant topic, read it, propose specific edits. Wait for user approval before applying.
 
-After applying: offer to push and re-run (go back to Step 2).
+After applying: offer to push and re-run (go back to Step 3).
