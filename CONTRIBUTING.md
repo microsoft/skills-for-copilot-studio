@@ -82,12 +82,60 @@ evals/                   # Scenario-based eval framework (harness, report, fixtu
   hooks/                 # Eval-only hooks (skill tracing via PreToolUse)
 hooks/                   # Session hooks (agent routing)
 skills/                  # Skill definitions (entry points + internal skills)
+  patterns/              # Repeatable reference architectures (JIT glossary, user context, orchestrator variables)
+  authoring-tips/        # Practical tips & workarounds (date context, dynamic redirects, child agent control)
+  ...                    # Other skills (add-knowledge, new-topic, etc.)
 scripts/                 # Bundled tools (schema lookup, chat-with-agent)
   src/                   # Source code
 reference/               # Copilot Studio YAML schema
 templates/               # YAML templates for common patterns
 tests/                   # Test runner for Copilot Studio Kit integration
 ```
+
+## Contributing to patterns and authoring tips
+
+The `skills/` directory has two places for sharing reusable knowledge beyond individual skill definitions:
+
+### `skills/patterns/` — Repeatable Patterns
+
+Reference architectures that describe **how to build a specific capability** end-to-end for a Copilot Studio agent. Each pattern is a complete implementation guide with architecture diagrams, step-by-step instructions, YAML examples, and validation checklists.
+
+**Current patterns:**
+- **JIT Glossary** — load customer acronyms into a global variable at conversation start
+- **JIT User Context** — load the user's M365 profile for personalized answers
+- **Orchestrator Variables** — classify queries at orchestration time for knowledge routing
+
+**When to add a new pattern:** you've built a multi-step capability that other agent authors would reuse as-is — it involves creating multiple files (topics, variables, knowledge sources, instructions) that work together.
+
+**How to contribute:**
+1. Create a new `.md` file in `skills/patterns/` with the full implementation guide
+2. Add a routing entry in `skills/patterns/SKILL.md` following the existing format
+3. Update the `description` field in the SKILL.md frontmatter to include keywords for the new pattern
+
+### `skills/authoring-tips/` — Authoring Tips
+
+Practical tips, techniques, and workarounds learned from building agents with Copilot Studio. These address platform limitations, improve authoring ergonomics, or share non-obvious techniques.
+
+**Current tips:**
+- **Date Context** — inject today's date into agent instructions via Power FX
+- **Dynamic Topic Redirect** — use `Switch()` in `BeginDialog` instead of nested conditions
+- **Prevent Child Agent Responses** — stop connected agents from messaging users directly
+
+**When to add a new tip:** you've discovered a technique or workaround that isn't obvious from the documentation — something that saves time or avoids a known pitfall.
+
+**How to contribute:**
+1. Create a new `.md` file in `skills/authoring-tips/` with the tip, including the problem, solution, and a YAML example
+2. Add a routing entry in `skills/authoring-tips/SKILL.md` following the existing format
+3. Update the `description` field in the SKILL.md frontmatter to include keywords for the new tip
+
+### Choosing between the two
+
+| | Patterns | Authoring Tips |
+|---|---|---|
+| **Scope** | Full capability (multiple files, end-to-end) | Single technique or workaround |
+| **Length** | Detailed guide with steps, templates, checklists | Concise explanation with one YAML example |
+| **Reuse** | Copied and adapted per agent | Applied as-needed during authoring |
+| **Example** | "Set up country-based knowledge routing" | "Use `Switch()` instead of nested conditions" |
 
 ## Scenario evals
 
