@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.0.8
+
+### Changed
+
+- Synchronized extension version with upstream microsoft/skills-for-copilot-studio releases (previously independent at 0.1.x)
+- Added daily upstream release monitoring workflow
+- Added upstream version badge to README
+- Added version synchronization guards to publish workflow
+
 ## 0.1.4
 
 ### Fixed

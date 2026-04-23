@@ -124,9 +124,9 @@ jobs:
           1. Review the upstream release notes for breaking changes or new features
           2. Run the sync-upstream workflow or manually merge upstream changes
           3. Update `upstream-version.json` to `TAG_PLACEHOLDER`
-          4. Bump extension version as appropriate
+          4. Update extension version to `TAG_PLACEHOLDER` in `extension/templates/package.template.json` and `extension-pack/package.json`
           5. Test the build locally with `bash extension/test-local.sh --package-only`
-          6. Create a release PR
+          6. Create a release tagged `TAG_PLACEHOLDER`
 
           ## Impact Assessment
 

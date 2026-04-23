@@ -62,7 +62,8 @@ jobs:
           fi
           UPSTREAM_VERSION=$(node -e "
             const uv = require('./upstream-version.json');
-            console.log(uv.upstream_version || '');
+            const v = uv.upstream_version || '';
+            console.log(v.replace(/^v/, ''));
           ")
           if [ -z "$UPSTREAM_VERSION" ]; then
             echo "ERROR: upstream-version.json does not contain a valid upstream_version"
@@ -70,6 +71,13 @@ jobs:
           fi
           echo "UPSTREAM_VERSION=$UPSTREAM_VERSION" >> "$GITHUB_ENV"
           echo "Upstream version tracked: $UPSTREAM_VERSION"
+
+          # Enforce synchronized versioning: extension version must match upstream
+          if [ "$SKILLS_VERSION" != "$UPSTREAM_VERSION" ]; then
+            echo "ERROR: Extension version ($SKILLS_VERSION) does not match upstream version ($UPSTREAM_VERSION)"
+            echo "See VERSIONING.md — this fork's version must match the upstream release version."
+            exit 1
+          fi
 
       - name: Build skills extension VSIX
         run: bash extension/test-local.sh --package-only
