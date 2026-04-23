@@ -273,11 +273,9 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           # Find open failure issues from previous runs and close them
-          ISSUES=$(curl -sf \
-            -H "Authorization: token $GH_TOKEN" \
-            -H "Accept: application/vnd.github+json" \
-            "https://api.github.com/repos/${{ github.repository }}/issues?state=open&labels=type/infra" \
-            | jq -r '[.[] | select(.title | startswith("ci: check-upstream-release workflow failed"))] | .[].number')
+          ISSUES=$(gh api --paginate \
+            "repos/${{ github.repository }}/issues?state=open&labels=type/infra&per_page=100" \
+            --jq '.[] | select(.title | startswith("ci: check-upstream-release workflow failed")) | .number')
 
           for ISSUE_NUM in $ISSUES; do
             echo "Closing stale failure issue #$ISSUE_NUM"
