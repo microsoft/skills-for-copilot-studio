@@ -201,7 +201,18 @@ jobs:
             fs.writeFileSync('extension-pack/package.json', JSON.stringify(pkg, null, 2) + '\n');
           "
 
-          git add upstream-version.json extension/templates/package.template.json extension-pack/package.json
+          # Prepend changelog entry for the new version
+          CHANGELOG="extension/CHANGELOG.md"
+          if [ -f "$CHANGELOG" ]; then
+            RELEASE_BODY=$(cat /tmp/upstream-body.md 2>/dev/null || echo "")
+            ENTRY="## ${VERSION}\n\n### Upstream Sync\n\n- Synced with upstream release [${TAG}](https://github.com/microsoft/skills-for-copilot-studio/releases/tag/${TAG})\n"
+
+            # Insert after the "# Changelog" header
+            sed -i "s/^# Changelog$/# Changelog\n\n${ENTRY}/" "$CHANGELOG"
+            echo "Added changelog entry for ${VERSION}"
+          fi
+
+          git add upstream-version.json extension/templates/package.template.json extension-pack/package.json extension/CHANGELOG.md
           git commit -m "chore: bump version to ${VERSION} (upstream ${TAG})"
           git push origin "$BRANCH"
 
@@ -214,6 +225,7 @@ jobs:
           - \`upstream-version.json\` → \`${TAG}\`
           - \`extension/templates/package.template.json\` → \`${VERSION}\`
           - \`extension-pack/package.json\` → \`${VERSION}\`
+          - \`extension/CHANGELOG.md\` → added \`${VERSION}\` entry
 
           ---
           *This PR was created automatically by the check-upstream-release workflow.*"
