@@ -1,0 +1,217 @@
+name: Check upstream release
+
+on:
+  schedule:
+    # Every day at 08:00 UTC
+    - cron: "0 8 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  issues: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: coatsy/vscode-extension
+
+      - name: Fetch latest upstream release
+        id: upstream
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          RESPONSE=$(curl -sf \
+            -H "Authorization: token $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/microsoft/skills-for-copilot-studio/releases/latest")
+
+          UPSTREAM_TAG=$(echo "$RESPONSE" | jq -r '.tag_name')
+          UPSTREAM_NAME=$(echo "$RESPONSE" | jq -r '.name')
+          UPSTREAM_URL=$(echo "$RESPONSE" | jq -r '.html_url')
+          UPSTREAM_DATE=$(echo "$RESPONSE" | jq -r '.published_at')
+          UPSTREAM_BODY=$(echo "$RESPONSE" | jq -r '.body')
+
+          echo "tag=$UPSTREAM_TAG" >> "$GITHUB_OUTPUT"
+          echo "name=$UPSTREAM_NAME" >> "$GITHUB_OUTPUT"
+          echo "url=$UPSTREAM_URL" >> "$GITHUB_OUTPUT"
+          echo "date=$UPSTREAM_DATE" >> "$GITHUB_OUTPUT"
+
+          # Store body in a file to handle multiline content
+          echo "$UPSTREAM_BODY" > /tmp/upstream-body.md
+
+          echo "Latest upstream release: $UPSTREAM_TAG ($UPSTREAM_DATE)"
+
+      - name: Read tracked version
+        id: tracked
+        run: |
+          if [ ! -f "upstream-version.json" ]; then
+            echo "version=none" >> "$GITHUB_OUTPUT"
+            echo "No upstream-version.json found — treating as first run"
+          else
+            TRACKED=$(jq -r '.upstream_version' upstream-version.json)
+            echo "version=$TRACKED" >> "$GITHUB_OUTPUT"
+            echo "Currently tracked upstream version: $TRACKED"
+          fi
+
+      - name: Compare versions
+        id: compare
+        run: |
+          UPSTREAM="${{ steps.upstream.outputs.tag }}"
+          TRACKED="${{ steps.tracked.outputs.version }}"
+
+          if [ "$UPSTREAM" = "$TRACKED" ]; then
+            echo "new_release=false" >> "$GITHUB_OUTPUT"
+            echo "Already tracking latest upstream version ($UPSTREAM). Nothing to do."
+          else
+            echo "new_release=true" >> "$GITHUB_OUTPUT"
+            echo "New upstream release detected: $UPSTREAM (was: $TRACKED)"
+          fi
+
+      - name: Check for existing proposal issue
+        if: steps.compare.outputs.new_release == 'true'
+        id: existing
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${{ steps.upstream.outputs.tag }}"
+
+          # Search for open issues with the upstream release tag in the title
+          EXISTING=$(curl -sf \
+            -H "Authorization: token $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${{ github.repository }}/issues?state=open&labels=upstream/sync" \
+            | jq -r --arg tag "$TAG" '[.[] | select(.title | contains($tag))] | length')
+
+          if [ "$EXISTING" -gt 0 ]; then
+            echo "duplicate=true" >> "$GITHUB_OUTPUT"
+            echo "Proposal issue for $TAG already exists — skipping."
+          else
+            echo "duplicate=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Create proposal issue
+        if: steps.compare.outputs.new_release == 'true' && steps.existing.outputs.duplicate == 'false'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${{ steps.upstream.outputs.tag }}"
+          NAME="${{ steps.upstream.outputs.name }}"
+          URL="${{ steps.upstream.outputs.url }}"
+          DATE="${{ steps.upstream.outputs.date }}"
+          TRACKED="${{ steps.tracked.outputs.version }}"
+          BODY=$(cat /tmp/upstream-body.md)
+
+          ISSUE_BODY=$(cat <<'ISSUE_EOF'
+          ## Upstream Release Detected
+
+          | | |
+          |---|---|
+          | **New upstream version** | `TAG_PLACEHOLDER` |
+          | **Previous tracked version** | `TRACKED_PLACEHOLDER` |
+          | **Published** | DATE_PLACEHOLDER |
+          | **Release URL** | URL_PLACEHOLDER |
+
+          ## Upstream Release Notes
+
+          BODY_PLACEHOLDER
+
+          ## Recommended Actions
+
+          1. Review the upstream release notes for breaking changes or new features
+          2. Run the sync-upstream workflow or manually merge upstream changes
+          3. Update `upstream-version.json` to `TAG_PLACEHOLDER`
+          4. Bump extension version as appropriate
+          5. Test the build locally with `bash extension/test-local.sh --package-only`
+          6. Create a release PR
+
+          ## Impact Assessment
+
+          - [ ] Breaking changes reviewed
+          - [ ] New skills or agents identified
+          - [ ] Extension compatibility verified
+          - [ ] Build tested successfully
+
+          ---
+          *This issue was created automatically by the check-upstream-release workflow.*
+          ISSUE_EOF
+          )
+
+          # Replace placeholders
+          ISSUE_BODY="${ISSUE_BODY//TAG_PLACEHOLDER/$TAG}"
+          ISSUE_BODY="${ISSUE_BODY//TRACKED_PLACEHOLDER/$TRACKED}"
+          ISSUE_BODY="${ISSUE_BODY//DATE_PLACEHOLDER/$DATE}"
+          ISSUE_BODY="${ISSUE_BODY//URL_PLACEHOLDER/$URL}"
+          ISSUE_BODY="${ISSUE_BODY//BODY_PLACEHOLDER/$BODY}"
+
+          # Create the issue via API (avoids shell quoting issues with gh cli)
+          jq -n \
+            --arg title "upstream: new release $TAG available" \
+            --arg body "$ISSUE_BODY" \
+            '{"title": $title, "body": $body, "labels": ["upstream/sync"]}' \
+            | curl -sf \
+              -X POST \
+              -H "Authorization: token $GH_TOKEN" \
+              -H "Accept: application/vnd.github+json" \
+              "https://api.github.com/repos/${{ github.repository }}/issues" \
+              -d @-
+
+          echo "Created proposal issue for upstream release $TAG"
+
+      - name: Update tracked version
+        if: steps.compare.outputs.new_release == 'true' && steps.existing.outputs.duplicate == 'false'
+        run: |
+          TAG="${{ steps.upstream.outputs.tag }}"
+          TODAY=$(date -u +%Y-%m-%d)
+
+          jq --arg v "$TAG" --arg d "$TODAY" \
+            '.upstream_version = $v | .last_checked = $d' \
+            upstream-version.json > tmp.json && mv tmp.json upstream-version.json
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add upstream-version.json
+          git commit -m "chore: track upstream release $TAG"
+          git push
+
+      - name: Trigger upstream sync and build
+        if: steps.compare.outputs.new_release == 'true' && steps.existing.outputs.duplicate == 'false'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${{ steps.upstream.outputs.tag }}"
+
+          echo "Triggering sync-upstream workflow..."
+          curl -sf \
+            -X POST \
+            -H "Authorization: token $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${{ github.repository }}/actions/workflows/sync-upstream.yml/dispatches" \
+            -d '{"ref": "coatsy/vscode-extension"}'
+          echo "Sync-upstream triggered"
+
+          echo "Triggering build-extension workflow..."
+          curl -sf \
+            -X POST \
+            -H "Authorization: token $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${{ github.repository }}/actions/workflows/build-extension.yml/dispatches" \
+            -d '{"ref": "coatsy/vscode-extension"}'
+          echo "Build triggered successfully"
+
+      - name: Summary
+        run: |
+          TAG="${{ steps.upstream.outputs.tag }}"
+          TRACKED="${{ steps.tracked.outputs.version }}"
+          NEW="${{ steps.compare.outputs.new_release }}"
+
+          echo "### Upstream Release Check :mag:" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "| | |" >> "$GITHUB_STEP_SUMMARY"
+          echo "|---|---|" >> "$GITHUB_STEP_SUMMARY"
+          echo "| **Latest upstream** | \`$TAG\` |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| **Tracked version** | \`$TRACKED\` |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| **New release** | $NEW |" >> "$GITHUB_STEP_SUMMARY"

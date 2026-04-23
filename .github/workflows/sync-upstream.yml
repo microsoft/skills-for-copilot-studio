@@ -4,6 +4,12 @@ on:
   schedule:
     # Every Monday at 06:00 UTC
     - cron: "0 6 * * 1"
+  workflow_call:
+    inputs:
+      upstream_version:
+        description: "Upstream version that triggered this sync (set by check-upstream-release)"
+        required: false
+        type: string
   workflow_dispatch:
 
 permissions:

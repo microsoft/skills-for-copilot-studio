@@ -53,6 +53,24 @@ jobs:
             exit 1
           fi
 
+      - name: Validate upstream version tracking
+        if: github.event_name == 'release'
+        run: |
+          if [ ! -f "upstream-version.json" ]; then
+            echo "ERROR: upstream-version.json not found. See VERSIONING.md for policy."
+            exit 1
+          fi
+          UPSTREAM_VERSION=$(node -e "
+            const uv = require('./upstream-version.json');
+            console.log(uv.upstream_version || '');
+          ")
+          if [ -z "$UPSTREAM_VERSION" ]; then
+            echo "ERROR: upstream-version.json does not contain a valid upstream_version"
+            exit 1
+          fi
+          echo "UPSTREAM_VERSION=$UPSTREAM_VERSION" >> "$GITHUB_ENV"
+          echo "Upstream version tracked: $UPSTREAM_VERSION"
+
       - name: Build skills extension VSIX
         run: bash extension/test-local.sh --package-only
         env:
@@ -102,6 +120,29 @@ jobs:
       - name: Dry-run notice
         if: github.event_name == 'workflow_dispatch' && inputs.dry_run == true
         run: echo "Dry run \u2014 both VSIX files built but not published."
+
+      - name: Append upstream version to release body
+        if: github.event_name == 'release'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          RELEASE_TAG="${{ github.event.release.tag_name }}"
+          CURRENT_BODY=$(echo '${{ toJSON(github.event.release.body) }}' | jq -r '.')
+          UPSTREAM_REF="\n---\n**Upstream version**: [${UPSTREAM_VERSION}](https://github.com/microsoft/skills-for-copilot-studio/releases/tag/${UPSTREAM_VERSION})"
+
+          # Only append if not already present
+          if echo "$CURRENT_BODY" | grep -q "Upstream version"; then
+            echo "Upstream version reference already present — skipping."
+          else
+            NEW_BODY="${CURRENT_BODY}${UPSTREAM_REF}"
+            jq -n --arg body "$NEW_BODY" '{"body": $body}' | curl -sf \
+              -X PATCH \
+              -H "Authorization: token $GH_TOKEN" \
+              -H "Accept: application/vnd.github+json" \
+              "https://api.github.com/repos/${{ github.repository }}/releases/${{ github.event.release.id }}" \
+              -d @-
+            echo "Appended upstream version ($UPSTREAM_VERSION) to release notes"
+          fi
 
       - name: Upload skills extension VSIX
         uses: actions/upload-artifact@v4
