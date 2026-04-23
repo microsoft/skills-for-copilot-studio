@@ -61,9 +61,38 @@ jobs:
           fi
           echo "New version: $NEW_VERSION"
 
-          # Update both version files
+          # Update Claude plugin version files
           jq --arg v "$NEW_VERSION" '.version = $v' .claude-plugin/plugin.json > tmp.json && mv tmp.json .claude-plugin/plugin.json
           jq --arg v "$NEW_VERSION" '.plugins[0].version = $v' .claude-plugin/marketplace.json > tmp.json && mv tmp.json .claude-plugin/marketplace.json
+
+          # Update VS Code extension version files to match upstream
+          if [ -f "extension/templates/package.template.json" ]; then
+            node -e "
+              const fs = require('fs');
+              const pkg = JSON.parse(fs.readFileSync('extension/templates/package.template.json', 'utf8'));
+              pkg.version = '$NEW_VERSION';
+              fs.writeFileSync('extension/templates/package.template.json', JSON.stringify(pkg, null, 2) + '\n');
+            "
+            echo "Updated extension/templates/package.template.json to $NEW_VERSION"
+          fi
+          if [ -f "extension-pack/package.json" ]; then
+            node -e "
+              const fs = require('fs');
+              const pkg = JSON.parse(fs.readFileSync('extension-pack/package.json', 'utf8'));
+              pkg.version = '$NEW_VERSION';
+              fs.writeFileSync('extension-pack/package.json', JSON.stringify(pkg, null, 2) + '\n');
+            "
+            echo "Updated extension-pack/package.json to $NEW_VERSION"
+          fi
+
+          # Update upstream-version.json if present
+          if [ -f "upstream-version.json" ]; then
+            TODAY=$(date -u +%Y-%m-%d)
+            jq --arg v "v$NEW_VERSION" --arg d "$TODAY" \
+              '.upstream_version = $v | .last_checked = $d' \
+              upstream-version.json > tmp.json && mv tmp.json upstream-version.json
+            echo "Updated upstream-version.json to v$NEW_VERSION"
+          fi
 
           # Configure git
           git config user.name "github-actions[bot]"
@@ -71,7 +100,7 @@ jobs:
 
           # Create branch, commit, and push
           git checkout -b "$BRANCH"
-          git add .claude-plugin/plugin.json .claude-plugin/marketplace.json
+          git add -A
           git commit -m "chore: bump version to ${NEW_VERSION} for ${BRANCH}"
           git push origin "$BRANCH"
 
