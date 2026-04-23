@@ -1,0 +1,6 @@
+{
+  "upstream_repo": "microsoft/skills-for-copilot-studio",
+  "upstream_version": "v1.0.8",
+  "last_checked": "2026-04-23",
+  "notes": "Tracked by check-upstream-release workflow. Updated when a new upstream release is detected and processed."
+}

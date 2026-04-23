@@ -11,6 +11,7 @@ on:
       - 'reference/**'
       - 'extension/**'
       - 'extension-pack/**'
+      - 'upstream-version.json'
       - '.github/workflows/build-extension.yml'
   pull_request:
     branches: [main, coatsy/vscode-extension]
@@ -22,6 +23,7 @@ on:
       - 'reference/**'
       - 'extension/**'
       - 'extension-pack/**'
+      - 'upstream-version.json'
       - '.github/workflows/build-extension.yml'
   workflow_dispatch:
     inputs:

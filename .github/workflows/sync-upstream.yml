@@ -4,7 +4,18 @@ on:
   schedule:
     # Every Monday at 06:00 UTC
     - cron: "0 6 * * 1"
+  workflow_call:
+    inputs:
+      upstream_version:
+        description: "Upstream version that triggered this sync (set by check-upstream-release)"
+        required: false
+        type: string
   workflow_dispatch:
+    inputs:
+      upstream_version:
+        description: "Upstream version that triggered this sync (leave empty for scheduled runs)"
+        required: false
+        type: string
 
 permissions:
   contents: write
@@ -62,15 +73,33 @@ jobs:
 
           git push origin "$BRANCH"
 
+          # Build PR body with optional upstream version reference
+          UPSTREAM_VERSION="${{ inputs.upstream_version }}"
+          if [ -n "$UPSTREAM_VERSION" ]; then
+            VERSION_LINE="**Upstream release**: [$UPSTREAM_VERSION](https://github.com/microsoft/skills-for-copilot-studio/releases/tag/$UPSTREAM_VERSION)"
+          else
+            VERSION_LINE=""
+          fi
+
+          PR_BODY="Automated sync of upstream microsoft/skills-for-copilot-studio main into coatsy/vscode-extension.
+
+          **Commits behind**: $BEHIND"
+
+          if [ -n "$VERSION_LINE" ]; then
+            PR_BODY="$PR_BODY
+          $VERSION_LINE"
+          fi
+
+          PR_BODY="$PR_BODY
+
+          This PR was created automatically by the sync-upstream workflow."
+
           gh pr create \
             --base coatsy/vscode-extension \
             --head "$BRANCH" \
-            --title "chore: sync $BEHIND commit(s) from upstream main" \
-            --body "Automated sync of upstream microsoft/skills-for-copilot-studio main into coatsy/vscode-extension.
-
-          **Commits behind**: $BEHIND
-
-          This PR was created automatically by the sync-upstream workflow." \
+            --title "chore: sync $BEHIND commit(s) from upstream main${UPSTREAM_VERSION:+ ($UPSTREAM_VERSION)}" \
+            --body "$PR_BODY" \
+            --label "upstream/sync" \
             --draft
 
       - name: Report conflict

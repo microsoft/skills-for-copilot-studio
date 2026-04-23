@@ -5,6 +5,8 @@ description: "Author, test, and troubleshoot Microsoft Copilot Studio agents thr
 
 A toolkit for authoring, testing, and troubleshooting [Microsoft Copilot Studio](https://aka.ms/CopilotStudio) agents through YAML files. Available as a VS Code extension for GitHub Copilot Chat and as a plugin for [Claude Code](https://docs.anthropic.com/en/docs/claude-code).
 
+[![Upstream Version](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2Fcoatsy%2Fskills-for-copilot-studio%2Fcoatsy%2Fvscode-extension%2Fupstream-version.json&query=%24.upstream_version&label=upstream&color=blue)](https://github.com/microsoft/skills-for-copilot-studio/releases)
+
 ## Prerequisites
 
 * [Node.js](https://nodejs.org/) 22+
