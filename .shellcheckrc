@@ -1,0 +1,8 @@
+# ShellCheck configuration
+# https://www.shellcheck.net/wiki/
+# Matches the CI lint-scripts job in .github/workflows/build-extension.yml
+#
+# Note: severity is not a supported .shellcheckrc directive.
+# CI enforces --severity=warning on the command line.
+
+shell=bash

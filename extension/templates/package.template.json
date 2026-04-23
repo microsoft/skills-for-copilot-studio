@@ -1,0 +1,40 @@
+{
+  "name": "copilot-studio-skills",
+  "displayName": "Copilot Studio Skills",
+  "extensionKind": [
+    "workspace",
+    "ui"
+  ],
+  "version": "1.0.8",
+  "description": "Copilot Studio YAML authoring, testing, and management skills for GitHub Copilot",
+  "publisher": "coatsy",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/coatsy/skills-for-copilot-studio.git"
+  },
+  "bugs": {
+    "url": "https://github.com/coatsy/skills-for-copilot-studio/issues"
+  },
+  "homepage": "https://github.com/coatsy/skills-for-copilot-studio#readme",
+  "engines": {
+    "vscode": "^1.106.1"
+  },
+  "categories": [
+    "Chat"
+  ],
+  "keywords": [
+    "copilot",
+    "copilot-studio",
+    "agents",
+    "skills",
+    "yaml"
+  ],
+  "galleryBanner": {
+    "color": "#1e1e1e",
+    "theme": "dark"
+  },
+  "icon": "icon.png",
+  "contributes": {},
+  "author": "Microsoft",
+  "license": "MIT"
+}

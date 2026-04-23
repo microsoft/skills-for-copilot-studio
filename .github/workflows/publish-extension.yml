@@ -1,0 +1,168 @@
+name: Publish Extension
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Dry run \u2014 package without publishing'
+        required: false
+        type: boolean
+        default: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Resolve version from release tag
+        if: github.event_name == 'release'
+        run: |
+          TAG="${{ github.event.release.tag_name }}"
+          # Strip leading 'v' if present
+          VERSION="${TAG#v}"
+          echo "RELEASE_VERSION=$VERSION" >> "$GITHUB_ENV"
+          echo "Resolved version from tag: $VERSION"
+
+      - name: Validate version matches manifests
+        if: github.event_name == 'release'
+        run: |
+          SKILLS_VERSION=$(node -e "
+            const pkg = require('./extension/templates/package.template.json');
+            console.log(pkg.version);
+          ")
+          BUNDLE_VERSION=$(node -e "
+            const pkg = require('./extension-pack/package.json');
+            console.log(pkg.version);
+          ")
+          echo "Skills extension version: $SKILLS_VERSION"
+          echo "Extension pack version:   $BUNDLE_VERSION"
+          echo "Release version:          $RELEASE_VERSION"
+          echo "SKILLS_VERSION=$SKILLS_VERSION" >> "$GITHUB_ENV"
+          if [ "$SKILLS_VERSION" != "$RELEASE_VERSION" ]; then
+            echo "ERROR: Skills extension version ($SKILLS_VERSION) does not match release tag ($RELEASE_VERSION)"
+            exit 1
+          fi
+          if [ "$BUNDLE_VERSION" != "$RELEASE_VERSION" ]; then
+            echo "ERROR: Extension pack version ($BUNDLE_VERSION) does not match release tag ($RELEASE_VERSION)"
+            exit 1
+          fi
+
+      - name: Validate upstream version tracking
+        if: github.event_name == 'release'
+        run: |
+          if [ ! -f "upstream-version.json" ]; then
+            echo "ERROR: upstream-version.json not found. See VERSIONING.md for policy."
+            exit 1
+          fi
+          UPSTREAM_VERSION=$(node -e "
+            const uv = require('./upstream-version.json');
+            const v = uv.upstream_version || '';
+            console.log(v.replace(/^v/, ''));
+          ")
+          if [ -z "$UPSTREAM_VERSION" ]; then
+            echo "ERROR: upstream-version.json does not contain a valid upstream_version"
+            exit 1
+          fi
+          echo "UPSTREAM_VERSION=$UPSTREAM_VERSION" >> "$GITHUB_ENV"
+          echo "Upstream version tracked: $UPSTREAM_VERSION"
+
+          # Enforce synchronized versioning: extension version must match upstream
+          if [ "$SKILLS_VERSION" != "$UPSTREAM_VERSION" ]; then
+            echo "ERROR: Extension version ($SKILLS_VERSION) does not match upstream version ($UPSTREAM_VERSION)"
+            echo "See VERSIONING.md — this fork's version must match the upstream release version."
+            exit 1
+          fi
+
+      - name: Build skills extension VSIX
+        run: bash extension/test-local.sh --package-only
+        env:
+          CODE_CMD: 'true'
+
+      - name: Verify skills extension VSIX
+        run: |
+          VSIX=$(ls -t extension/*.vsix 2>/dev/null | head -1)
+          if [ -z "$VSIX" ]; then
+            echo "ERROR: No skills extension .vsix file produced"
+            exit 1
+          fi
+          echo "SKILLS_VSIX=$VSIX" >> "$GITHUB_ENV"
+          echo "Built: $VSIX ($(du -h "$VSIX" | cut -f1))"
+
+      - name: Build extension pack
+        run: bash extension-pack/build.sh --package-only
+        env:
+          CODE_CMD: 'true'
+
+      - name: Verify extension pack VSIX
+        run: |
+          VSIX=$(ls -t extension-pack/*.vsix 2>/dev/null | head -1)
+          if [ -z "$VSIX" ]; then
+            echo "ERROR: No extension pack .vsix file produced"
+            exit 1
+          fi
+          echo "BUNDLE_VSIX=$VSIX" >> "$GITHUB_ENV"
+          echo "Built: $VSIX ($(du -h "$VSIX" | cut -f1))"
+
+      - name: Publish skills extension to Marketplace
+        if: >-
+          (github.event_name == 'release' ||
+           (github.event_name == 'workflow_dispatch' && inputs.dry_run == false))
+        run: npx --yes @vscode/vsce publish --no-dependencies --packagePath "$SKILLS_VSIX"
+        env:
+          VSCE_PAT: ${{ secrets.VSCE_PAT }}
+
+      - name: Publish extension pack to Marketplace
+        if: >-
+          (github.event_name == 'release' ||
+           (github.event_name == 'workflow_dispatch' && inputs.dry_run == false))
+        run: npx --yes @vscode/vsce publish --no-dependencies --packagePath "$BUNDLE_VSIX"
+        env:
+          VSCE_PAT: ${{ secrets.VSCE_PAT }}
+
+      - name: Dry-run notice
+        if: github.event_name == 'workflow_dispatch' && inputs.dry_run == true
+        run: echo "Dry run \u2014 both VSIX files built but not published."
+
+      - name: Append upstream version to release body
+        if: github.event_name == 'release'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          RELEASE_TAG="${{ github.event.release.tag_name }}"
+          CURRENT_BODY=$(jq -r '.release.body // ""' "$GITHUB_EVENT_PATH")
+          UPSTREAM_REF="\n---\n**Upstream version**: [${UPSTREAM_VERSION}](https://github.com/microsoft/skills-for-copilot-studio/releases/tag/${UPSTREAM_VERSION})"
+
+          # Only append if not already present
+          if echo "$CURRENT_BODY" | grep -q "Upstream version"; then
+            echo "Upstream version reference already present — skipping."
+          else
+            NEW_BODY="${CURRENT_BODY}${UPSTREAM_REF}"
+            jq -n --arg body "$NEW_BODY" '{"body": $body}' | curl -sf \
+              -X PATCH \
+              -H "Authorization: token $GH_TOKEN" \
+              -H "Accept: application/vnd.github+json" \
+              "https://api.github.com/repos/${{ github.repository }}/releases/${{ github.event.release.id }}" \
+              -d @-
+            echo "Appended upstream version ($UPSTREAM_VERSION) to release notes"
+          fi
+
+      - name: Upload skills extension VSIX
+        uses: actions/upload-artifact@v4
+        with:
+          name: copilot-studio-skills-vsix
+          path: extension/*.vsix
+          retention-days: 30
+
+      - name: Upload extension pack VSIX
+        uses: actions/upload-artifact@v4
+        with:
+          name: copilot-studio-bundle-vsix
+          path: extension-pack/*.vsix
+          retention-days: 30

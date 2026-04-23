@@ -1,10 +1,12 @@
-# Name: Custom MCP Server
-# Custom MCP server with user context
+mcs.metadata:
+  componentName: Custom MCP Server
+  description: Custom MCP server with user context
 kind: TaskDialog
 inputs:
   - kind: ManualTaskInput
     propertyName: userid
     value: =System.User.Email
+
 modelDisplayName: Custom MCP Server
 modelDescription: Custom MCP server for internal tools
 action:
@@ -12,6 +14,7 @@ action:
   connectionReference: cr26e_evalTest.shared_custommcp.def456
   connectionProperties:
     mode: Maker
+
   operationDetails:
     kind: ModelContextProtocolMetadata
     operationId: InvokeMCP
