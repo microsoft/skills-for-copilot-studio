@@ -175,7 +175,7 @@ jobs:
           TAG="${{ steps.upstream.outputs.tag }}"
           VERSION="${TAG#v}"
           TODAY=$(date -u +%Y-%m-%d)
-          BRANCH="chore/bump-to-${VERSION}"
+          BRANCH="chore/bump-to-${VERSION}-${TODAY}-${GITHUB_RUN_ID}"
 
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
