@@ -44,6 +44,7 @@ jobs:
           echo "Skills extension version: $SKILLS_VERSION"
           echo "Extension pack version:   $BUNDLE_VERSION"
           echo "Release version:          $RELEASE_VERSION"
+          echo "SKILLS_VERSION=$SKILLS_VERSION" >> "$GITHUB_ENV"
           if [ "$SKILLS_VERSION" != "$RELEASE_VERSION" ]; then
             echo "ERROR: Skills extension version ($SKILLS_VERSION) does not match release tag ($RELEASE_VERSION)"
             exit 1
