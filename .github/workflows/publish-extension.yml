@@ -135,7 +135,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           RELEASE_TAG="${{ github.event.release.tag_name }}"
-          CURRENT_BODY=$(echo '${{ toJSON(github.event.release.body) }}' | jq -r '.')
+          CURRENT_BODY=$(jq -r '.release.body // ""' "$GITHUB_EVENT_PATH")
           UPSTREAM_REF="\n---\n**Upstream version**: [${UPSTREAM_VERSION}](https://github.com/microsoft/skills-for-copilot-studio/releases/tag/${UPSTREAM_VERSION})"
 
           # Only append if not already present
