@@ -11,6 +11,11 @@ on:
         required: false
         type: string
   workflow_dispatch:
+    inputs:
+      upstream_version:
+        description: "Upstream version that triggered this sync (leave empty for scheduled runs)"
+        required: false
+        type: string
 
 permissions:
   contents: write

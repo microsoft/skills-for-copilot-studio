@@ -184,13 +184,14 @@ jobs:
         run: |
           TAG="${{ steps.upstream.outputs.tag }}"
 
-          echo "Triggering sync-upstream workflow..."
-          curl -sf \
-            -X POST \
-            -H "Authorization: token $GH_TOKEN" \
-            -H "Accept: application/vnd.github+json" \
-            "https://api.github.com/repos/${{ github.repository }}/actions/workflows/sync-upstream.yml/dispatches" \
-            -d '{"ref": "coatsy/vscode-extension"}'
+          echo "Triggering sync-upstream workflow with upstream_version=$TAG..."
+          jq -n --arg tag "$TAG" '{"ref": "coatsy/vscode-extension", "inputs": {"upstream_version": $tag}}' \
+            | curl -sf \
+              -X POST \
+              -H "Authorization: token $GH_TOKEN" \
+              -H "Accept: application/vnd.github+json" \
+              "https://api.github.com/repos/${{ github.repository }}/actions/workflows/sync-upstream.yml/dispatches" \
+              -d @-
           echo "Sync-upstream triggered"
 
           echo "Triggering build-extension workflow..."
