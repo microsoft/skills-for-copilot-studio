@@ -215,3 +215,42 @@ jobs:
           echo "| **Latest upstream** | \`$TAG\` |" >> "$GITHUB_STEP_SUMMARY"
           echo "| **Tracked version** | \`$TRACKED\` |" >> "$GITHUB_STEP_SUMMARY"
           echo "| **New release** | $NEW |" >> "$GITHUB_STEP_SUMMARY"
+
+  notify-failure:
+    runs-on: ubuntu-latest
+    needs: check
+    if: failure()
+    permissions:
+      issues: write
+    steps:
+      - name: Open failure issue
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TITLE="ci: check-upstream-release workflow failed ($(date -u +%Y-%m-%d))"
+          RUN_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
+          # Check for an existing open failure issue to avoid duplicates
+          EXISTING=$(curl -sf \
+            -H "Authorization: token $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${{ github.repository }}/issues?state=open&labels=type/infra" \
+            | jq -r '[.[] | select(.title | startswith("ci: check-upstream-release workflow failed"))] | length')
+
+          if [ "$EXISTING" -gt 0 ]; then
+            echo "Failure issue already open — skipping."
+            exit 0
+          fi
+
+          jq -n \
+            --arg title "$TITLE" \
+            --arg body "The daily upstream release check workflow failed.\n\n**Run**: $RUN_URL\n\nPlease investigate the workflow logs and fix the issue.\n\n---\n*This issue was created automatically.*" \
+            '{"title": $title, "body": $body, "labels": ["type/infra"]}' \
+            | curl -sf \
+              -X POST \
+              -H "Authorization: token $GH_TOKEN" \
+              -H "Accept: application/vnd.github+json" \
+              "https://api.github.com/repos/${{ github.repository }}/issues" \
+              -d @-
+
+          echo "Opened failure notification issue"
