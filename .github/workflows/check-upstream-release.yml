@@ -86,12 +86,11 @@ jobs:
         run: |
           TAG="${{ steps.upstream.outputs.tag }}"
 
-          # Search for open issues with the upstream release tag in the title
-          EXISTING=$(curl -sf \
-            -H "Authorization: token $GH_TOKEN" \
+          # Search all pages of open issues/PRs with the upstream/sync label
+          EXISTING=$(gh api --paginate \
             -H "Accept: application/vnd.github+json" \
-            "https://api.github.com/repos/${{ github.repository }}/issues?state=open&labels=upstream/sync" \
-            | jq -r --arg tag "$TAG" '[.[] | select(.title | contains($tag))] | length')
+            "/repos/${{ github.repository }}/issues?state=open&labels=upstream/sync&per_page=100" \
+            | jq -r -s --arg tag "$TAG" 'add | map(select(.title | contains($tag))) | length')
 
           if [ "$EXISTING" -gt 0 ]; then
             echo "duplicate=true" >> "$GITHUB_OUTPUT"
