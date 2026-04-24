@@ -12,7 +12,7 @@
 
 - Ship a versioned release every week so users can pin to known-good versions.
 - Auto-generate release notes from merged PRs using GitHub labels.
-- Keep the process lightweight — no release branches, no manual changelogs.
+- Keep the process lightweight — weekly release branches, no manual changelogs.
 
 ## 2. Versioning
 
@@ -24,7 +24,7 @@ We use **semver** (MAJOR.MINOR.PATCH):
 | **Minor** (1.x.0) | New skills, new agents, new capabilities | Add analytics agent, add AI Prompt skill |
 | **Major** (x.0.0) | Breaking changes to plugin API or skill interface | Schema format change, removed skills |
 
-The version lives in `.claude-plugin/plugin.json`. It is bumped as part of the release PR.
+The version lives in `.claude-plugin/plugin.json`. It is bumped on the release branch before merging to `main`.
 
 ## 3. Labels
 
@@ -43,22 +43,37 @@ We use **6 labels** to classify PRs. Each PR should have exactly one `type/` lab
 
 ## 4. Release Process (Weekly)
 
+### Branch workflow
+
+Each week uses a release branch named `release/YYYY-WNN` (ISO week number):
+
+1. **After Wednesday's release**, create the next week's branch from `main`:
+   ```bash
+   git checkout main && git pull
+   git checkout -b release/2026-W17
+   git push -u origin release/2026-W17
+   ```
+2. **During the week**, PRs target the current release branch (not `main`).
+3. **On Wednesday**, the release branch merges to `main` and gets tagged.
+
 ### Wednesday release checklist
 
-1. **Check open PRs** — merge only PRs that are ready. PRs that are not ready must remain unmerged and should be labeled `release/blocked` for tracking and exclusion from generated release notes.
-2. **Bump version** — update `version` in `.claude-plugin/plugin.json`.
-3. **Tag and release** — create a GitHub Release from `main`:
+1. **Check open PRs** — merge remaining PRs into the release branch, or defer to next week. PRs not ready should be labeled `release/blocked` for tracking.
+2. **Bump version** — update `version` in `.claude-plugin/plugin.json` on the release branch.
+3. **Merge to main** — create a PR from `release/YYYY-WNN` → `main` and merge it.
+4. **Tag and release** — create a GitHub Release from `main`:
    ```bash
    # Example for v1.1.0
    gh release create v1.1.0 --generate-notes --latest
    ```
    GitHub auto-generates notes from merged PRs using `.github/release.yml` categories.
-4. **Write release summary** — draft a short, plain-language summary of what changed and why it matters (for non-technical audiences).
-5. **Announce** — post the summary with a link to the release in Teams and on LinkedIn.
+5. **Write release summary** — draft a short, plain-language summary of what changed and why it matters (for non-technical audiences).
+6. **Announce** — post the summary with a link to the release in Teams and on LinkedIn.
+7. **Create next release branch** — branch `release/YYYY-WNN` from the newly updated `main`.
 
 ### Automation (future)
 
-A GitHub Actions workflow can automate steps 3-4. For now, we do it manually.
+A GitHub Actions workflow can automate steps 4-5. For now, we do it manually.
 
 ## 5. GitHub Release Notes Configuration
 
@@ -85,11 +100,11 @@ changelog:
 
 ## 6. What Goes Into a Release
 
-Everything merged to `main` since the last release tag is included in the release. The `release/blocked` label does **not** prevent code from shipping; it only excludes that PR from the auto-generated release notes.
+Everything merged into the weekly `release/YYYY-WNN` branch is included when that branch merges to `main` on Wednesday.
 
-There are no feature branches or release branches. `main` is always the release branch.
+**Important:** The Claude plugin marketplace auto-pulls from `main`. This is why PRs target the release branch — `main` only changes on release day when the release branch merges in. PRs that aren't ready for this week stay on their feature branches and target next week's release branch.
 
-**Important:** The Claude plugin marketplace auto-pulls from `main`. PRs that are not ready for release must **NOT** be merged to `main` and must stay on feature branches until ready. Use `release/blocked` only to mark PRs that should be excluded from release notes; if a blocked PR is merged accidentally, revert it from `main` before the release.
+The `release/blocked` label excludes a PR from auto-generated release notes. It does **not** prevent code from shipping — if a blocked PR is merged into the release branch, it will still ship when the branch merges to `main`.
 
 ## 7. Hotfix Process
 
@@ -113,7 +128,7 @@ To activate this release plan, the following one-time setup is needed:
 - [x] **Release day:** Wednesday.
 - [x] **Announcements:** Teams and LinkedIn. Manual posting with a plain-language summary of each release.
 - [x] **CI gate:** No eval or test gating yet. The team is actively building out evals and testing — this will be revisited.
-- [x] **Marketplace sync:** The Claude plugin marketplace auto-pulls from `main`. This means `main` must always be release-ready — PRs that aren't ready must stay on feature branches.
+- [x] **Marketplace sync:** The Claude plugin marketplace auto-pulls from `main`. Weekly release branches gate what lands on `main`.
 
 ---
 
