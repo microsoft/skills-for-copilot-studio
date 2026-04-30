@@ -1,7 +1,7 @@
 ---
 user-invocable: false
 name: patterns
-description: "Index of repeatable implementation patterns for Copilot Studio agents. When a request may need a best-practice architecture or reusable pattern for building an agent capability, retrieve this index before deciding what detailed guidance is relevant. Do not decide from this frontmatter alone; use the index summaries, then open only the specific pattern file if needed. Do not use for general knowledge sources or topic creation."
+description: "Index of repeatable implementation patterns for Copilot Studio agents. When a request may need a best-practice architecture or reusable pattern for building an agent capability, retrieve this index before deciding what detailed guidance is relevant. Do not decide from this frontmatter alone; use the index summaries, then open only the specific pattern file if needed. Do not use for general knowledge sources or topic creation. USE FOR: glossary, acronyms, terminology, CSV, SharePoint, JIT, user context, country, department, M365 profile, GetMyProfile, AutomaticTaskInput, shouldPromptUser, orchestrator-generated inputs, conversation-init, Teams deployment, Microsoft Teams, Teams agent, production hardening, OnInstallationUpdate, app reinstall, OnInactivity, stale context, clear ConversationHistory, Global.InactiveConversation, cross-channel context, Microsoft 365 Copilot, M365 Copilot, Global.UserContext, IsBlank context, Reset Conversation, OnSystemRedirect, Start Over, YesNo entity, Adaptive Card confirmation, OnError card, self-serve troubleshooting, diagnostics panel, System.Bot.Id, System.Conversation.Id, LogCustomTelemetryEvent, OnErrorLog, suggested prompts, conversationStarters."
 context: fork
 agent: copilot-studio-author
 ---
@@ -42,3 +42,15 @@ Uses `AutomaticTaskInput` to let the orchestrator's LLM classify or extract stru
 ## Combining Patterns
 
 You can combine more than one pattern. For example, when using both glossary and user context, merge them into a **single** `conversation-init` topic rather than creating separate OnActivity topics. Use the template at `${CLAUDE_SKILL_DIR}/../../templates/topics/conversation-init.topic.mcs.yml`. The individual files explain the details.
+
+## Teams Production Hardening → [teams-production-hardening.md](teams-production-hardening.md)
+
+Coordinated framework of eight production patterns for Copilot Studio agents deployed to Microsoft Teams and Microsoft 365 Copilot. Covers app reinstalls (`OnActivity InstallationUpdate`), stale-context handling (`OnInactivity` + follow-up notification), cross-channel context initialization (`Global.UserContext` via priority-based `OnActivity` guarded by `IsBlank`), rebuilt Reset Conversation and Start Over system topics with Adaptive Card confirmation and diagnostics panel, rich `OnError` card with self-serve troubleshooting and telemetry, and agent-level suggested prompts.
+
+**Read this pattern when:**
+- The user is deploying (or hardening) a Copilot Studio agent on Microsoft Teams
+- Users report stale context after returning to a long-running Teams conversation
+- Context variables (country, language, department) work on web chat but not in Microsoft 365 Copilot
+- The user wants richer `OnError` or Start Over experiences with diagnostic info for help-desk escalation
+- The user asks about `OnInstallationUpdate`, `OnInactivity`, `OnSystemRedirect`, suggested prompts, or Teams-specific agent behavior
+- The user wants to reduce token usage by clearing idle conversation history
