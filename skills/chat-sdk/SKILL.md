@@ -1,5 +1,6 @@
 ---
 user-invocable: false
+agent-types: both
 description: Send a message to a Copilot Studio agent via the Copilot Studio Client SDK (M365). Use for agents with integrated auth (Entra ID SSO). Requires an App Registration Client ID.
 argument-hint: <utterance>
 allowed-tools: Bash(node *chat-with-agent.bundle.js *), Read, Glob

@@ -1,5 +1,6 @@
 ---
 user-invocable: false
+agent-types: classic
 description: Add a knowledge source (public website or SharePoint) to a Copilot Studio agent. Use when the user asks to add a knowledge source, documentation URL, website, or SharePoint site for the agent to search.
 argument-hint: <url>
 allowed-tools: Bash(node *schema-lookup.bundle.js *), Read, Write, Glob

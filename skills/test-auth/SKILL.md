@@ -1,5 +1,6 @@
 ---
 user-invocable: false
+agent-types: both
 description: >
   Authenticate for Copilot Studio evaluation API and SDK chat. Caches a token
   that is shared across run-eval and chat-sdk skills. Run this before any

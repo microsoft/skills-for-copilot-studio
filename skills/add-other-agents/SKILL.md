@@ -1,5 +1,6 @@
 ---
 user-invocable: false
+agent-types: classic
 description: Add child agents, connected agents, or other multi-agent patterns to a Copilot Studio agent. Use when the user asks to create a sub-agent, child agent, connected agent, or call another agent.
 argument-hint: <agent description>
 allowed-tools: Bash(node *schema-lookup.bundle.js *), Read, Write, Glob

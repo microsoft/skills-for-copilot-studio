@@ -1,5 +1,6 @@
 ---
 user-invocable: false
+agent-types: both
 description: Send a message to a Copilot Studio agent via DirectLine v3. Use for agents with no auth or manual auth. Requires a token endpoint URL or DirectLine secret.
 argument-hint: <utterance>
 allowed-tools: Bash(node *chat-with-agent.bundle.js *), Read, Glob

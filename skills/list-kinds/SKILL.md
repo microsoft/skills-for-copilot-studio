@@ -1,5 +1,6 @@
 ---
 user-invocable: false
+agent-types: both
 description: List all available kind discriminator values from the Copilot Studio YAML schema. Use when the user asks what kinds/types are available.
 argument-hint: <optional-filter-keyword>
 allowed-tools: Bash(node *schema-lookup.bundle.js *)

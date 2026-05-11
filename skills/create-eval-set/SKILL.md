@@ -1,5 +1,6 @@
 ---
 user-invocable: false
+agent-types: both
 description: >
   Create a test set CSV file for import into Copilot Studio's in-product Evaluate tab.
   Reads the agent's topics, instructions, and knowledge sources to generate meaningful

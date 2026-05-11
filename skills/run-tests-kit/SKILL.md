@@ -1,5 +1,6 @@
 ---
 user-invocable: false
+agent-types: both
 description: >
   Run a batch test suite via the Copilot Studio Kit (Dataverse API).
   Uses the Power CAT Copilot Studio Kit to execute test cases against a published agent

@@ -66,8 +66,24 @@ jobs:
 
           ERRORS=0
 
-          # Check: every skill with agent-types frontmatter must be in the hook list
-          # (hook may have extras for planned skills that don't exist yet — that's OK)
+          # Check 1: every skill MUST have agent-types in frontmatter
+          MISSING_TAG=""
+          for dir in skills/*/; do
+            skill_name=$(basename "$dir")
+            skill_file="$dir/SKILL.md"
+            [ -f "$skill_file" ] || continue
+            # Skip internal skills (int-* prefix)
+            case "$skill_name" in int-*) continue ;; esac
+
+            agent_types=$(head -20 "$skill_file" | grep "^agent-types:" | sed 's/agent-types: *//')
+            if [ -z "$agent_types" ]; then
+              echo "::error::Skill '$skill_name' is missing agent-types in SKILL.md frontmatter. Add 'agent-types: classic', 'agent-types: modern', or 'agent-types: both'."
+              MISSING_TAG="$MISSING_TAG $skill_name"
+              ERRORS=1
+            fi
+          done
+
+          # Check 2: every tagged skill must be in the hook list
           for skill in $(echo "$CLASSIC_FROM_FRONTMATTER" | tr ',' '\n'); do
             if ! echo ",$CLASSIC_FROM_HOOK," | grep -q ",$skill,"; then
               echo "::error::Skill '$skill' has agent-types: classic but is NOT in CLASSIC_ONLY_SKILLS in detect-agent-type.js"
@@ -83,7 +99,13 @@ jobs:
           done
 
           if [ "$ERRORS" -eq 1 ]; then
+            if [ -n "$MISSING_TAG" ]; then
+              echo ""
+              echo "Skills missing agent-types:$MISSING_TAG"
+              echo "Every skill must declare which agent type it supports."
+              echo "Add one of: agent-types: classic | modern | both"
+            fi
             exit 1
           fi
 
-          echo "All skill agent-types are registered in the hook. (Hook may pre-register planned skills not yet created.)"
+          echo "All skills have agent-types tags and are registered in the hook."
