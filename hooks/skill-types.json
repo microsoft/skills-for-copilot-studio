@@ -1,0 +1,21 @@
+{
+  "classic": [
+    "add-action",
+    "add-adaptive-card",
+    "add-generative-answers",
+    "add-global-variable",
+    "add-knowledge",
+    "add-node",
+    "add-other-agents",
+    "edit-action",
+    "edit-agent",
+    "edit-triggers",
+    "list-topics",
+    "new-topic"
+  ],
+  "modern": [
+    "edit-agent-modern",
+    "list-skills",
+    "new-skill"
+  ]
+}

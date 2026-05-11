@@ -4,7 +4,7 @@ on:
   pull_request:
     paths:
       - 'skills/*/SKILL.md'
-      - 'hooks/filter-skills.js'
+      - 'hooks/skill-types.json'
       - 'scripts/build-skill-filter.js'
 
 jobs:
@@ -13,7 +13,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Check all skills have agent-types and hook is up to date
+      - name: Check all skills have agent-types and JSON is up to date
         run: |
           ERRORS=0
 
@@ -31,12 +31,12 @@ jobs:
             fi
           done
 
-          # Check 2: committed filter-skills.js matches what build script generates
-          cp hooks/filter-skills.js /tmp/filter-skills-committed.js
+          # Check 2: committed skill-types.json matches build output
+          cp hooks/skill-types.json /tmp/skill-types-committed.json
           node scripts/build-skill-filter.js
-          if ! diff -q hooks/filter-skills.js /tmp/filter-skills-committed.js > /dev/null 2>&1; then
-            echo "::error::hooks/filter-skills.js is out of date. Run 'node scripts/build-skill-filter.js' and commit the result."
-            diff hooks/filter-skills.js /tmp/filter-skills-committed.js || true
+          if ! diff -q hooks/skill-types.json /tmp/skill-types-committed.json > /dev/null 2>&1; then
+            echo "::error::hooks/skill-types.json is out of date. Run 'node scripts/build-skill-filter.js' and commit the result."
+            diff hooks/skill-types.json /tmp/skill-types-committed.json || true
             ERRORS=1
           fi
 
@@ -44,4 +44,4 @@ jobs:
             exit 1
           fi
 
-          echo "All skills have agent-types and filter hook is up to date."
+          echo "All skills have agent-types and skill-types.json is up to date."
