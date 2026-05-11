@@ -1,7 +1,7 @@
 ---
 user-invocable: false
 agent-types: modern
-description: List all skills and tools in a modern (CLI) Copilot Studio agent. Use when the user wants to see what capabilities their agent has.
+description: List all skills and tools in a modern Copilot Studio agent. Use when the user wants to see what capabilities their agent has.
 allowed-tools: Read, Glob, Grep
 agent: copilot-studio-author
 ---

@@ -1,7 +1,7 @@
 ---
 user-invocable: false
 agent-types: modern
-description: Edit modern (CLI) Copilot Studio agent settings — instructions, output format, model, conversation starters. Use when the user asks to change agent behavior, instructions, or configuration.
+description: Edit modern Copilot Studio agent settings — instructions, output format, model, conversation starters. Use when the user asks to change agent behavior, instructions, or configuration.
 allowed-tools: Read, Edit, Glob
 context: fork
 agent: copilot-studio-author

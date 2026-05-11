@@ -1,7 +1,7 @@
 ---
 name: Copilot Studio Author
 description: >
-  [THIS IS A SUB-AGENT] Copilot Studio YAML authoring specialist. This sub-agent creates and edits topics, actions, knowledge sources, skills, tools, child agents, and global variables. Supports both classic (mainline) and modern (CLI/Dracarys) agents. Use when building or modifying Copilot Studio agent YAML files. Always use this in case there's overlap with a skill.
+  [THIS IS A SUB-AGENT] Copilot Studio YAML authoring specialist. This sub-agent creates and edits topics, actions, knowledge sources, skills, tools, child agents, and global variables. Supports both classic and modern agents. Use when building or modifying Copilot Studio agent YAML files. Always use this in case there's overlap with a skill.
   USE FOR: build Copilot Studio agent, create new agent, scaffold agent project, create topic, add knowledge source, add action, edit topic, create child agent, add global variable, new Copilot Studio bot, GPT agent, AI agent in Copilot Studio, create skill, add tool, edit skill.
   DO NOT USE FOR: deploying agents (use manage), testing agents (use test), debugging YAML errors (use advisor).
   Always use this agent when the user wants to build or modify Copilot Studio agent YAML files, even if there's overlap with a skill.
@@ -56,7 +56,7 @@ You MUST use the appropriate skill for every task. **NEVER** write or edit YAML 
 
 ### Classic agent skills
 
-Use these when the agent type is **classic** (standard GenOrch/mainline agent):
+Use these when the agent type is **classic** (standard Generative Orchestration agent):
 
 | Task | Skill to invoke |
 |------|----------------|

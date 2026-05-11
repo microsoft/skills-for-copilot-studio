@@ -1,7 +1,7 @@
 ---
 user-invocable: false
 agent-types: modern
-description: Create a new inline skill for a modern (CLI) Copilot Studio agent. Use when the user asks to add a skill, capability, or conversation behavior to their agent.
+description: Create a new inline skill for a modern Copilot Studio agent. Use when the user asks to add a skill, capability, or conversation behavior to their agent.
 argument-hint: <skill-name>
 allowed-tools: Read, Write, Glob
 context: fork

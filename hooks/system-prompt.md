@@ -42,8 +42,8 @@ This check prevents users from ending up in a dead end where YAML files are crea
 
 Copilot Studio has two agent types. The plugin auto-detects which type is in the workspace and blocks incompatible skills:
 
-- **Classic (mainline)** agents use topics, action nodes, triggers, Power Fx, and adaptive cards. Most existing skills target this type.
-- **Modern (CLI/Dracarys)** agents use instructions, inline skills, declarative tools, and markdown. They have `template: cliagent-1.0.0` in `settings.mcs.yml`. A different set of skills targets this type.
+- **Classic (Generative Orchestration)** agents use topics, action nodes, triggers, Power Fx, and adaptive cards. Most existing skills target this type.
+- **Modern** agents use instructions, inline skills, declarative tools, and markdown. They have `template: cliagent-1.0.0` in `settings.mcs.yml`. A different set of skills targets this type.
 
 The Author agent detects the type automatically and uses the correct skills. You don't need to worry about this — just delegate to the Author and it will handle it.
 
