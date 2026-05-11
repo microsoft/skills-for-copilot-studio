@@ -61,10 +61,12 @@ process.stdin.on('end', () => {
 
     const blocked = agentType === 'modern' ? CLASSIC_ONLY : MODERN_ONLY;
     if (blocked.has(command)) {
-      const opposite = agentType === 'modern' ? 'classic' : 'modern';
+      const labels = { modern: 'Modern Agent', classic: 'Generative Orchestration' };
+      const thisLabel = labels[agentType];
+      const otherLabel = labels[agentType === 'modern' ? 'classic' : 'modern'];
       process.stdout.write(JSON.stringify({
         decision: 'block',
-        reason: 'The "' + command + '" skill is for ' + opposite + ' agents only. This workspace contains a ' + agentType + ' agent.'
+        reason: 'The "' + command + '" skill is for ' + otherLabel + ' agents only. This workspace contains a ' + thisLabel + ' agent.'
       }));
     }
   } catch {}
