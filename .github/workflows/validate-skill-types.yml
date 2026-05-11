@@ -4,7 +4,8 @@ on:
   pull_request:
     paths:
       - 'skills/*/SKILL.md'
-      - 'hooks/detect-agent-type.js'
+      - 'hooks/filter-skills.js'
+      - 'scripts/build-skill-filter.js'
 
 jobs:
   validate:
@@ -12,100 +13,35 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Check agent-types frontmatter matches hook lists
+      - name: Check all skills have agent-types and hook is up to date
         run: |
-          # Extract classic-only and modern-only skill names from hook
-          CLASSIC_FROM_HOOK=$(node -e "
-            const fs = require('fs');
-            const code = fs.readFileSync('hooks/detect-agent-type.js', 'utf8');
-            const match = code.match(/CLASSIC_ONLY_SKILLS\s*=\s*\[([\s\S]*?)\]/);
-            if (match) {
-              const skills = match[1].match(/'([^']+)'/g).map(s => s.replace(/'/g, ''));
-              console.log(skills.sort().join(','));
-            }
-          ")
-
-          MODERN_FROM_HOOK=$(node -e "
-            const fs = require('fs');
-            const code = fs.readFileSync('hooks/detect-agent-type.js', 'utf8');
-            const match = code.match(/MODERN_ONLY_SKILLS\s*=\s*\[([\s\S]*?)\]/);
-            if (match) {
-              const skills = match[1].match(/'([^']+)'/g).map(s => s.replace(/'/g, ''));
-              console.log(skills.sort().join(','));
-            }
-          ")
-
-          # Extract from SKILL.md frontmatter
-          CLASSIC_FROM_FRONTMATTER=""
-          MODERN_FROM_FRONTMATTER=""
-
-          for dir in skills/*/; do
-            skill_name=$(basename "$dir")
-            skill_file="$dir/SKILL.md"
-            [ -f "$skill_file" ] || continue
-
-            agent_types=$(head -20 "$skill_file" | grep "^agent-types:" | sed 's/agent-types:\s*//')
-            case "$agent_types" in
-              classic)
-                CLASSIC_FROM_FRONTMATTER="$CLASSIC_FROM_FRONTMATTER,$skill_name"
-                ;;
-              modern)
-                MODERN_FROM_FRONTMATTER="$MODERN_FROM_FRONTMATTER,$skill_name"
-                ;;
-            esac
-          done
-
-          # Sort for comparison
-          CLASSIC_FROM_FRONTMATTER=$(echo "$CLASSIC_FROM_FRONTMATTER" | tr ',' '\n' | sort | grep -v '^$' | tr '\n' ',' | sed 's/,$//')
-          MODERN_FROM_FRONTMATTER=$(echo "$MODERN_FROM_FRONTMATTER" | tr ',' '\n' | sort | grep -v '^$' | tr '\n' ',' | sed 's/,$//')
-
-          echo "Hook classic:       $CLASSIC_FROM_HOOK"
-          echo "Frontmatter classic: $CLASSIC_FROM_FRONTMATTER"
-          echo "Hook modern:        $MODERN_FROM_HOOK"
-          echo "Frontmatter modern: $MODERN_FROM_FRONTMATTER"
-
           ERRORS=0
 
-          # Check 1: every skill MUST have agent-types in frontmatter
-          MISSING_TAG=""
+          # Check 1: every skill must have agent-types frontmatter
           for dir in skills/*/; do
             skill_name=$(basename "$dir")
             skill_file="$dir/SKILL.md"
             [ -f "$skill_file" ] || continue
-            # Skip internal skills (int-* prefix)
             case "$skill_name" in int-*) continue ;; esac
 
             agent_types=$(head -20 "$skill_file" | grep "^agent-types:" | sed 's/agent-types: *//')
             if [ -z "$agent_types" ]; then
               echo "::error::Skill '$skill_name' is missing agent-types in SKILL.md frontmatter. Add 'agent-types: classic', 'agent-types: modern', or 'agent-types: both'."
-              MISSING_TAG="$MISSING_TAG $skill_name"
               ERRORS=1
             fi
           done
 
-          # Check 2: every tagged skill must be in the hook list
-          for skill in $(echo "$CLASSIC_FROM_FRONTMATTER" | tr ',' '\n'); do
-            if ! echo ",$CLASSIC_FROM_HOOK," | grep -q ",$skill,"; then
-              echo "::error::Skill '$skill' has agent-types: classic but is NOT in CLASSIC_ONLY_SKILLS in detect-agent-type.js"
-              ERRORS=1
-            fi
-          done
-
-          for skill in $(echo "$MODERN_FROM_FRONTMATTER" | tr ',' '\n'); do
-            if ! echo ",$MODERN_FROM_HOOK," | grep -q ",$skill,"; then
-              echo "::error::Skill '$skill' has agent-types: modern but is NOT in MODERN_ONLY_SKILLS in detect-agent-type.js"
-              ERRORS=1
-            fi
-          done
+          # Check 2: committed filter-skills.js matches what build script generates
+          cp hooks/filter-skills.js /tmp/filter-skills-committed.js
+          node scripts/build-skill-filter.js
+          if ! diff -q hooks/filter-skills.js /tmp/filter-skills-committed.js > /dev/null 2>&1; then
+            echo "::error::hooks/filter-skills.js is out of date. Run 'node scripts/build-skill-filter.js' and commit the result."
+            diff hooks/filter-skills.js /tmp/filter-skills-committed.js || true
+            ERRORS=1
+          fi
 
           if [ "$ERRORS" -eq 1 ]; then
-            if [ -n "$MISSING_TAG" ]; then
-              echo ""
-              echo "Skills missing agent-types:$MISSING_TAG"
-              echo "Every skill must declare which agent type it supports."
-              echo "Add one of: agent-types: classic | modern | both"
-            fi
             exit 1
           fi
 
-          echo "All skills have agent-types tags and are registered in the hook."
+          echo "All skills have agent-types and filter hook is up to date."
