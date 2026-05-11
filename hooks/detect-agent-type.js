@@ -60,6 +60,9 @@ const CLASSIC_ONLY_SKILLS = [
   'edit-triggers',
   'add-global-variable',
   'list-topics',
+  'add-knowledge',
+  'add-other-agents',
+  'edit-agent',
 ];
 
 const MODERN_ONLY_SKILLS = [
