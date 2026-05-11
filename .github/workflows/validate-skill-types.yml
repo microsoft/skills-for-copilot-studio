@@ -66,18 +66,24 @@ jobs:
 
           ERRORS=0
 
-          if [ "$CLASSIC_FROM_HOOK" != "$CLASSIC_FROM_FRONTMATTER" ]; then
-            echo "::error::Classic skill lists don't match! Update hooks/detect-agent-type.js CLASSIC_ONLY_SKILLS to match SKILL.md frontmatter."
-            ERRORS=1
-          fi
+          # Check: every skill with agent-types frontmatter must be in the hook list
+          # (hook may have extras for planned skills that don't exist yet — that's OK)
+          for skill in $(echo "$CLASSIC_FROM_FRONTMATTER" | tr ',' '\n'); do
+            if ! echo ",$CLASSIC_FROM_HOOK," | grep -q ",$skill,"; then
+              echo "::error::Skill '$skill' has agent-types: classic but is NOT in CLASSIC_ONLY_SKILLS in detect-agent-type.js"
+              ERRORS=1
+            fi
+          done
 
-          if [ "$MODERN_FROM_HOOK" != "$MODERN_FROM_FRONTMATTER" ]; then
-            echo "::error::Modern skill lists don't match! Update hooks/detect-agent-type.js MODERN_ONLY_SKILLS to match SKILL.md frontmatter."
-            ERRORS=1
-          fi
+          for skill in $(echo "$MODERN_FROM_FRONTMATTER" | tr ',' '\n'); do
+            if ! echo ",$MODERN_FROM_HOOK," | grep -q ",$skill,"; then
+              echo "::error::Skill '$skill' has agent-types: modern but is NOT in MODERN_ONLY_SKILLS in detect-agent-type.js"
+              ERRORS=1
+            fi
+          done
 
           if [ "$ERRORS" -eq 1 ]; then
             exit 1
           fi
 
-          echo "All skill agent-types match between frontmatter and hook."
+          echo "All skill agent-types are registered in the hook. (Hook may pre-register planned skills not yet created.)"
