@@ -4,8 +4,6 @@ on:
   pull_request:
     paths:
       - 'skills/*/SKILL.md'
-      - 'hooks/skill-types.json'
-      - 'scripts/build-skill-filter.js'
 
 jobs:
   validate:
@@ -13,11 +11,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Check all skills have agent-types and JSON is up to date
+      - name: Check all skills have agent-types frontmatter
         run: |
           ERRORS=0
-
-          # Check 1: every skill must have agent-types frontmatter
           for dir in skills/*/; do
             skill_name=$(basename "$dir")
             skill_file="$dir/SKILL.md"
@@ -28,20 +24,13 @@ jobs:
             if [ -z "$agent_types" ]; then
               echo "::error::Skill '$skill_name' is missing agent-types in SKILL.md frontmatter. Add 'agent-types: classic', 'agent-types: modern', or 'agent-types: both'."
               ERRORS=1
+            elif [ "$agent_types" != "classic" ] && [ "$agent_types" != "modern" ] && [ "$agent_types" != "both" ]; then
+              echo "::error::Skill '$skill_name' has invalid agent-types: '$agent_types'. Must be 'classic', 'modern', or 'both'."
+              ERRORS=1
             fi
           done
-
-          # Check 2: committed skill-types.json matches build output
-          cp hooks/skill-types.json /tmp/skill-types-committed.json
-          node scripts/build-skill-filter.js
-          if ! diff -q hooks/skill-types.json /tmp/skill-types-committed.json > /dev/null 2>&1; then
-            echo "::error::hooks/skill-types.json is out of date. Run 'node scripts/build-skill-filter.js' and commit the result."
-            diff hooks/skill-types.json /tmp/skill-types-committed.json || true
-            ERRORS=1
-          fi
 
           if [ "$ERRORS" -eq 1 ]; then
             exit 1
           fi
-
-          echo "All skills have agent-types and skill-types.json is up to date."
+          echo "All skills have valid agent-types frontmatter."
