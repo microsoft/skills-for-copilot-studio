@@ -1,5 +1,6 @@
 ---
 user-invocable: false
+agent-types: classic
 description: Guide users through adding a new connector action to a Copilot Studio agent. Connector actions require UI-based connection setup, so this skill walks users through the Copilot Studio portal steps, then delegates to edit-action for YAML modifications.
 argument-hint: <action description, e.g. "post a Teams message">
 allowed-tools: Bash(node *connector-lookup.bundle.js *), Read

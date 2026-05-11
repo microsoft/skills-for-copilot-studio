@@ -1,0 +1,14 @@
+# Name: _REPLACE
+# Modern (CLI) agent inline skill template
+# Place in topics/Default_{name}.mcs.yml
+# Replace _REPLACE placeholders before use
+mcs.metadata:
+  componentName: _REPLACE
+  description: _REPLACE
+kind: InlineAgentSkill
+content: |-
+  ---
+  name: _REPLACE
+  description: _REPLACE
+  ---
+  _REPLACE
