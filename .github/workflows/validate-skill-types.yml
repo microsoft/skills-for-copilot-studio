@@ -1,0 +1,83 @@
+name: Validate skill agent-types
+
+on:
+  pull_request:
+    paths:
+      - 'skills/*/SKILL.md'
+      - 'hooks/detect-agent-type.js'
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check agent-types frontmatter matches hook lists
+        run: |
+          # Extract classic-only and modern-only skill names from hook
+          CLASSIC_FROM_HOOK=$(node -e "
+            const fs = require('fs');
+            const code = fs.readFileSync('hooks/detect-agent-type.js', 'utf8');
+            const match = code.match(/CLASSIC_ONLY_SKILLS\s*=\s*\[([\s\S]*?)\]/);
+            if (match) {
+              const skills = match[1].match(/'([^']+)'/g).map(s => s.replace(/'/g, ''));
+              console.log(skills.sort().join(','));
+            }
+          ")
+
+          MODERN_FROM_HOOK=$(node -e "
+            const fs = require('fs');
+            const code = fs.readFileSync('hooks/detect-agent-type.js', 'utf8');
+            const match = code.match(/MODERN_ONLY_SKILLS\s*=\s*\[([\s\S]*?)\]/);
+            if (match) {
+              const skills = match[1].match(/'([^']+)'/g).map(s => s.replace(/'/g, ''));
+              console.log(skills.sort().join(','));
+            }
+          ")
+
+          # Extract from SKILL.md frontmatter
+          CLASSIC_FROM_FRONTMATTER=""
+          MODERN_FROM_FRONTMATTER=""
+
+          for dir in skills/*/; do
+            skill_name=$(basename "$dir")
+            skill_file="$dir/SKILL.md"
+            [ -f "$skill_file" ] || continue
+
+            agent_types=$(head -20 "$skill_file" | grep "^agent-types:" | sed 's/agent-types:\s*//')
+            case "$agent_types" in
+              classic)
+                CLASSIC_FROM_FRONTMATTER="$CLASSIC_FROM_FRONTMATTER,$skill_name"
+                ;;
+              modern)
+                MODERN_FROM_FRONTMATTER="$MODERN_FROM_FRONTMATTER,$skill_name"
+                ;;
+            esac
+          done
+
+          # Sort for comparison
+          CLASSIC_FROM_FRONTMATTER=$(echo "$CLASSIC_FROM_FRONTMATTER" | tr ',' '\n' | sort | grep -v '^$' | tr '\n' ',' | sed 's/,$//')
+          MODERN_FROM_FRONTMATTER=$(echo "$MODERN_FROM_FRONTMATTER" | tr ',' '\n' | sort | grep -v '^$' | tr '\n' ',' | sed 's/,$//')
+
+          echo "Hook classic:       $CLASSIC_FROM_HOOK"
+          echo "Frontmatter classic: $CLASSIC_FROM_FRONTMATTER"
+          echo "Hook modern:        $MODERN_FROM_HOOK"
+          echo "Frontmatter modern: $MODERN_FROM_FRONTMATTER"
+
+          ERRORS=0
+
+          if [ "$CLASSIC_FROM_HOOK" != "$CLASSIC_FROM_FRONTMATTER" ]; then
+            echo "::error::Classic skill lists don't match! Update hooks/detect-agent-type.js CLASSIC_ONLY_SKILLS to match SKILL.md frontmatter."
+            ERRORS=1
+          fi
+
+          if [ "$MODERN_FROM_HOOK" != "$MODERN_FROM_FRONTMATTER" ]; then
+            echo "::error::Modern skill lists don't match! Update hooks/detect-agent-type.js MODERN_ONLY_SKILLS to match SKILL.md frontmatter."
+            ERRORS=1
+          fi
+
+          if [ "$ERRORS" -eq 1 ]; then
+            exit 1
+          fi
+
+          echo "All skill agent-types match between frontmatter and hook."
