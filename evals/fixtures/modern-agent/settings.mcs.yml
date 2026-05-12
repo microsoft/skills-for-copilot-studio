@@ -13,7 +13,12 @@ configuration:
       $kind: Instructions
       segments:
         - $kind: StaticSegment
-          value: You are a helpful test agent.
+          value: You are a helpful customer support agent for Contoso Electronics.
+
+    conversationStarters:
+      - $kind: ConversationStarter
+        title: Get Started
+        text: How can you help me?
 
 template: cliagent-1.0.0
 language: 1033

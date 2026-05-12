@@ -1,0 +1,6 @@
+mcs.metadata:
+  componentName: https://www.contoso.com
+kind: KnowledgeSourceConfiguration
+source:
+  kind: WebsiteKnowledgeSource
+  siteUrl: https://www.contoso.com
