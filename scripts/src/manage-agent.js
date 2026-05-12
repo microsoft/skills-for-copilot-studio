@@ -159,6 +159,9 @@ function parseArgs() {
       case "--force":
         parsed.force = true;
         break;
+      case "--cluster-category":
+        parsed.clusterCategory = parseInt(args[++i], 10);
+        break;
       case "--url":
         parsed.url = args[++i];
         break;
@@ -1365,9 +1368,10 @@ async function cmdClone(args) {
 
   const envUrl = args.environmentUrl.replace(/\/+$/, "");
 
-  // Clone uses Island API token (same as push/pull) — default to Prod cluster (5)
-  const DEFAULT_CLUSTER_CATEGORY = 5;
-  const cpsToken = await getOrAcquireIslandToken(args.tenantId, DEFAULT_CLUSTER_CATEGORY, "Island API");
+  // Clone uses Island API token (same as push/pull)
+  // Default to Prod cluster (5). Pass --cluster-category for non-prod environments.
+  const clusterCategory = args.clusterCategory != null ? args.clusterCategory : 5;
+  const cpsToken = await getOrAcquireIslandToken(args.tenantId, clusterCategory, "Island API");
 
   const dvToken = await getOrAcquireToken(args.tenantId, VSCODE_CLIENT_ID, [`${envUrl}/.default`], "Dataverse API");
 
@@ -1393,7 +1397,7 @@ async function cmdClone(args) {
         accountId: args.accountId || dvToken.account?.homeAccountId || "unknown",
         accountEmail: args.accountEmail || dvToken.account?.username || undefined,
         tenantId: args.tenantId,
-        clusterCategory: DEFAULT_CLUSTER_CATEGORY,
+        clusterCategory,
       },
       copilotStudioAccessToken: cpsToken.accessToken,
       dataverseAccessToken: dvToken.accessToken,
