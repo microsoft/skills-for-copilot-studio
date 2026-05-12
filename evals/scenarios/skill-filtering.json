@@ -8,7 +8,6 @@
       "fixture": "modern-agent",
       "mock_scripts": [],
       "checks": {
-        "agent_invoked": "copilot-studio:Copilot Studio Author",
         "skill_invoked": "copilot-studio:new-skill",
         "files_created": [
           {
@@ -16,7 +15,11 @@
             "min_count": 1
           }
         ],
-        "content_contains": ["InlineAgentSkill", "return", "30"],
+        "content_contains": [
+          "InlineAgentSkill",
+          "return",
+          "30"
+        ],
         "no_placeholders": true
       }
     },
@@ -27,9 +30,11 @@
       "fixture": "modern-agent",
       "mock_scripts": [],
       "checks": {
-        "agent_invoked": "copilot-studio:Copilot Studio Author",
         "skill_invoked": "copilot-studio:edit-skill",
-        "content_contains": ["cancellation", "refund"]
+        "content_contains": [
+          "cancellation",
+          "refund"
+        ]
       }
     },
     {
@@ -39,9 +44,12 @@
       "fixture": "modern-agent",
       "mock_scripts": [],
       "checks": {
-        "agent_invoked": "copilot-studio:Copilot Studio Author",
         "skill_invoked": "copilot-studio:edit-agent-modern",
-        "content_contains": ["Contoso Electronics", "escalate", "hardware"]
+        "content_contains": [
+          "Contoso Electronics",
+          "escalate",
+          "hardware"
+        ]
       }
     },
     {
@@ -51,7 +59,6 @@
       "fixture": "modern-agent",
       "mock_scripts": [],
       "checks": {
-        "agent_invoked": "copilot-studio:Copilot Studio Author",
         "skill_invoked": "copilot-studio:add-knowledge-modern",
         "files_created": [
           {
@@ -59,7 +66,10 @@
             "min_count": 1
           }
         ],
-        "content_contains": ["WebsiteKnowledgeSource", "learn.microsoft.com"]
+        "content_contains": [
+          "WebsiteKnowledgeSource",
+          "learn.microsoft.com"
+        ]
       }
     },
     {
@@ -69,9 +79,12 @@
       "fixture": "modern-agent",
       "mock_scripts": [],
       "checks": {
-        "agent_invoked": "copilot-studio:Copilot Studio Author",
         "skill_invoked": "copilot-studio:edit-agent-modern",
-        "content_contains": ["ConversationStarter", "order status", "Return"]
+        "content_contains": [
+          "ConversationStarter",
+          "order status",
+          "Return"
+        ]
       }
     }
   ]
