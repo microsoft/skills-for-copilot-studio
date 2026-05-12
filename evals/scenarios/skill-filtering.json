@@ -1,0 +1,107 @@
+{
+  "scenario_name": "skill-filtering",
+  "evals": [
+    {
+      "id": 1,
+      "name": "Block modern skill on classic agent — new-skill",
+      "prompt": "Create a new skill for my agent that handles weather questions.",
+      "fixture": "basic-agent",
+      "mock_scripts": [],
+      "checks": {
+        "skill_not_invoked": ["copilot-studio:new-skill"],
+        "stdout_contains": ["classic", "topic"],
+        "stdout_not_contains": ["```yaml"]
+      }
+    },
+    {
+      "id": 2,
+      "name": "Block modern skill on classic agent — list-skills",
+      "prompt": "List all the skills in my agent.",
+      "fixture": "basic-agent",
+      "mock_scripts": [],
+      "checks": {
+        "skill_not_invoked": ["copilot-studio:list-skills"],
+        "stdout_contains": ["topic"]
+      }
+    },
+    {
+      "id": 3,
+      "name": "Block modern skill on classic agent — edit-agent-modern",
+      "prompt": "Change my agent's output format to structured JSON with a schema that has an answer field.",
+      "fixture": "basic-agent",
+      "mock_scripts": [],
+      "checks": {
+        "skill_not_invoked": ["copilot-studio:edit-agent-modern"]
+      }
+    },
+    {
+      "id": 4,
+      "name": "Block classic skill on modern agent — new-topic",
+      "prompt": "Create a new topic for handling customer complaints with trigger phrases like 'I have a complaint' and 'something is wrong'.",
+      "fixture": "modern-agent",
+      "mock_scripts": [],
+      "checks": {
+        "skill_not_invoked": ["copilot-studio:new-topic"],
+        "stdout_contains": ["modern", "skill"],
+        "stdout_not_contains": ["```yaml"]
+      }
+    },
+    {
+      "id": 5,
+      "name": "Block classic skill on modern agent — add-adaptive-card",
+      "prompt": "Add an adaptive card to collect the user's name and email address.",
+      "fixture": "modern-agent",
+      "mock_scripts": [],
+      "checks": {
+        "skill_not_invoked": ["copilot-studio:add-adaptive-card"],
+        "stdout_not_contains": ["AdaptiveCardPrompt"]
+      }
+    },
+    {
+      "id": 6,
+      "name": "Block classic skill on modern agent — add-node",
+      "prompt": "Add a question node to the greeting topic that asks for the user's department.",
+      "fixture": "modern-agent",
+      "mock_scripts": [],
+      "checks": {
+        "skill_not_invoked": ["copilot-studio:add-node"],
+        "stdout_not_contains": ["```yaml"]
+      }
+    },
+    {
+      "id": 7,
+      "name": "Allow classic skill on classic agent — new-topic",
+      "prompt": "Create a simple greeting topic that says hello when the conversation starts.",
+      "fixture": "basic-agent",
+      "mock_scripts": [],
+      "checks": {
+        "agent_invoked": "copilot-studio:Copilot Studio Author",
+        "skill_invoked": "copilot-studio:new-topic",
+        "files_created": [
+          {
+            "pattern": "topics/*.topic.mcs.yml",
+            "min_count": 1
+          }
+        ]
+      }
+    },
+    {
+      "id": 8,
+      "name": "Allow modern skill on modern agent — new-skill",
+      "prompt": "Create a skill called WeatherHelper that tells users the weather forecast when they ask about weather.",
+      "fixture": "modern-agent",
+      "mock_scripts": [],
+      "checks": {
+        "agent_invoked": "copilot-studio:Copilot Studio Author",
+        "skill_invoked": "copilot-studio:new-skill",
+        "files_created": [
+          {
+            "pattern": "topics/*.mcs.yml",
+            "min_count": 1
+          }
+        ],
+        "content_contains": ["weather", "InlineAgentSkill"]
+      }
+    }
+  ]
+}

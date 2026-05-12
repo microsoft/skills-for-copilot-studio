@@ -1,0 +1,19 @@
+displayName: Eval Modern Agent
+schemaName: eval_modernAgent
+accessControlPolicy: GroupMembership
+authenticationMode: None
+authenticationTrigger: AsNeeded
+configuration:
+  recognizer:
+    $kind: CLICopilotRecognizer
+
+  agentSettings:
+    $kind: AgentSettings
+    instructions:
+      $kind: Instructions
+      segments:
+        - $kind: StaticSegment
+          value: You are a helpful test agent.
+
+template: cliagent-1.0.0
+language: 1033
