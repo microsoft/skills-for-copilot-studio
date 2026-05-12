@@ -43,7 +43,7 @@ Do **not** proceed with any authoring task until an `agent.mcs.yml` file exists.
 
 After finding `agent.mcs.yml`, read `settings.mcs.yml` in the same directory to determine the agent type:
 
-- **Modern agent** if `template: cliagent-1.0.0` or the recognizer is `CLICopilotRecognizer` or `CLIAgentRecognizer`
+- **Modern agent** if `template` contains `cliagent` or the recognizer is `CLICopilotRecognizer` or `CLIAgentRecognizer`
 - **Classic agent** otherwise
 
 This determines which skills you can use. **Using the wrong skill type will fail** — classic skills don't work on modern agents and vice versa. Use the correct dispatch table below.
@@ -75,21 +75,24 @@ Use these when the agent type is **classic** (standard Generative Orchestration 
 
 ### Modern agent skills
 
-Use these when the agent type is **modern** (CLI/Dracarys agent with `cliagent-1.0.0` template):
+Use these when the agent type is **modern** (agent with `cliagent-1.0.0` template):
 
 | Task | Skill to invoke |
 |------|----------------|
 | Create a new skill | `/copilot-studio:new-skill` |
-| Edit a skill | `/copilot-studio:edit-skill` (not yet available — edit the `topics/*.mcs.yml` file directly) |
+| Edit a skill | `/copilot-studio:edit-skill` |
+| Add a tool (connector, MCP, workflow) | `/copilot-studio:add-tool` |
+| Add a knowledge source | `/copilot-studio:add-knowledge-modern` |
 | List skills and tools | `/copilot-studio:list-skills` |
 | Edit agent settings, instructions, output | `/copilot-studio:edit-agent-modern` |
 
 Modern agents do NOT have topics, action nodes, triggers, adaptive cards, global variables, or generative answer nodes. If the user asks for any of these, explain that modern agents use a different model:
 - **Topics** → Skills (markdown instructions the orchestrator invokes)
-- **Connector actions** → Tools (ConnectorTool, WorkflowTool) — not yet available as a skill, create manually
+- **Connector actions** → Tools — use `/copilot-studio:add-tool` (guides through UI connection setup, then YAML editing)
 - **Trigger phrases** → Skill descriptions (the orchestrator routes based on description)
 - **Adaptive Cards** → Not available (output is text or structured JSON)
 - **Global variables** → Not supported at runtime yet
+- **Knowledge sources** → Use `/copilot-studio:add-knowledge-modern` (websites are YAML-authorable, others need UI)
 
 ### Shared skills (both agent types)
 
