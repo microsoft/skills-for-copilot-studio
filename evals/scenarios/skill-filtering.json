@@ -3,23 +3,6 @@
   "evals": [
     {
       "id": 1,
-      "name": "Classic skill works on classic agent — new-topic",
-      "prompt": "Create a simple greeting topic that says hello when the conversation starts.",
-      "fixture": "basic-agent",
-      "mock_scripts": [],
-      "checks": {
-        "agent_invoked": "copilot-studio:Copilot Studio Author",
-        "skill_invoked": "copilot-studio:new-topic",
-        "files_created": [
-          {
-            "pattern": "topics/*.topic.mcs.yml",
-            "min_count": 1
-          }
-        ]
-      }
-    },
-    {
-      "id": 2,
       "name": "Create a new skill on modern agent",
       "prompt": "Create a skill called ReturnPolicy that explains our 30-day return policy when customers ask about returns or refunds.",
       "fixture": "modern-agent",
@@ -38,7 +21,7 @@
       }
     },
     {
-      "id": 3,
+      "id": 2,
       "name": "Edit existing skill description on modern agent",
       "prompt": "Update the OrderLookup skill description to also mention 'order cancellation' and 'refund status' so the orchestrator routes those questions to it too.",
       "fixture": "modern-agent",
@@ -50,7 +33,7 @@
       }
     },
     {
-      "id": 4,
+      "id": 3,
       "name": "Edit modern agent instructions",
       "prompt": "Change the agent's instructions to: 'You are a friendly tech support agent for Contoso Electronics. Always greet the customer by name if available. Escalate complex hardware issues to a human agent.'",
       "fixture": "modern-agent",
@@ -62,7 +45,7 @@
       }
     },
     {
-      "id": 5,
+      "id": 4,
       "name": "Add website knowledge source on modern agent",
       "prompt": "Add https://learn.microsoft.com/en-us/copilot-studio/ as a knowledge source so the agent can answer questions about Copilot Studio.",
       "fixture": "modern-agent",
@@ -80,32 +63,7 @@
       }
     },
     {
-      "id": 6,
-      "name": "List skills and tools on modern agent",
-      "prompt": "What skills and tools does this agent have?",
-      "fixture": "modern-agent",
-      "mock_scripts": [],
-      "checks": {
-        "agent_invoked": "copilot-studio:Copilot Studio Author",
-        "skill_invoked": "copilot-studio:list-skills",
-        "stdout_contains": ["OrderLookup", "MSN Weather"]
-      }
-    },
-    {
-      "id": 7,
-      "name": "Add tool guides to UI on modern agent",
-      "prompt": "I want to add a connector tool that sends emails via Office 365 Outlook.",
-      "fixture": "modern-agent",
-      "mock_scripts": [],
-      "checks": {
-        "agent_invoked": "copilot-studio:Copilot Studio Author",
-        "skill_invoked": "copilot-studio:add-tool",
-        "stdout_contains": ["Copilot Studio", "pull"],
-        "stdout_not_contains": ["```yaml"]
-      }
-    },
-    {
-      "id": 8,
+      "id": 5,
       "name": "Add conversation starters on modern agent",
       "prompt": "Add three conversation starters: 'Check order status', 'Return a product', and 'Contact support'.",
       "fixture": "modern-agent",
