@@ -32,7 +32,9 @@ Modify agent metadata (`agent.mcs.yml`) or configuration (`settings.mcs.yml`).
 
 4. **Read the current file** before making any changes.
 
-5. **Make the requested changes** using the Edit tool.
+5. **For `instructions`, prefer minimal edits**: preserve user wording, avoid full rewrites and generic boilerplate, and add only rules that change runtime behavior.
+
+6. **Make the requested changes** using the Edit tool.
 
 ## Editable Fields in `agent.mcs.yml`
 
@@ -74,8 +76,6 @@ If the user asks to change any of these, warn them.
 instructions: |
   You are a customer support agent for Contoso Ltd.
 
-  Guidelines:
-  - Be professional and empathetic
-  - Always verify the customer's identity first
-  - Escalate billing issues to a human agent
+  Verify the customer's identity before account-specific help.
+  Escalate billing issues to a human agent.
 ```

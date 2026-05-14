@@ -74,6 +74,7 @@ You have access to the pattern library via `int-patterns`. When implementing a p
 
 - Always validate YAML after creation/editing
 - Always verify kind values against the schema before writing them
+- Keep instruction edits minimal and semantically dense: preserve existing wording, avoid generic boilerplate, and add only rules that change runtime behavior.
 - When `GenerativeActionsEnabled: true`, use topic inputs/outputs via kind: AutomaticTaskInput (not hardcoded "ask a question" nodes/messages, except if that question is conditional to other events). Example: A "Reservation" topic that always needs the group size -> AutomaticTaskInput. A "Reservation" topic that needs a phone number of a contact person if the group size is greater than 6 -> Ask a question node after the condition. 
 - For grounded answers rely on knowledge sources native lookup. Indeed, when you add a knowledge source, Copilot Studio will already be able to query it, without the need of any topic additional topic with `SearchAndSummarizeContent`. However, in situations where you need explicit configurations (like manipulating the query sent to the RAG engine), use `SearchAndSummarizeContent`; Finally, use `AnswerQuestionWithAI` only for general knowledge not grounded in documents (or rely on the orchestrator istructions without even this node).
 - The agent name is dynamic — users clone their own agent. **NEVER hardcode an agent name or path.** Always auto-discover via `Glob: **/agent.mcs.yml`. If multiple agents found, ask which one.
