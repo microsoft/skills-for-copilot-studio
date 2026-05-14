@@ -50,3 +50,19 @@ Validate Copilot Studio agent YAML files using the LanguageServerHost binary's f
 
    Summary: X files checked, Y errors, Z warnings
    ```
+
+7. **Flag schema-valid-but-not-syncable kinds.** Schema validity does **not** imply the file will be pushed to the cloud — `validate` checks the schema, but `getLocalChanges` uses a narrower component classifier. After validation passes, if any file's `kind:` is in this list, surface an informational note:
+
+   | Kind | Status | Recommendation |
+   |---|---|---|
+   | `EvaluationSet` | Schema-valid, NOT synced | Use `/copilot-studio:create-eval-set` for portal-compatible CSV. See [#170](https://github.com/microsoft/skills-for-copilot-studio/issues/170). |
+   | `EvaluationData` | Schema-valid, NOT synced | Same as above. |
+
+   Output template:
+
+   ```
+   [INFO] <filename> — kind '<kind>' is schema-valid but is NOT pushed to the cloud by sync.
+          See <recommendation>.
+   ```
+
+   This warning prevents the silent-drop class of bug where validation passes, push reports success, and the user can't figure out why their file never reaches the portal.

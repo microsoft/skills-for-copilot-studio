@@ -38,6 +38,22 @@ Do not ask the user about authentication state — just run `test-auth` and it h
 
 Run `/copilot-studio:create-eval-set`. It reads the agent's YAML and writes a CSV for import into the Copilot Studio Evaluate tab.
 
+### Do NOT author eval files yourself
+
+When the user asks for "evaluation test sets", "test cases", "evals", or similar — **always delegate to `/copilot-studio:create-eval-set`**. Do not author files directly. In particular:
+
+- **Never write `*.eval.mcs.yml` files** with `kind: EvaluationSet` / `kind: EvaluationData`. These kinds exist in `bot.schema.yaml-authoring.json` and pass `validate`, but they are **not in the LSP sync surface** — `getLocalChanges` ignores them, `push` silently drops them, and they never appear in the Copilot Studio portal. Authoring them wastes the user's time.
+- **Never invent a CSV column schema.** The portal's Evaluate-tab CSV is `question,expectedResponse` (the `Testing method` column is ignored on import — it's set in the UI after upload). This is documented at <https://learn.microsoft.com/microsoft-copilot-studio/analytics-agent-evaluation-create>. The `/copilot-studio:create-eval-set` skill already emits the correct format.
+- **Power CAT Kit-format CSV is a different surface.** If the user explicitly asks for Kit/Dataverse bulk import (not the in-portal Evaluate tab), use `/copilot-studio:run-tests-kit` — but do not silently generate Kit-format files when the user asked for "evaluation test sets" generically. The default is the in-portal Evaluate-tab CSV.
+
+### Conversation (multi-turn) evaluations have no CSV upload
+
+The portal's **Conversation (preview)** data type does **not** accept CSV uploads — only Quick conversation set, Full conversation set, or "Use your test chat" (which captures from the Test pane). If a user wants multi-turn evals, tell them to use the Test pane in the portal or one of the auto-generation buttons. Do not produce a multi-turn CSV.
+
+### When in doubt, consult MS Learn before inventing a schema
+
+If a request needs a file format you are not certain about, search MS Learn first (e.g., via `firecrawl-search` or the `WebSearch` tool). Schema-validity in `bot.schema.yaml-authoring.json` is **not** sufficient evidence that a kind/file is supported by a particular runtime surface — the schema is a superset of what each surface accepts. Always confirm against authoritative docs.
+
 ## How to handle "test this utterance" (point testing)
 
 1. Run `/copilot-studio:detect-mode` to find DirectLine vs M365 mode.

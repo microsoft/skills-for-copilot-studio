@@ -14,6 +14,13 @@ agent: copilot-studio-test
 
 Create a test set CSV file that can be imported into Copilot Studio's **Evaluate** tab for in-product agent evaluation.
 
+## Critical rules — do not deviate
+
+1. **Output is a CSV file, not YAML.** Never create `*.eval.mcs.yml` files with `kind: EvaluationSet` or `kind: EvaluationData`. Those kinds exist in `bot.schema.yaml-authoring.json` and pass `validate`, but they are not picked up by the LSP sync surface — `push` silently drops them and they never appear in the portal. See [#170](https://github.com/microsoft/skills-for-copilot-studio/issues/170).
+2. **Columns are exactly `question,expectedResponse`.** Do not add `Testing method`, `Expected keywords`, `Expected topic`, `Conversation ID`, `Turn`, or any other column. The portal rejects files with extra columns (`"This file uses the wrong template"`).
+3. **Only the Single response data type accepts CSV.** The Conversation (preview) data type has no CSV upload path — its only sources are Quick conversation set, Full conversation set, and Use your test chat. Do not produce a "conversation CSV"; instead, tell the user to seed multi-turn evals via the Test pane in the portal.
+4. **Authoritative docs**: <https://learn.microsoft.com/microsoft-copilot-studio/analytics-agent-evaluation-create> (Single response) and <https://learn.microsoft.com/microsoft-copilot-studio/analytics-agent-evaluation-multi-turn> (Conversation). Cite these to the user when reporting completion.
+
 ## Phase 1: Understand the Agent
 
 Read the agent's YAML files to understand what it does:

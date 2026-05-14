@@ -50,3 +50,34 @@ Token caching applies to both flows. After initial login, tokens refresh silentl
 ## Agent Discovery
 
 The agent workspace is auto-detected by finding the subfolder with `.mcs/conn.json`. **NEVER hardcode an agent name or path.** If multiple agents are found, ask which one.
+
+## Warn About Unsupported Component Kinds
+
+The LSP `getLocalChanges` classifier only recognizes a subset of schema-valid kinds as syncable components. As of the current binary, the syncable kinds are:
+
+| Component class | Folder | Notable kinds |
+|---|---|---|
+| `GptComponentMetadata` | root | `agent.mcs.yml` |
+| `BotComponentSettings` | root | `settings.mcs.yml` |
+| `DialogComponent` | `topics/` | `AdaptiveDialog` |
+| `KnowledgeSourceComponent` | `knowledge/` | `KnowledgeSourceComponent` |
+| `ActionComponent` | `actions/` | `TaskDialog`, etc. |
+| `BotVariableComponent` | `variables/` | global variables |
+| Workflows / Child agents | `workflows/`, `agents/` | as listed in templates |
+
+**Other schema-valid kinds (e.g., `EvaluationSet`, `EvaluationData`) are NOT picked up by sync.** They will pass `validate` and produce no errors from `push`, but the files never reach the cloud. This is the most common silent-failure mode for users who hand-author eval YAML.
+
+### Required check after `changes` or before `push`
+
+Before reporting that the workspace is "in sync" or "nothing to push", scan the workspace for files with kinds that are not in the syncable list above:
+
+1. Run `Glob: **/*.eval.mcs.yml` and read the first few bytes of each match.
+2. If any file's `kind:` field is in `{EvaluationSet, EvaluationData}` (or any other non-syncable kind), surface a warning to the user, **even if `localChanges` is empty**:
+
+   > **Warning:** Found `<N>` file(s) using kind `<kind>` that are NOT synced to the cloud by `push`:
+   > - `<file-1>`
+   > - `<file-2>`
+   >
+   > These files will not appear in the Copilot Studio portal. If you intended to create in-portal evaluations, delete these and use `/copilot-studio:create-eval-set` to generate a CSV for upload via Evaluate → New evaluation. See issue [#170](https://github.com/microsoft/skills-for-copilot-studio/issues/170).
+
+3. Do **not** suppress this warning when `changes` returns empty arrays. Silent drops are the actual bug — empty diffs are a symptom, not a confirmation of success.
