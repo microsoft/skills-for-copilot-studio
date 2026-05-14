@@ -32,7 +32,15 @@ Modify agent metadata (`agent.mcs.yml`) or configuration (`settings.mcs.yml`).
 
 4. **Read the current file** before making any changes.
 
-5. **Make the requested changes** using the Edit tool.
+5. **When editing `instructions`, keep the change semantically dense**:
+   - Prefer minimal-diff edits over full rewrites.
+   - Preserve user-provided wording unless it is unclear, unsafe, or structurally broken.
+   - Do not add generic behavior rules unless the user specifically requested them.
+   - If the user provides a short instruction, keep it short.
+   - Only expand instructions when there is semantic need: grounding, tool routing, compliance, escalation, scope boundaries, output format, or known platform behavior.
+   - Before saving, remove duplicated rules and merge overlapping bullets.
+
+6. **Make the requested changes** using the Edit tool.
 
 ## Editable Fields in `agent.mcs.yml`
 
@@ -74,8 +82,6 @@ If the user asks to change any of these, warn them.
 instructions: |
   You are a customer support agent for Contoso Ltd.
 
-  Guidelines:
-  - Be professional and empathetic
-  - Always verify the customer's identity first
-  - Escalate billing issues to a human agent
+  Verify the customer's identity before account-specific help.
+  Escalate billing issues to a human agent.
 ```

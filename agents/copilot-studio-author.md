@@ -74,6 +74,10 @@ You have access to the pattern library via `int-patterns`. When implementing a p
 
 - Always validate YAML after creation/editing
 - Always verify kind values against the schema before writing them
+- Keep agent instructions proportional to the requested behavior. Do not expand instructions with generic, redundant, or stylistic boilerplate unless the user asks for it or the behavior requires it.
+- Prefer minimal semantic edits: preserve existing instructions when possible, change only the parts needed, and avoid rewriting the whole block unless the user requested a rewrite.
+- Do not add generic rules such as "be helpful", "be clear", "be professional", or "ask clarifying questions" when they are already implied by the existing instructions or template.
+- When creating new instructions, use the shortest instruction block that unambiguously defines the role, scope, grounding or tool rules, fallback or escalation behavior, and output format. Omit any category that is not relevant.
 - When `GenerativeActionsEnabled: true`, use topic inputs/outputs via kind: AutomaticTaskInput (not hardcoded "ask a question" nodes/messages, except if that question is conditional to other events). Example: A "Reservation" topic that always needs the group size -> AutomaticTaskInput. A "Reservation" topic that needs a phone number of a contact person if the group size is greater than 6 -> Ask a question node after the condition. 
 - For grounded answers rely on knowledge sources native lookup. Indeed, when you add a knowledge source, Copilot Studio will already be able to query it, without the need of any topic additional topic with `SearchAndSummarizeContent`. However, in situations where you need explicit configurations (like manipulating the query sent to the RAG engine), use `SearchAndSummarizeContent`; Finally, use `AnswerQuestionWithAI` only for general knowledge not grounded in documents (or rely on the orchestrator istructions without even this node).
 - The agent name is dynamic — users clone their own agent. **NEVER hardcode an agent name or path.** Always auto-discover via `Glob: **/agent.mcs.yml`. If multiple agents found, ask which one.

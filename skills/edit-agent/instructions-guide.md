@@ -11,6 +11,23 @@ The instructions field directly controls:
 - **Fallback behavior**: what the agent says when no relevant information is found
 - **Scope enforcement**: whether the agent stays on-topic or answers anything
 
+## Keep Instructions Semantically Dense
+
+Good instructions are not necessarily long instructions. Add a directive only when it changes runtime behavior.
+
+Avoid:
+- Restating generic assistant qualities
+- Repeating the same rule in different words
+- Adding broad tone or personality sections unless requested
+- Expanding a short user request into a full policy document
+
+Prefer:
+- One clear role sentence
+- A short scope statement
+- Specific grounding, tool, or use-case rules only when needed
+- A compact fallback or escalation rule if relevant
+- Output formatting rules only when the user or scenario requires them
+
 ## Writing Knowledge-Aware Instructions
 
 Use these directives in `instructions` to shape knowledge behavior:
