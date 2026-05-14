@@ -13,20 +13,7 @@ The instructions field directly controls:
 
 ## Keep Instructions Semantically Dense
 
-Good instructions are not necessarily long instructions. Add a directive only when it changes runtime behavior.
-
-Avoid:
-- Restating generic assistant qualities
-- Repeating the same rule in different words
-- Adding broad tone or personality sections unless requested
-- Expanding a short user request into a full policy document
-
-Prefer:
-- One clear role sentence
-- A short scope statement
-- Specific grounding, tool, or use-case rules only when needed
-- A compact fallback or escalation rule if relevant
-- Output formatting rules only when the user or scenario requires them
+Add a directive only when it changes runtime behavior. Prefer one clear role or scope statement plus only required grounding, tool, fallback, escalation, or output-format rules; avoid generic assistant qualities, repeated rules, and broad tone sections unless requested.
 
 ## Writing Knowledge-Aware Instructions
 
