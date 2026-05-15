@@ -12,7 +12,7 @@
 
 - Ship a versioned release every week so users can pin to known-good versions.
 - Auto-generate release notes from merged PRs using GitHub labels.
-- Keep the process lightweight — weekly release branches, no manual changelogs.
+- Keep the process lightweight — weekly release branches, with `CHANGELOG.md` mirroring auto-generated release notes.
 
 ## 2. Versioning
 
@@ -60,21 +60,21 @@ Each week uses a release branch named `release/YYYY-WNN` (ISO week number):
 
 1. **Check open PRs** — merge remaining PRs into the release branch, or defer to next week. PRs not ready should be labeled `release/blocked` for tracking.
 2. **Bump version** — update `version` in `.claude-plugin/plugin.json` on the release branch.
-3. **Merge to main** — create a PR from `release/YYYY-WNN` → `main` and merge it.
-4. **Tag and release** — create a GitHub Release from `main`:
+3. **Finalize `CHANGELOG.md` on the release branch** — as the last release-branch change before merge, promote the `[Unreleased]` section to the new version, then copy the auto-generated GitHub Release notes body into the changelog (minus the meta-PRs: version bumps and weekly-release merges). Add a fresh empty `[Unreleased]` block at the top, update the comparison link footers, and commit the changelog update to the release branch.
+4. **Merge to main** — create a PR from `release/YYYY-WNN` → `main` and merge it.
+5. **Tag and release** — create a GitHub Release from `main`:
    ```bash
    # Example for v1.1.0
    gh release create v1.1.0 --generate-notes --latest
    ```
-   GitHub auto-generates notes from merged PRs using `.github/release.yml` categories.
-5. **Update `CHANGELOG.md`** — promote the `[Unreleased]` section to the new version, then paste the auto-generated GitHub release body (minus the meta-PRs: version bumps and weekly-release merges) under the new heading. Add a fresh empty `[Unreleased]` block at the top and update the comparison link footers. Commit directly to `main`.
+   GitHub auto-generates notes from merged PRs using `.github/release.yml` categories; the release body should match what was copied into `CHANGELOG.md`.
 6. **Write release summary** — draft a short, plain-language summary of what changed and why it matters (for non-technical audiences).
 7. **Announce** — post the summary with a link to the release in Teams and on LinkedIn.
 8. **Create next release branch** — branch `release/YYYY-WNN` from the newly updated `main`.
 
 ### Automation (future)
 
-A GitHub Actions workflow can automate steps 4-6. For now, we do it manually.
+A GitHub Actions workflow can automate steps 3 and 5-6. For now, we do it manually.
 
 ## 5. GitHub Release Notes Configuration
 
