@@ -67,13 +67,14 @@ Each week uses a release branch named `release/YYYY-WNN` (ISO week number):
    gh release create v1.1.0 --generate-notes --latest
    ```
    GitHub auto-generates notes from merged PRs using `.github/release.yml` categories.
-5. **Write release summary** — draft a short, plain-language summary of what changed and why it matters (for non-technical audiences).
-6. **Announce** — post the summary with a link to the release in Teams and on LinkedIn.
-7. **Create next release branch** — branch `release/YYYY-WNN` from the newly updated `main`.
+5. **Update `CHANGELOG.md`** — promote the `[Unreleased]` section to the new version, then paste the auto-generated GitHub release body (minus the meta-PRs: version bumps and weekly-release merges) under the new heading. Add a fresh empty `[Unreleased]` block at the top and update the comparison link footers. Commit directly to `main`.
+6. **Write release summary** — draft a short, plain-language summary of what changed and why it matters (for non-technical audiences).
+7. **Announce** — post the summary with a link to the release in Teams and on LinkedIn.
+8. **Create next release branch** — branch `release/YYYY-WNN` from the newly updated `main`.
 
 ### Automation (future)
 
-A GitHub Actions workflow can automate steps 4-5. For now, we do it manually.
+A GitHub Actions workflow can automate steps 4-6. For now, we do it manually.
 
 ## 5. GitHub Release Notes Configuration
 
