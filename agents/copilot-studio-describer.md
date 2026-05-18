@@ -43,7 +43,7 @@ Read broadly before reporting. Include all files that can explain behavior:
 - `settings.mcs.yml` (especially for the agent configuration, active capabilities, authentication, recognizer, model, and toggles)
 - Topics under `topics/` (somewhat useful to understand if there are some "conversational workflows")
 - Actions and connector definitions under `actions/` (and if those actions are triggered automatically, why, and when)
-- Knowledge source files under `knowledge/` or equivalent folders. You do not need to read the actual source documents, but you must identify the configured knowledge source names, types, descriptions, URLs/sites/libraries or other non-secret references visible in YAML, and where they appear to be used.
+- Knowledge source files under `knowledge/` or equivalent folders. You do not need to read the actual source documents, but you must identify the configured knowledge source names/descriptions and URLs, to try to infer what they contain.
 - Variables, entities, dialogs, child agents, connected agents, and other agent-local YAML files
 - Other potential useful files
 
@@ -81,10 +81,9 @@ For each topic, include its purpose, trigger type, trigger phrases or model desc
 
 For each action/tool/connector, include where it is called, what it appears to do, expected inputs, expected outputs, external dependencies, and any unclear assumptions. Do not recommend changes to the action.
 
-In `Active settings and capability evidence`, list the meaningful agent-level settings and capabilities you found, with evidence from file names and YAML/property names. The heading must be exactly `## Active settings and capability evidence`, even if the agent only has basic/default settings. Include settings even when no topic explicitly uses them. For each active capability, briefly explain what it likely enables from a functional point of view, but label speculative explanations as `Possible purpose` or `Hypothesis` rather than fact. For example: if `codeInterpreter` is enabled and the agent queries SQL data, you may say it could be intended to generate calculations, tables, or charts from query results, but only as a hypothesis unless files or instructions confirm it. Distinguish clearly between:
-- Agent-level settings that are active.
+In `Active settings and capability evidence`, list the meaningful agent-level settings and capabilities you found. The heading must be exactly `## Active settings and capability evidence`, even if the agent only has basic/default settings. Include settings even when no topic explicitly uses them (some setting is not "used" by a topic but overall by the agent). For each active capability, briefly explain what it likely enables from a functional point of view, but label speculative explanations as `Possible purpose` or `Hypothesis` rather than fact. For example: if `codeInterpreter` is enabled and the agent queries SQL data, you may say it could be intended to generate calculations, tables, or charts from query results, but only as a hypothesis unless files or instructions confirm it. Distinguish clearly between:
+- Agent-level settings or capabilities that are active.
 - Topic-level actions or nodes that explicitly use a capability.
-- Capabilities that are configured but not referenced by any topic.
 
 In `Knowledge and grounding`, do not stop at "one SharePoint source" or "knowledge exists". Provide evidence: knowledge source display name, type, visible location/reference, description or scope if available, and the files/properties where this was found. Also explain how the agent appears to use knowledge:
 - Native grounding through configured knowledge sources.
