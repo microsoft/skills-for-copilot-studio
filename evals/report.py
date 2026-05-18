@@ -771,7 +771,7 @@ def main():
     html_content = generate_html(results, results_dir)
 
     output_path = Path(args.output) if args.output else results_dir / "report.html"
-    output_path.write_text(html_content)
+    output_path.write_text(html_content, encoding="utf-8")
     print(f"Report generated: {output_path}")
 
 

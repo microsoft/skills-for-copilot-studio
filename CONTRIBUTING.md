@@ -76,7 +76,7 @@ npm run build
 ```
 .claude-plugin/          # Plugin manifest and marketplace config
 .github/plugin/          # GitHub Copilot Plugin manifest to speedup discovery
-agents/                  # Sub-agent definitions (advisor, author, manage, test)
+agents/                  # Sub-agent definitions (advisor, author, describer, manage, test)
 evals/                   # Scenario-based eval framework (harness, report, fixtures)
   scenarios/             # Eval definitions per scenario (<name>.json)
   hooks/                 # Eval-only hooks (skill tracing via PreToolUse)
@@ -131,6 +131,7 @@ Skills invoked inside sub-agents are traced via a `PreToolUse` hook injected at 
 | `knowledge-sources` | 3 | Public website, SharePoint, and custom-named knowledge sources |
 | `action-creation` | 2 | MCP and connector action creation |
 | `action-editing` | 3 | MCP action display name, connection mode, structure preservation |
+| `agent-description` | 1 | Direct describer invocation and read-only behavior reporting |
 
 ### Available checks
 

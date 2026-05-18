@@ -28,6 +28,7 @@ body:
         - copilot-studio-manage
         - copilot-studio-test
         - copilot-studio-advisor
+        - copilot-studio-describer
         - General
     validations:
       required: true
