@@ -1,0 +1,55 @@
+{
+  "scenario_name": "agent-description",
+  "evals": [
+    {
+      "id": 1,
+      "name": "Direct describer report",
+      "prompt": "@copilot-studio:copilot-studio-describer Describe everything this agent does in a detailed report. Include the User stories section, Active settings and capability evidence, and explicitly state whether SearchAndSummarizeContent is present or not found. Do not modify files.",
+      "fixture": "basic-agent",
+      "mock_scripts": [],
+      "checks": {
+        "agent_not_invoked": [
+          "copilot-studio:Copilot Studio Author",
+          "copilot-studio:Copilot Studio Manage",
+          "copilot-studio:Copilot Studio Test",
+          "copilot-studio:Copilot Studio Advisor",
+          "Explore"
+        ],
+        "skill_not_invoked": [
+          "copilot-studio:new-topic",
+          "copilot-studio:edit-agent",
+          "copilot-studio:manage-agent",
+          "copilot-studio:run-eval",
+          "copilot-studio:int-patterns"
+        ],
+        "yaml_unchanged": [
+          {"file": "agent.mcs.yml"},
+          {"file": "settings.mcs.yml"},
+          {"file": "topics/*.topic.mcs.yml"}
+        ],
+        "stdout_contains": [
+          "Eval Test Agent",
+          "Greeting",
+          "OnConversationStart",
+          "GenerativeActionsEnabled",
+          "GPT5Chat",
+          "ChatbotReaders",
+          "Active settings",
+          "SearchAndSummarizeContent",
+          "user stor",
+          "knowledge",
+          "tools"
+        ],
+        "stdout_not_contains": [
+          "Unknown command",
+          "isn't installed",
+          "I recommend",
+          "you should update",
+          "validation failed",
+          "published successfully"
+        ],
+        "exit_code": 0
+      }
+    }
+  ]
+}

@@ -43,7 +43,7 @@ claude --plugin-dir /path/to/skills-for-copilot-studio
 claude plugin install /path/to/skills-for-copilot-studio --scope user
 ```
 
-To verify, type `@` in the input — you should see `copilot-studio:copilot-studio-manage`, `copilot-studio:copilot-studio-author`, `copilot-studio:copilot-studio-test`, and `copilot-studio:copilot-studio-advisor` in the autocomplete menu.
+To verify, type `@` in the input — you should see `copilot-studio:copilot-studio-manage`, `copilot-studio:copilot-studio-author`, `copilot-studio:copilot-studio-test`, `copilot-studio:copilot-studio-advisor`, and `copilot-studio:copilot-studio-describer` in the autocomplete menu.
 
 ---
 
@@ -72,8 +72,10 @@ Open Claude Code (or your preferred tool) in the cloned agent's directory.
 ### Explore the agent
 
 ```
-@copilot-studio:copilot-studio-author What topics does this agent have? Give me an overview.
+@copilot-studio:copilot-studio-describer Describe everything this agent does.
 ```
+
+The describer is read-only. It reviews the local agent files, asks clarification questions if something is unclear, and returns a detailed report of the agent's instructions, topics, actions, knowledge, variables, and behavior.
 
 ### Create a new topic
 
@@ -194,7 +196,7 @@ If something goes wrong, you can always re-clone the original agent with `@copil
 - [ ] Plugin installed from marketplace or loaded locally
 - [ ] Copilot Studio VS Code Extension installed (provides the LSP binary)
 - [ ] Agent cloned with `@copilot-studio:copilot-studio-manage clone` or VS Code Extension
-- [ ] `@copilot-studio:copilot-studio-manage`, `:copilot-studio-author`, `:copilot-studio-test`, `:copilot-studio-advisor` visible in `@` autocomplete
+- [ ] `@copilot-studio:copilot-studio-manage`, `:copilot-studio-author`, `:copilot-studio-test`, `:copilot-studio-advisor`, `:copilot-studio-describer` visible in `@` autocomplete
 - [ ] Created a topic with `@copilot-studio:copilot-studio-author`
 - [ ] Validated with `@copilot-studio:copilot-studio-advisor`
 - [ ] Pulled, pushed, and published (`@copilot-studio:copilot-studio-manage pull`, then `push`)
