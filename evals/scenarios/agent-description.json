@@ -4,7 +4,7 @@
     {
       "id": 1,
       "name": "Direct describer report",
-      "prompt": "@copilot-studio:copilot-studio-describer Describe everything this agent does in a detailed report. Include the User stories section. Do not modify files.",
+      "prompt": "@copilot-studio:copilot-studio-describer Describe everything this agent does in a detailed report. Include the User stories section, Active settings and capability evidence, and explicitly state whether SearchAndSummarizeContent is present or not found. Do not modify files.",
       "fixture": "basic-agent",
       "mock_scripts": [],
       "checks": {
@@ -34,6 +34,8 @@
           "GenerativeActionsEnabled",
           "GPT5Chat",
           "ChatbotReaders",
+          "Active settings",
+          "SearchAndSummarizeContent",
           "user stor",
           "knowledge",
           "tools"
