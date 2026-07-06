@@ -1,4 +1,5 @@
 ---
+name: edit-action
 user-invocable: false
 description: Edit an existing action (TaskDialog) in a Copilot Studio agent. Supports connector actions and MCP server actions. Modify inputs, outputs, descriptions, connection mode, and other properties.
 argument-hint: <what to change, e.g. "add description to SharePoint inputs">

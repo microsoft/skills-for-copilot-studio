@@ -1,4 +1,5 @@
 ---
+name: run-eval
 user-invocable: false
 description: >
   Run evaluations against a Copilot Studio agent via the Power Platform Evaluation API.
