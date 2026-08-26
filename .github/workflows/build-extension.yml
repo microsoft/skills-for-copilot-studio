@@ -1,0 +1,185 @@
+name: Build Extension
+
+on:
+  push:
+    branches: [main, coatsy/vscode-extension]
+    paths:
+      - 'agents/**'
+      - 'skills/**'
+      - 'scripts/**'
+      - 'templates/**'
+      - 'reference/**'
+      - 'extension/**'
+      - 'extension-pack/**'
+      - 'upstream-version.json'
+      - '.github/workflows/build-extension.yml'
+  pull_request:
+    branches: [main, coatsy/vscode-extension]
+    paths:
+      - 'agents/**'
+      - 'skills/**'
+      - 'scripts/**'
+      - 'templates/**'
+      - 'reference/**'
+      - 'extension/**'
+      - 'extension-pack/**'
+      - 'upstream-version.json'
+      - '.github/workflows/build-extension.yml'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version override (e.g. 0.2.0). Leave empty to use package.template.json version.'
+        required: false
+        type: string
+
+jobs:
+  lint-scripts:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install ShellCheck (macOS)
+        if: runner.os == 'macOS'
+        run: brew install shellcheck
+
+      - name: Validate shell script syntax
+        run: |
+          errors=0
+          for script in extension/*.sh extension-pack/*.sh; do
+            echo "Checking $script..."
+            if ! bash -n "$script"; then
+              errors=$((errors + 1))
+            fi
+          done
+          if [ "$errors" -gt 0 ]; then
+            echo "ERROR: $errors script(s) have syntax errors"
+            exit 1
+          fi
+
+      - name: Run ShellCheck
+        run: |
+          errors=0
+          for script in extension/*.sh extension-pack/*.sh; do
+            echo "Checking $script..."
+            if ! shellcheck --severity=warning "$script"; then
+              errors=$((errors + 1))
+            fi
+          done
+          if [ "$errors" -gt 0 ]; then
+            echo "ERROR: ShellCheck found issues in $errors script(s)"
+            exit 1
+          fi
+
+  build:
+    runs-on: ubuntu-latest
+    needs: lint-scripts
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Override version
+        if: inputs.version != ''
+        run: |
+          cd extension/templates
+          node -e "
+            const fs = require('fs');
+            const pkg = JSON.parse(fs.readFileSync('package.template.json', 'utf8'));
+            pkg.version = '${{ inputs.version }}';
+            fs.writeFileSync('package.template.json', JSON.stringify(pkg, null, 2) + '\n');
+            console.log('Version set to: ' + pkg.version);
+          "
+
+      - name: Build extension
+        run: bash extension/test-local.sh --package-only
+        env:
+          CODE_CMD: 'true'  # Skip VS Code install in CI
+
+      - name: Verify VSIX artifact
+        run: |
+          VSIX=$(ls -t extension/*.vsix 2>/dev/null | head -1)
+          if [ -z "$VSIX" ]; then
+            echo "ERROR: No .vsix file produced"
+            exit 1
+          fi
+          echo "Built: $VSIX"
+          echo "Size: $(du -h "$VSIX" | cut -f1)"
+
+      - name: Validate VSIX contents
+        run: |
+          STAGE_DIR="extension/.staging"
+
+          # Verify package.json has agents and skills
+          AGENTS=$(node -e "const p=require('./$STAGE_DIR/package.json'); console.log((p.contributes?.chatAgents||[]).length)")
+          SKILLS=$(node -e "const p=require('./$STAGE_DIR/package.json'); console.log((p.contributes?.chatSkills||[]).length)")
+          echo "Agents: $AGENTS, Skills: $SKILLS"
+
+          if [ "$AGENTS" -lt 1 ]; then
+            echo "ERROR: No agents discovered"
+            exit 1
+          fi
+          if [ "$SKILLS" -lt 1 ]; then
+            echo "ERROR: No skills discovered"
+            exit 1
+          fi
+
+          # Verify no Claude-specific frontmatter fields remain
+          if grep -r 'allowed-tools\|CLAUDE_SKILL_DIR\|user-invocable' "$STAGE_DIR/skills/" 2>/dev/null; then
+            echo "ERROR: Claude-specific fields found in staged skills"
+            exit 1
+          fi
+
+          # Verify path resolution handled all CLAUDE_SKILL_DIR variants
+          # Check for repo-root-relative (../../) and skill-local (./) patterns
+          echo "Checking resolved paths..."
+          UNRESOLVED=$(grep -rn '\${CLAUDE_SKILL_DIR}' "$STAGE_DIR/" 2>/dev/null || true)
+          if [ -n "$UNRESOLVED" ]; then
+            echo "ERROR: Unresolved CLAUDE_SKILL_DIR references:"
+            echo "$UNRESOLVED"
+            exit 1
+          fi
+          echo "   All CLAUDE_SKILL_DIR paths resolved"
+
+          # Verify essential directories exist
+          for dir in agents skills scripts templates reference; do
+            if [ ! -d "$STAGE_DIR/$dir" ]; then
+              echo "ERROR: Missing directory: $dir"
+              exit 1
+            fi
+          done
+
+          echo "VSIX validation passed: $AGENTS agents, $SKILLS skills"
+
+      - name: Upload skills extension VSIX
+        uses: actions/upload-artifact@v4
+        with:
+          name: copilot-studio-skills-vsix
+          path: extension/*.vsix
+          retention-days: 30
+
+      - name: Build extension pack
+        run: bash extension-pack/build.sh --package-only
+        env:
+          CODE_CMD: 'true'
+
+      - name: Verify extension pack VSIX
+        run: |
+          VSIX=$(ls -t extension-pack/*.vsix 2>/dev/null | head -1)
+          if [ -z "$VSIX" ]; then
+            echo "ERROR: No extension pack .vsix file produced"
+            exit 1
+          fi
+          echo "Built: $VSIX"
+          echo "Size: $(du -h "$VSIX" | cut -f1)"
+
+      - name: Upload extension pack VSIX
+        uses: actions/upload-artifact@v4
+        with:
+          name: copilot-studio-bundle-vsix
+          path: extension-pack/*.vsix
+          retention-days: 30

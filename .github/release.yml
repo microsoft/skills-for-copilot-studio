@@ -4,6 +4,8 @@ changelog:
       labels: ["type/feature"]
     - title: "Bug Fixes"
       labels: ["type/fix"]
+    - title: "Upstream Sync"
+      labels: ["upstream/sync"]
     - title: "Documentation"
       labels: ["type/docs"]
     - title: "Infrastructure & Evals"

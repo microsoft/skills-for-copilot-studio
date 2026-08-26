@@ -1,0 +1,63 @@
+name: Validate version consistency
+
+on:
+  pull_request:
+    branches: [coatsy/vscode-extension]
+    paths:
+      - 'extension/templates/package.template.json'
+      - 'extension-pack/package.json'
+      - 'upstream-version.json'
+
+jobs:
+  check-versions:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate version files are in sync
+        run: |
+          SKILLS_VERSION=$(node -e "
+            const pkg = require('./extension/templates/package.template.json');
+            console.log(pkg.version);
+          ")
+          BUNDLE_VERSION=$(node -e "
+            const pkg = require('./extension-pack/package.json');
+            console.log(pkg.version);
+          ")
+
+          echo "Skills extension version: $SKILLS_VERSION"
+          echo "Extension pack version:   $BUNDLE_VERSION"
+
+          ERRORS=0
+
+          # Check extension versions match each other
+          if [ "$SKILLS_VERSION" != "$BUNDLE_VERSION" ]; then
+            echo "::error::Skills extension version ($SKILLS_VERSION) does not match extension pack version ($BUNDLE_VERSION)"
+            ERRORS=$((ERRORS + 1))
+          fi
+
+          # Check versions match upstream-version.json if present
+          if [ -f "upstream-version.json" ]; then
+            UPSTREAM_VERSION=$(node -e "
+              const uv = require('./upstream-version.json');
+              const v = uv.upstream_version || '';
+              console.log(v.replace(/^v/, ''));
+            ")
+            echo "Upstream version:         $UPSTREAM_VERSION"
+
+            if [ -n "$UPSTREAM_VERSION" ] && [ "$SKILLS_VERSION" != "$UPSTREAM_VERSION" ]; then
+              echo "::error::Extension version ($SKILLS_VERSION) does not match upstream version ($UPSTREAM_VERSION). See VERSIONING.md."
+              ERRORS=$((ERRORS + 1))
+            fi
+          fi
+
+          if [ "$ERRORS" -gt 0 ]; then
+            echo ""
+            echo "Version files are out of sync. All version files must match:"
+            echo "  - extension/templates/package.template.json"
+            echo "  - extension-pack/package.json"
+            echo "  - upstream-version.json (upstream_version, without 'v' prefix)"
+            exit 1
+          fi
+
+          echo "All version files are in sync ($SKILLS_VERSION)"

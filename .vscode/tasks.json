@@ -1,0 +1,29 @@
+{
+  "version": "2.0.0",
+  "options": {
+    "shell": {
+      "executable": "C:\\Program Files\\Git\\bin\\bash.exe",
+      "args": ["-l", "-c"]
+    }
+  },
+  "tasks": [
+    {
+      "label": "Package Extension",
+      "type": "shell",
+      "command": "bash",
+      "args": ["extension/test-local.sh", "--package-only"],
+      "group": "build",
+      "problemMatcher": [],
+      "detail": "Stage artifacts and build the VSIX without installing"
+    },
+    {
+      "label": "Build and Install Extension",
+      "type": "shell",
+      "command": "bash",
+      "args": ["extension/test-local.sh"],
+      "group": "build",
+      "problemMatcher": [],
+      "detail": "Stage artifacts, build the VSIX, and install into VS Code"
+    }
+  ]
+}

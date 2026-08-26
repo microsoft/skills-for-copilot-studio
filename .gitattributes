@@ -1,0 +1,10 @@
+# Default: auto-detect and normalize to LF in the repo
+* text=auto
+
+# Shell scripts must use LF everywhere (including Windows checkout)
+*.sh text eol=lf
+.shellcheckrc text eol=lf
+
+# Batch files must use CRLF
+*.bat text eol=crlf
+*.cmd text eol=crlf
