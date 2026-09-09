@@ -1,4 +1,5 @@
 ---
+name: create-eval
 user-invocable: true
 description: Create plugin development eval scenarios (JSON files with natural prompts and deterministic checks for testing plugin skills). NOT for Copilot Studio in-product evaluation — use /copilot-studio:create-eval-set for that.
 argument-hint: <scenario name>

@@ -1,4 +1,5 @@
 ---
+name: list-kinds
 user-invocable: false
 description: List all available kind discriminator values from the Copilot Studio YAML schema. Use when the user asks what kinds/types are available.
 argument-hint: <optional-filter-keyword>

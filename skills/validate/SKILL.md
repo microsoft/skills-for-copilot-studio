@@ -1,4 +1,5 @@
 ---
+name: validate
 user-invocable: false
 description: Validate Copilot Studio agent YAML files using the LSP binary's full diagnostics (YAML structure, Power Fx, schema, cross-file references). Use when the user asks to check, validate, or verify YAML files.
 argument-hint: <path-to-agent-workspace>

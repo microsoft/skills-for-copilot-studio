@@ -1,4 +1,5 @@
 ---
+name: create-eval-set
 user-invocable: false
 description: >
   Create a test set CSV file for import into Copilot Studio's in-product Evaluate tab.

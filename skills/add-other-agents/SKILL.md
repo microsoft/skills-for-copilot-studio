@@ -1,4 +1,5 @@
 ---
+name: add-other-agents
 user-invocable: false
 description: Add child agents, connected agents, or other multi-agent patterns to a Copilot Studio agent. Use when the user asks to create a sub-agent, child agent, connected agent, or call another agent.
 argument-hint: <agent description>

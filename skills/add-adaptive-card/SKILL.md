@@ -1,4 +1,5 @@
 ---
+name: add-adaptive-card
 user-invocable: false
 description: Generate and insert an Adaptive Card into a Copilot Studio topic using AdaptiveCardPrompt. Use when the user asks to add an adaptive card, rich card, form card, info card, confirmation card, or interactive card to a topic.
 argument-hint: <card-type> in <topic-name>

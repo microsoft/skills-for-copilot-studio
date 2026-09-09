@@ -1,4 +1,5 @@
 ---
+name: directline-chat
 user-invocable: false
 description: "DEPRECATED: Use /copilot-studio:chat-with-agent instead — it auto-detects DirectLine vs M365 mode. This skill is kept for backwards compatibility only."
 argument-hint: <utterance to send>
