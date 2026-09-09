@@ -1,5 +1,6 @@
 ---
 user-invocable: false
+agent-types: both
 description: >
   Run evaluations against a Copilot Studio agent via the Power Platform Evaluation API.
   Works on DRAFT agents — no publish step required. Lists test sets, starts a run,

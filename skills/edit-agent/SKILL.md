@@ -1,5 +1,6 @@
 ---
 user-invocable: false
+agent-types: classic
 description: Edit Copilot Studio agent settings, instructions, or configuration. Use when the user asks to change agent instructions, display name, conversation starters, AI settings, or generative actions toggle.
 argument-hint: <what to change>
 allowed-tools: Bash(node *schema-lookup.bundle.js *), Read, Edit, Glob

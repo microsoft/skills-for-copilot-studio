@@ -1,0 +1,91 @@
+{
+  "scenario_name": "skill-filtering",
+  "evals": [
+    {
+      "id": 1,
+      "name": "Create a new skill on modern agent",
+      "prompt": "Create a skill called ReturnPolicy that explains our 30-day return policy when customers ask about returns or refunds.",
+      "fixture": "modern-agent",
+      "mock_scripts": [],
+      "checks": {
+        "skill_invoked": "copilot-studio:new-skill",
+        "files_created": [
+          {
+            "pattern": "topics/*.mcs.yml",
+            "min_count": 1
+          }
+        ],
+        "content_contains": [
+          "InlineAgentSkill",
+          "return",
+          "30"
+        ],
+        "no_placeholders": true
+      }
+    },
+    {
+      "id": 2,
+      "name": "Edit existing skill description on modern agent",
+      "prompt": "Update the OrderLookup skill description to also mention 'order cancellation' and 'refund status' so the orchestrator routes those questions to it too.",
+      "fixture": "modern-agent",
+      "mock_scripts": [],
+      "checks": {
+        "skill_invoked": "copilot-studio:edit-skill",
+        "content_contains": [
+          "cancellation",
+          "refund"
+        ]
+      }
+    },
+    {
+      "id": 3,
+      "name": "Edit modern agent instructions",
+      "prompt": "Change the agent's instructions to: 'You are a friendly tech support agent for Contoso Electronics. Always greet the customer by name if available. Escalate complex hardware issues to a human agent.'",
+      "fixture": "modern-agent",
+      "mock_scripts": [],
+      "checks": {
+        "skill_invoked": "copilot-studio:edit-agent-modern",
+        "content_contains": [
+          "Contoso Electronics",
+          "escalate",
+          "hardware"
+        ]
+      }
+    },
+    {
+      "id": 4,
+      "name": "Add website knowledge source on modern agent",
+      "prompt": "Add https://learn.microsoft.com/en-us/copilot-studio/ as a knowledge source so the agent can answer questions about Copilot Studio.",
+      "fixture": "modern-agent",
+      "mock_scripts": [],
+      "checks": {
+        "skill_invoked": "copilot-studio:add-knowledge-modern",
+        "files_created": [
+          {
+            "pattern": "knowledge/*.mcs.yml",
+            "min_count": 1
+          }
+        ],
+        "content_contains": [
+          "WebsiteKnowledgeSource",
+          "learn.microsoft.com"
+        ]
+      }
+    },
+    {
+      "id": 5,
+      "name": "Add conversation starters on modern agent",
+      "prompt": "Add three conversation starters: 'Check order status', 'Return a product', and 'Contact support'.",
+      "fixture": "modern-agent",
+      "mock_scripts": [],
+      "checks": {
+        "skill_invoked": "copilot-studio:edit-agent-modern",
+        "content_contains": [
+          "ConversationStarter",
+          "order status",
+          "Return"
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,36 @@
+name: Validate skill agent-types
+
+on:
+  pull_request:
+    paths:
+      - 'skills/*/SKILL.md'
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check all skills have agent-types frontmatter
+        run: |
+          ERRORS=0
+          for dir in skills/*/; do
+            skill_name=$(basename "$dir")
+            skill_file="$dir/SKILL.md"
+            [ -f "$skill_file" ] || continue
+            case "$skill_name" in int-*) continue ;; esac
+
+            agent_types=$(head -20 "$skill_file" | grep "^agent-types:" | sed 's/agent-types: *//')
+            if [ -z "$agent_types" ]; then
+              echo "::error::Skill '$skill_name' is missing agent-types in SKILL.md frontmatter. Add 'agent-types: classic', 'agent-types: modern', or 'agent-types: both'."
+              ERRORS=1
+            elif [ "$agent_types" != "classic" ] && [ "$agent_types" != "modern" ] && [ "$agent_types" != "both" ]; then
+              echo "::error::Skill '$skill_name' has invalid agent-types: '$agent_types'. Must be 'classic', 'modern', or 'both'."
+              ERRORS=1
+            fi
+          done
+
+          if [ "$ERRORS" -eq 1 ]; then
+            exit 1
+          fi
+          echo "All skills have valid agent-types frontmatter."

@@ -1,5 +1,6 @@
 ---
 user-invocable: false
+agent-types: classic
 description: Create a new Copilot Studio topic YAML file. Use when the user asks to create a new topic, conversation flow, or dialog for their agent.
 argument-hint: <topic description>
 allowed-tools: Bash(node *schema-lookup.bundle.js *), Bash(node *manage-agent.bundle.js *), Read, Write, Glob

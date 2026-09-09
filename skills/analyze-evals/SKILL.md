@@ -1,5 +1,6 @@
 ---
 user-invocable: false
+agent-types: both
 description: >
   Analyze exported evaluation results from Copilot Studio's Evaluate tab.
   The user provides a CSV file exported from the Copilot Studio UI; this skill

@@ -1,0 +1,7 @@
+mcs.metadata:
+  componentName: MSN Weather — Get current weather
+  description: Get the current weather for a location.
+kind: ConnectorTool
+connectorId: /providers/Microsoft.PowerApps/apis/shared_msnweather
+connectionReference: eval_modernAgent.shared_msnweather.abc123
+operationId: CurrentWeather

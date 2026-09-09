@@ -1,0 +1,15 @@
+mcs.metadata:
+  componentName: OrderLookup
+  description: Looks up order status when the customer asks about shipping or delivery.
+kind: InlineAgentSkill
+content: |-
+  ---
+  name: OrderLookup
+  description: Looks up order status when the customer asks about shipping or delivery.
+  ---
+  # Order Lookup
+
+  When the user asks about their order status:
+  1. Ask for their order number
+  2. Tell them you're looking it up
+  3. Respond with a placeholder status

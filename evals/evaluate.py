@@ -120,9 +120,12 @@ def run_cli(cli: str, prompt: str, cwd: Path, timeout: int = 600, plugin_dir: st
         cmd.extend(["--allowedTools", "Bash(node *) Read Write Glob Edit"])
         if plugin_dir:
             cmd.extend(["--plugin-dir", plugin_dir])
-        # Inject PreToolUse hook to trace skill invocations inside sub-agents
+        # Inject PreToolUse hooks:
+        # 1. Trace skill invocations inside sub-agents
+        # 2. Filter skills by agent type (blocks incompatible skills)
         # Use forward slashes for cross-platform compatibility in node command
         hook_path = str(HOOK_SCRIPT).replace("\\", "/")
+        filter_path = str(REPO_ROOT / "hooks" / "filter-skills.js").replace("\\", "/")
         hook_settings = json.dumps({
             "hooks": {
                 "PreToolUse": [{

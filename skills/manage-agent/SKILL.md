@@ -1,5 +1,6 @@
 ---
 user-invocable: false
+agent-types: both
 description: Push/pull Copilot Studio agent content via the VS Code extension's LanguageServerHost LSP binary. Handles authentication (interactive browser login for push/pull, device code flow for chat token), sync push, sync pull, clone, and diff operations.
 argument-hint: <push|pull|clone|changes|validate|publish|auth|list-agents|list-envs>
 allowed-tools: Bash(node *manage-agent.bundle.js *), Read, Glob, Grep

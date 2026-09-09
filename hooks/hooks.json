@@ -17,6 +17,19 @@
           }
         ]
       }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Skill",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node -e \"var r=process.env.CLAUDE_PLUGIN_ROOT;if(r){var p=require('path');require(p.join(r,'hooks','filter-skills.js'))}\"",
+            "bash": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/filter-skills.js\"",
+            "powershell": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/filter-skills.js\""
+          }
+        ]
+      }
     ]
   }
 }
