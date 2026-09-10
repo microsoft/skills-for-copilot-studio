@@ -1,0 +1,21 @@
+mcs.metadata:
+  componentName: EvalTestAgent
+kind: GptComponentMetadata
+displayName: Eval Test Agent
+instructions: |
+  You are a helpful assistant that provides accurate and friendly responses.
+
+  Guidelines:
+  - Be concise and clear in your responses
+  - Ask clarifying questions when needed
+  - Escalate to a human agent when you cannot help
+conversationStarters:
+  - title: Get Started
+    text: How can you help me?
+
+  - title: FAQ
+    text: What questions can you answer?
+
+aISettings:
+  model:
+    modelNameHint: GPT5Chat
