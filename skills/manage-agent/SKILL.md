@@ -118,6 +118,12 @@ node ${CLAUDE_SKILL_DIR}/../../scripts/manage-agent.bundle.js pull \
 
 Push automatically validates all `.mcs.yml` files before pushing and blocks if there are errors. Add `--force` to bypass validation (not recommended).
 
+**Disambiguation check:** Before pushing, check if any routing-relevant changes were made since the last push (new topics with `modelDescription`, new child agents, changed `modelDescription` or `beginDialog.description` on any surface). If so, suggest a disambiguation check:
+
+> "You've made changes to topic/tool/child agent descriptions since the last push. Want to run a disambiguation check first to catch any routing collisions?"
+
+If the user declines, proceed with push. Do NOT block on this — it's advisory.
+
 ```bash
 node ${CLAUDE_SKILL_DIR}/../../scripts/manage-agent.bundle.js push \
   --workspace "<path-to-agent-folder>" \
