@@ -1,7 +1,7 @@
 ---
 user-invocable: false
 description: Clone a Copilot Studio agent from the cloud. Guides through environment selection, agent selection, and downloads agent YAML files.
-argument-hint: [agent name or environment hint]
+argument-hint: "[agent name or environment hint]"
 allowed-tools: Bash(node *manage-agent.bundle.js *), Read, Glob, Grep
 context: fork
 agent: copilot-studio-manage
