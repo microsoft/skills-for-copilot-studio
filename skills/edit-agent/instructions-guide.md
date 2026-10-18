@@ -2,6 +2,27 @@
 
 The `instructions` field in `agent.mcs.yml` is the system prompt. It is the most powerful lever for improving knowledge-based responses.
 
+## Instructions format
+
+The `instructions` field supports two forms.
+
+**Plain string (original):**
+```yaml
+instructions: |
+  You are a helpful assistant.
+```
+
+**Segments object (current Copilot Studio format):**
+```yaml
+instructions:
+  segments:
+    - kind: StaticSegment
+      value: |
+        You are a helpful assistant.
+```
+
+Current Copilot Studio templates use the segments form. When you pull an agent from Copilot Studio, instructions will come back as `segments` with `StaticSegment` entries. The plain string form still works for authoring but may be ignored by newer templates that expect `segments`. If your published agent has blank instructions, switch to the segments form.
+
 ## Role of `instructions` in Knowledge Usage
 
 The instructions field directly controls:

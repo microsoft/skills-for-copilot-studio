@@ -48,6 +48,9 @@
           "$ref": "#/definitions/ExpressionSegment"
         },
         {
+          "$ref": "#/definitions/StaticSegment"
+        },
+        {
           "$ref": "#/definitions/VideoCardTemplate"
         },
         {
@@ -1485,6 +1488,9 @@
       "oneOf": [
         {
           "$ref": "#/definitions/TextSegment"
+        },
+        {
+          "$ref": "#/definitions/StaticSegment"
         },
         {
           "$ref": "#/definitions/ExpressionSegment"
@@ -3365,6 +3371,34 @@
       "required": [
         "kind"
       ]
+    },
+    "StaticSegment": {
+      "title": "StaticSegment",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "StaticSegment"
+        },
+        "value": {
+          "title": "Value",
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind"
+      ]
+    },
+    "StaticSegmentNoKind": {
+      "title": "StaticSegment",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "value": {
+          "title": "Value",
+          "type": "string"
+        }
+      }
     },
     "ExpressionSegment": {
       "title": "ExpressionSegment",
@@ -17164,7 +17198,26 @@
         "instructions": {
           "title": "BotSchema:$$GptComponentMetadata_instructions_title$$",
           "description": "BotSchema:$$GptComponentMetadata_instructions_description$$",
-          "$ref": "#/definitions/TemplateLineNoKind"
+          "oneOf": [
+            {
+              "$ref": "#/definitions/TemplateLineNoKind"
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "segments": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/definitions/TemplateSegment"
+                  }
+                },
+                "text": {
+                  "type": "string"
+                }
+              }
+            }
+          ]
         },
         "responseInstructions": {
           "title": "BotSchema:$$GptComponentMetadata_responseInstructions_title$$",
@@ -17239,7 +17292,26 @@
         "instructions": {
           "title": "BotSchema:$$GptComponentMetadata_instructions_title$$",
           "description": "BotSchema:$$GptComponentMetadata_instructions_description$$",
-          "$ref": "#/definitions/TemplateLineNoKind"
+          "oneOf": [
+            {
+              "$ref": "#/definitions/TemplateLineNoKind"
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "segments": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/definitions/TemplateSegment"
+                  }
+                },
+                "text": {
+                  "type": "string"
+                }
+              }
+            }
+          ]
         },
         "responseInstructions": {
           "title": "BotSchema:$$GptComponentMetadata_responseInstructions_title$$",

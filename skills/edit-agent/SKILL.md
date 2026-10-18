@@ -39,7 +39,7 @@ Modify agent metadata (`agent.mcs.yml`) or configuration (`settings.mcs.yml`).
 | Field | Description | Example |
 |-------|-------------|---------|
 | `displayName` | Agent's display name | `displayName: My Agent` |
-| `instructions` | System prompt / personality | Multi-line YAML with `\|` |
+| `instructions` | System prompt / personality | Plain string or `segments` object (see guide) |
 | `conversationStarters` | Suggested conversation starters | Array of `{title, text}` |
 | `aISettings.model.modelNameHint` | Model hint (run `models` command for convention) | `Sonnet46`, `GPT5Chat` |
 | `aISettings.model.provider` | Model provider (required for non-OpenAI) | `Anthropic` |
@@ -70,6 +70,7 @@ If the user asks to change any of these, warn them.
 
 ## Example: Update Instructions
 
+**Plain string form:**
 ```yaml
 instructions: |
   You are a customer support agent for Contoso Ltd.
@@ -79,3 +80,19 @@ instructions: |
   - Always verify the customer's identity first
   - Escalate billing issues to a human agent
 ```
+
+**Segments form (required by newer Copilot Studio templates):**
+```yaml
+instructions:
+  segments:
+    - kind: StaticSegment
+      value: |
+        You are a customer support agent for Contoso Ltd.
+
+        Guidelines:
+        - Be professional and empathetic
+        - Always verify the customer's identity first
+        - Escalate billing issues to a human agent
+```
+
+If the agent was pulled from Copilot Studio and already uses `segments`, keep that form.
