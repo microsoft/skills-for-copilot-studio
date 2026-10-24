@@ -341,6 +341,12 @@ function validateYamlFile(filepath, definitions) {
       console.log(`[WARN] Kind '${kind}' not found in schema kind values`);
       warnings++;
     }
+    if (kind === "EvaluationSet" || kind === "EvaluationData") {
+      console.log(
+        `[NOTE] Kind '${kind}' is valid in the schema, but is not synchronized to the cloud by 'manage-agent push'. ` +
+        `To evaluate in Copilot Studio, import a CSV test set via the portal Evaluate tab or use the PPAPI eval runner.`
+      );
+    }
   } else {
     console.log("[FAIL] No 'kind' property found at root level");
     failures++;

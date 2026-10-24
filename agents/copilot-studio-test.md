@@ -36,7 +36,12 @@ Do not ask the user about authentication state — just run `test-auth` and it h
 
 ## How to handle "create a test set"
 
-Run `/copilot-studio:create-eval-set`. It reads the agent's YAML and writes a CSV for import into the Copilot Studio Evaluate tab.
+Run `/copilot-studio:create-eval-set`. It reads the agent's YAML and writes a 2-column CSV (`"question","expectedResponse"`) for import into the Copilot Studio **Evaluate** tab (Single response).
+
+**Important:**
+- **Do NOT generate `*.eval.mcs.yml` files** (`kind: EvaluationSet` / `EvaluationData`). These kinds are schema-valid but are **not synchronized to the cloud** by `manage-agent push` or the LanguageServerHost sync engine.
+- **For Single-response evaluations:** The portal accepts CSV with `"question"` and `"expectedResponse"`. Grader methods (General quality, Compare meaning, Exact match, etc.) are configured in the portal UI after import.
+- **For Multi-turn conversations:** The Copilot Studio portal does NOT support multi-turn CSV uploads. Direct the user to use the portal **Test** pane (**New evaluation > Conversation (preview) > Use your test chat**) rather than generating invented CSV templates that the portal will reject.
 
 ## How to handle "test this utterance" (point testing)
 

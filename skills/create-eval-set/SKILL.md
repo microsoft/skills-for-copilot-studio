@@ -122,3 +122,17 @@ After import, some things can only be configured in the UI:
 - Keywords for Keyword match test cases
 - Expected capabilities for Capability use test cases
 - Custom grader instructions and labels
+
+## Multi-Turn (Conversation) Evaluations
+
+The Copilot Studio portal **does not support CSV file uploads for multi-turn evaluations**. Do not generate synthetic multi-turn CSV templates (such as `evaluate-conversation.csv`), as the portal import will fail with a template error.
+
+To evaluate multi-turn conversations:
+1. Open your agent in the Copilot Studio portal.
+2. Open the **Test** pane and complete sample interactive conversations.
+3. Go to the **Evaluate** tab > **New evaluation** > **Conversation (preview)**.
+4. Select **Use your test chat** to turn your recent test conversations into an evaluation run.
+
+## Sync Note
+
+Local evaluation YAML files (`*.eval.mcs.yml` with `kind: EvaluationSet` or `EvaluationData`) are valid against the authoring schema but are **not synchronized to the cloud** by `manage-agent push`. Always use the CSV format described above for single-response evaluations in the portal Evaluate tab.
