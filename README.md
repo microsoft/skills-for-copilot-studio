@@ -82,6 +82,20 @@ The plugin provides four sub-agents, each backed by a specialized agent:
 
 See [SETUP_GUIDE.md](SETUP_GUIDE.md) for a full end-to-end walkthrough including validation, testing options, and troubleshooting.
 
+## Sync Scope & Evaluations
+
+### What gets synchronized by `manage-agent push`/`pull`
+The Copilot Studio LanguageServerHost sync engine synchronizes the following component kinds:
+- **Topics & Dialogs:** `AdaptiveDialog` (`topics/*.topic.mcs.yml`)
+- **Agent Instructions & Settings:** `GptComponentMetadata` (`agent.mcs.yml`, `settings.mcs.yml`)
+- **Knowledge Sources:** `KnowledgeSourceConfiguration`
+- **Child Agents:** `AgentDialog`
+- **Actions & Connectors:** MCP actions and connection definitions (`actions/*.mcs.yml`)
+
+### How to evaluate agents
+- **Single-Response Evaluations:** Use `/copilot-studio:create-eval-set` to generate a 2-column CSV (`"question","expectedResponse"`). Import this CSV into the Copilot Studio portal under the **Evaluate** tab.
+- **Multi-Turn Evaluations:** Multi-turn CSV uploads are not supported by the portal. Use the portal **Test** pane to run conversations, then navigate to **New evaluation > Conversation (preview) > Use your test chat**.
+- **Local YAML Evaluations:** Evaluation definitions (`kind: EvaluationSet` and `EvaluationData`) are defined in the authoring schema, but are **not synchronized** to the cloud by `manage-agent push`. The tooling surfaces an informative notice if these files are present in your workspace.
 
 ## Disclaimer
 

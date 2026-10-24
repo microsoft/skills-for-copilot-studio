@@ -547,6 +547,35 @@ function findMcsYmlFiles(dir, results = []) {
   return results;
 }
 
+const UNSYNCED_KINDS = {
+  EvaluationSet: "EvaluationSet files are not synced by LanguageServerHost push. To evaluate in Copilot Studio, import a CSV test set via the portal Evaluate tab or use PPAPI eval runner.",
+  EvaluationData: "EvaluationData files are not synced by LanguageServerHost push. To evaluate in Copilot Studio, import a CSV test set via the portal Evaluate tab or use PPAPI eval runner.",
+};
+
+function detectUnsyncedComponents(agentDir) {
+  const filePaths = findMcsYmlFiles(agentDir);
+  const unsynced = [];
+  for (const filePath of filePaths) {
+    try {
+      const content = fs.readFileSync(filePath, "utf8");
+      const match = content.match(/^kind:\s*([A-Za-z0-9_-]+)/m);
+      if (match) {
+        const kind = match[1];
+        if (UNSYNCED_KINDS[kind]) {
+          unsynced.push({
+            file: path.relative(agentDir, filePath),
+            kind,
+            message: UNSYNCED_KINDS[kind],
+          });
+        }
+      }
+    } catch {
+      // ignore unreadable files
+    }
+  }
+  return unsynced;
+}
+
 function openFilesForDiagnostics(client, filePaths) {
   // Notify the server about all files via workspace/didChangeWatchedFiles first.
   // This mirrors the VS Code extension's file watcher behavior and triggers
@@ -664,6 +693,10 @@ async function runValidation(client, args, tokens) {
 
   const output = formatValidationOutput(diagnosticsMap, agentDir);
   output.fileCount = filePaths.length;
+  const unsynced = detectUnsyncedComponents(agentDir);
+  if (unsynced.length > 0) {
+    output.unsyncedComponents = unsynced;
+  }
   return output;
 }
 
@@ -917,12 +950,23 @@ async function cmdWithLsp(args, method) {
       log(`[push] Validation passed (${validation.summary.warnings} warning(s))`);
     }
 
+    const agentDir = findAgentDir(args.workspace);
+    const unsynced = detectUnsyncedComponents(agentDir);
+    if (unsynced.length > 0) {
+      log(`[${method}] Notice: ${unsynced.length} component file(s) are not synced by LanguageServerHost push: ${unsynced.map(u => u.file).join(", ")}`);
+    }
+
     const request = buildSyncRequest(args, tokens);
     log(`Calling ${method}...`);
     const result = await sendCustomRequestWithRetries(client, method, request);
 
+    const output = { status: "ok", method, result };
+    if (unsynced.length > 0) {
+      output.unsyncedComponents = unsynced;
+    }
+
     process.stdout.write(
-      JSON.stringify({ status: "ok", method, result }, null, 2) + "\n"
+      JSON.stringify(output, null, 2) + "\n"
     );
   } finally {
     await client.stop();
@@ -1279,9 +1323,16 @@ async function cmdChanges(args) {
       request
     );
 
+    const unsynced = detectUnsyncedComponents(agentDir);
+    const output = { status: "ok", localChanges, remoteChanges };
+    if (unsynced.length > 0) {
+      output.unsyncedComponents = unsynced;
+      log(`[changes] Warning: ${unsynced.length} component file(s) are not synced by push: ${unsynced.map((u) => u.file).join(", ")}`);
+    }
+
     process.stdout.write(
       JSON.stringify(
-        { status: "ok", localChanges, remoteChanges },
+        output,
         null,
         2
       ) + "\n"
@@ -1474,7 +1525,9 @@ async function main() {
 
 // Expose helpers for testing when loaded as a module
 if (typeof module !== "undefined") {
-  module.exports = { parseAgentUrl };
+  module.exports = { parseAgentUrl, detectUnsyncedComponents, UNSYNCED_KINDS };
 }
 
-main();
+if (require.main === module) {
+  main();
+}
