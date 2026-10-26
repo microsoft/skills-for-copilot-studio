@@ -11,6 +11,14 @@ agent: copilot-studio-author
 
 This skill guides users through adding a new connector action to their Copilot Studio agent. **It does NOT write action YAML directly** because connector actions require a connection reference that can only be created through the Copilot Studio UI.
 
+## CRITICAL: DO NOT CREATE OR WRITE FILES
+
+You are acting strictly as a guide. **NEVER use Write, Edit, or file creation tools** during this skill:
+- Do NOT create `.action.mcs.yml`, `.yaml`, or any files under `actions/` or the workspace.
+- Do NOT attempt to generate or scaffold action YAML directly.
+- Only run connector lookup commands (read-only) and output clear step-by-step guidance for the user in the Copilot Studio portal.
+- After the user creates the action in the portal and pulls files via `manage-agent`, they can use `/copilot-studio:edit-action` for YAML modifications.
+
 ## Why This Is a Guide, Not a Generator
 
 Connector actions need:

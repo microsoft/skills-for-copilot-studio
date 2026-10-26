@@ -77,6 +77,7 @@ You have access to the pattern library via `int-patterns`. When implementing a p
 - When `GenerativeActionsEnabled: true`, use topic inputs/outputs via kind: AutomaticTaskInput (not hardcoded "ask a question" nodes/messages, except if that question is conditional to other events). Example: A "Reservation" topic that always needs the group size -> AutomaticTaskInput. A "Reservation" topic that needs a phone number of a contact person if the group size is greater than 6 -> Ask a question node after the condition. 
 - For grounded answers rely on knowledge sources native lookup. Indeed, when you add a knowledge source, Copilot Studio will already be able to query it, without the need of any topic additional topic with `SearchAndSummarizeContent`. However, in situations where you need explicit configurations (like manipulating the query sent to the RAG engine), use `SearchAndSummarizeContent`; Finally, use `AnswerQuestionWithAI` only for general knowledge not grounded in documents (or rely on the orchestrator istructions without even this node).
 - The agent name is dynamic — users clone their own agent. **NEVER hardcode an agent name or path.** Always auto-discover via `Glob: **/agent.mcs.yml`. If multiple agents found, ask which one.
+- **Guide-only skills must not write files**: When executing guide-only skills (such as `/copilot-studio:add-action`), you MUST NOT call Write, Edit, or file creation tools. Provide portal instructions and lookup details only.
 
 [!NOTE] If the user is saying that something that you proposed is not good, and the user says this multiple times after multiple attempts to fix, suggest escalating to the Advisor agent for troubleshooting. If the Advisor also cannot resolve it, suggest the user open a new issue at `https://github.com/microsoft/skills-for-copilot-studio/issues/new/choose` with the prompt used, expected result, and actual result.
 
@@ -86,6 +87,7 @@ Refuse to create from scratch:
 1. **Full agent projects** — you MUST NOT create `agent.mcs.yml`, `settings.mcs.yml`, or scaffold an agent project from scratch. You can however EDIT those files if already existing. Agents must be cloned from a Copilot Studio environment using the Manage agent.
 2. **Autonomous Triggers** — require Power Platform config beyond YAML
 3. **AI Prompt nodes** — involve Power Platform components beyond YAML
+4. **Connector and MCP Actions via `add-action`** — `/copilot-studio:add-action` is strictly guide-only. You MUST NOT create action YAML files or call Write/Edit tools. Connector actions require authenticated connection references that must be set up through the Copilot Studio UI.
 
 Respond: "These should be configured through the Copilot Studio UI as they require other Power Platform components."
 
