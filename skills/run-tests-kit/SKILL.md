@@ -56,29 +56,28 @@ The user must have:
    }
    ```
 
-5. If all values are already configured and valid, proceed to Phase 2.
+5. **Confirm Environment & Client ID Before Running**:
+   When running tests against an existing or cloned workspace, explicitly confirm the target environment URL (`environmentUrl`) and client ID (`clientId`) with the user so they are aware of which tenant/environment authentication will target.
+
+6. If all values are already configured, verified, and valid, proceed to Phase 2.
 
 ## Phase 2: Run Tests
 
-1. **Ensure `tests/package.json` exists** in the user's project. If not, copy it:
+1. **Install dependencies from the plugin directory** if `${CLAUDE_SKILL_DIR}/../../tests/node_modules/` doesn't exist:
    ```bash
-   cp ${CLAUDE_SKILL_DIR}/../../tests/package.json ./tests/package.json
+   npm install --prefix ${CLAUDE_SKILL_DIR}/../../tests --ignore-scripts
    ```
+   *Note: Always install and source dependencies from the trusted plugin directory (`${CLAUDE_SKILL_DIR}/../../tests`) rather than project-supplied manifests to avoid untrusted dependency scripts.*
 
-2. **Install dependencies** if `tests/node_modules/` doesn't exist:
-   ```bash
-   npm install --prefix tests
-   ```
-
-3. **Run the test script in the background** with a 100-minute timeout (6000000ms):
+2. **Run the test script in the background** with a 100-minute timeout (6000000ms):
    ```bash
    node ${CLAUDE_SKILL_DIR}/../../tests/run-tests.js --config-dir ./tests
    ```
    Use `run_in_background: true` for this command. Save the returned task ID.
 
-4. **Wait 10 seconds**, then check the background task output (non-blocking check).
+3. **Wait 10 seconds**, then check the background task output (non-blocking check).
 
-5. **Detect the authentication state** from the output:
+4. **Detect the authentication state** from the output:
 
    - If the output contains **"Using cached token"**: Authentication succeeded automatically. Tell the user: "Authentication successful (cached credentials). Tests are running, this may take several minutes..."
 
@@ -95,11 +94,11 @@ The user must have:
 
    - If the output is empty or incomplete: Wait another 10 seconds and check again (retry up to 3 times).
 
-6. **Wait for the background task to complete** (blocking). The script polls every 20 seconds until all tests finish and downloads results as a CSV.
+5. **Wait for the background task to complete** (blocking). The script polls every 20 seconds until all tests finish and downloads results as a CSV.
 
-7. **Read the final output** to get the success rate and CSV filename.
+6. **Read the final output** to get the success rate and CSV filename.
 
-8. Proceed to **Phase 3**.
+7. Proceed to **Phase 3**.
 
 ## Phase 3: Analyze Results
 
