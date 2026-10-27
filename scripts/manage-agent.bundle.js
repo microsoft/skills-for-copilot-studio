@@ -217,6 +217,42 @@ var require_shared_utils = __commonJS({
   }
 });
 
+// src/dataverse-validation.js
+var require_dataverse_validation = __commonJS({
+  "src/dataverse-validation.js"(exports2, module2) {
+    var GUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    var DNS_LABEL = "[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?";
+    var DATAVERSE_HOST_RE = new RegExp(
+      `^${DNS_LABEL}\\.(?:crm[0-9]*\\.dynamics\\.com|crm\\.(?:microsoftdynamics\\.us|appsplatform\\.us|dynamics\\.cn))$`,
+      "i"
+    );
+    var TENANT_DOMAIN_RE = new RegExp(`^(?:${DNS_LABEL}\\.)+[a-z]{2,63}$`, "i");
+    function validateTenantId2(value) {
+      if (typeof value !== "string" || !(GUID_RE.test(value) || TENANT_DOMAIN_RE.test(value))) {
+        throw new Error("Tenant ID must be a GUID or tenant domain name.");
+      }
+      return value;
+    }
+    function validateAgentId2(value) {
+      if (typeof value !== "string" || !GUID_RE.test(value)) {
+        throw new Error("Agent ID must be a GUID.");
+      }
+      return value;
+    }
+    function validateDataverseUrl2(value) {
+      if (typeof value !== "string" || !/^https:\/\/[^/?#\\\s]+\/*$/i.test(value)) {
+        throw new Error("Dataverse URL must be an HTTPS origin without a path, query, or fragment.");
+      }
+      const url = new URL(value);
+      if (url.username || url.password || url.port || !DATAVERSE_HOST_RE.test(url.hostname)) {
+        throw new Error("Dataverse URL must use a trusted Dataverse hostname and the default HTTPS port.");
+      }
+      return url.origin;
+    }
+    module2.exports = { validateTenantId: validateTenantId2, validateAgentId: validateAgentId2, validateDataverseUrl: validateDataverseUrl2 };
+  }
+});
+
 // src/msal-cache.js
 var require_msal_cache = __commonJS({
   "src/msal-cache.js"(exports2, module2) {
@@ -14976,6 +15012,7 @@ var path2 = require("path");
 var fs6 = require("fs");
 var os2 = require("os");
 var { log, die, sleep } = require_shared_utils();
+var { validateTenantId, validateAgentId, validateDataverseUrl } = require_dataverse_validation();
 var {
   VSCODE_CLIENT_ID,
   getIslandResourceId,
@@ -15587,6 +15624,7 @@ async function sendCustomRequestWithRetries(client, method, request, options = {
 async function cmdAuth(args) {
   if (!args.tenantId) die("--tenant-id (or CPS_TENANT_ID) is required");
   if (!args.environmentUrl) die("--environment-url (or CPS_ENVIRONMENT_URL) is required");
+  const envUrl = validateDataverseUrl(args.environmentUrl);
   const clientId = args.clientId || VSCODE_CLIENT_ID;
   log("Acquiring Copilot Studio API token...");
   const cpsToken = await getOrAcquireToken(
@@ -15595,7 +15633,6 @@ async function cmdAuth(args) {
     ["https://api.powerplatform.com/.default"],
     "Copilot Studio API"
   );
-  const envUrl = args.environmentUrl.replace(/\/+$/, "");
   log("Acquiring Dataverse API token...");
   const dvToken = await getOrAcquireToken(
     args.tenantId,
@@ -15620,8 +15657,8 @@ async function acquireLspTokens(args) {
   const agentDir = findAgentDir(args.workspace);
   const conn = loadConnJson(agentDir);
   const clusterCategory = conn?.AccountInfo?.clusterCategory;
-  const tenantId = conn?.AccountInfo?.TenantId || args.tenantId;
-  const envUrl = args.environmentUrl.replace(/\/+$/, "");
+  const tenantId = validateTenantId(conn?.AccountInfo?.TenantId || args.tenantId);
+  const envUrl = validateDataverseUrl(args.environmentUrl);
   let cpsToken, dvToken;
   if (clusterCategory != null) {
     cpsToken = await getOrAcquireIslandToken(tenantId, clusterCategory, "Island API");
@@ -15719,6 +15756,7 @@ var BAP_HOST = "api.bap.microsoft.com";
 var BAP_TOKEN_SCOPE = "https://service.powerapps.com/.default";
 async function httpGetJson(url, accessToken) {
   const res = await fetch(url, {
+    redirect: "error",
     headers: { Authorization: `Bearer ${accessToken}` },
     signal: AbortSignal.timeout(3e4)
   });
@@ -15732,6 +15770,7 @@ async function httpPostJson(url, accessToken, body) {
   const payload = body != null ? JSON.stringify(body) : "";
   const res = await fetch(url, {
     method: "POST",
+    redirect: "error",
     headers: {
       Authorization: `Bearer ${accessToken}`,
       "Content-Type": "application/json",
@@ -15753,7 +15792,7 @@ async function httpPostJson(url, accessToken, body) {
 async function cmdListAgents(args) {
   if (!args.tenantId) die("--tenant-id (or CPS_TENANT_ID) is required");
   if (!args.environmentUrl) die("--environment-url (or CPS_ENVIRONMENT_URL) is required");
-  const envUrl = args.environmentUrl.replace(/\/+$/, "");
+  const envUrl = validateDataverseUrl(args.environmentUrl);
   const dvToken = await getOrAcquireToken(
     args.tenantId,
     VSCODE_CLIENT_ID,
@@ -15846,10 +15885,13 @@ async function cmdPublish(args) {
   const conn = loadConnJson(agentDir);
   const tenantId = conn?.AccountInfo?.TenantId || args.tenantId;
   if (!tenantId) die("--tenant-id (or CPS_TENANT_ID) is required");
-  const envUrl = (args.environmentUrl || conn?.DataverseEndpoint || "").replace(/\/+$/, "");
-  if (!envUrl) die("--environment-url (or CPS_ENVIRONMENT_URL) is required");
+  validateTenantId(tenantId);
+  const environmentUrl = args.environmentUrl || conn?.DataverseEndpoint;
+  if (!environmentUrl) die("--environment-url (or CPS_ENVIRONMENT_URL) is required");
+  const envUrl = validateDataverseUrl(environmentUrl);
   const botId = args.agentId || conn && conn.AgentId;
   if (!botId) die("Cannot determine agent ID. Provide --agent-id or ensure .mcs/conn.json exists.");
+  validateAgentId(botId);
   const dvToken = await getOrAcquireToken(
     tenantId,
     VSCODE_CLIENT_ID,
@@ -15925,8 +15967,8 @@ async function cmdChanges(args) {
   const agentDir = findAgentDir(args.workspace);
   const conn = loadConnJson(agentDir);
   const clusterCategory = conn?.AccountInfo?.clusterCategory;
-  const tenantId = conn?.AccountInfo?.TenantId || args.tenantId;
-  const envUrl = args.environmentUrl.replace(/\/+$/, "");
+  const tenantId = validateTenantId(conn?.AccountInfo?.TenantId || args.tenantId);
+  const envUrl = validateDataverseUrl(args.environmentUrl);
   let cpsToken, dvToken;
   if (clusterCategory != null) {
     cpsToken = await getOrAcquireIslandToken(tenantId, clusterCategory, "Island API");
@@ -16031,7 +16073,7 @@ async function cmdClone(args) {
   }
   if (!args.environmentUrl) die("Could not resolve --environment-url (or CPS_ENVIRONMENT_URL)");
   if (!args.agentMgmtUrl) die("Could not resolve --agent-mgmt-url (or CPS_AGENT_MGMT_URL)");
-  const envUrl = args.environmentUrl.replace(/\/+$/, "");
+  const envUrl = validateDataverseUrl(args.environmentUrl);
   const DEFAULT_CLUSTER_CATEGORY = 5;
   const cpsToken = await getOrAcquireIslandToken(args.tenantId, DEFAULT_CLUSTER_CATEGORY, "Island API");
   const dvToken = await getOrAcquireToken(args.tenantId, VSCODE_CLIENT_ID, [`${envUrl}/.default`], "Dataverse API");
@@ -16081,6 +16123,9 @@ async function cmdClone(args) {
 async function main() {
   const args = parseArgs();
   try {
+    if (args.tenantId) validateTenantId(args.tenantId);
+    if (args.agentId) validateAgentId(args.agentId);
+    if (args.environmentUrl) args.environmentUrl = validateDataverseUrl(args.environmentUrl);
     switch (args.command) {
       case "auth":
         await cmdAuth(args);

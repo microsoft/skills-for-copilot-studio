@@ -2,6 +2,7 @@ const fs = require('fs');
 const cp = require('child_process');
 const p = require('path');
 const os = require('os');
+const { persistEnvironment } = require('./setup-env');
 
 // __dirname is the hooks/ directory; the plugin root is one level up
 const r = p.resolve(__dirname, '..');
@@ -31,8 +32,5 @@ fs.writeFileSync(
 );
 
 if (e) {
-  fs.appendFileSync(
-    e,
-    'export CLAUDE_PLUGIN_DATA="' + d + '"\nexport CLAUDE_PLUGIN_ROOT="' + r + '"\n'
-  );
+  persistEnvironment(e, d, r);
 }
