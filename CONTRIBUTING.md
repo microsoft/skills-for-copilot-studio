@@ -49,6 +49,28 @@ npm install
 npm run build
 ```
 
+For a manage-agent-only change, use `npm run build:manage-agent` and commit the
+regenerated bundle with its source.
+
+### Offline security regression tests
+
+These tests use temporary workspaces and mocked authentication/HTTP, not live
+Dataverse environments. Python 3.10 or later is required by the eval harness.
+
+```bash
+node --test tests/manage-agent-security.test.js tests/setup-env.test.js
+python3 -B -m unittest discover -s tests -p 'test_eval_paths.py'
+```
+
+Eval fixture and mock names must be relative to `evals/fixtures` and `evals/mocks`.
+Nested names are supported; absolute paths, traversal, and symlinks escaping the
+selected fixture or mock/script base are rejected. Fixtures and workspaces must
+not be modified concurrently while setup validates and copies them.
+
+The setup hook treats `CLAUDE_ENV_FILE` as a trusted host-provided absolute path.
+It appends shell-literal exports to a regular file (creating it if needed), rejects
+symlink destinations, and skips persistence when the variable is absent.
+
 ## Plugin management
 
 ```bash

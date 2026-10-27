@@ -20,7 +20,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
-from pathlib import Path
+from pathlib import Path, PureWindowsPath
 
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -36,21 +36,54 @@ EVALS_SCENARIOS_DIR = REPO_ROOT / "evals" / "scenarios"
 
 def load_evals(scenario_name: str) -> dict:
     """Load eval definition from evals/scenarios/<name>.json."""
-    evals_path = EVALS_SCENARIOS_DIR / f"{scenario_name}.json"
+    evals_path = contained_path(EVALS_SCENARIOS_DIR, f"{scenario_name}.json")
     if not evals_path.exists():
         print(f"Error: No evals found for scenario '{scenario_name}' in evals/scenarios/", file=sys.stderr)
         sys.exit(1)
     return json.loads(evals_path.read_text())
 
 
+def contained_path(base: Path, name: str) -> Path:
+    """Resolve a portable relative name without escaping its trusted base."""
+    if (not isinstance(name, str) or not name or "\0" in name or "\\" in name
+            or Path(name).is_absolute() or PureWindowsPath(name).drive
+            or ".." in Path(name).parts):
+        raise ValueError(f"Expected a relative in-base path: {name!r}")
+    root = base.resolve()
+    target = (root / name).resolve()
+    if target == root or not target.is_relative_to(root):
+        raise ValueError(f"Path escapes its base: {name!r}")
+    return target
+
+
+def validate_fixture_tree(directory: Path, root: Path, ancestors: frozenset[Path] = frozenset()) -> None:
+    """Check every followed fixture link before copytree can dereference it."""
+    resolved = directory.resolve()
+    if not resolved.is_relative_to(root) or resolved in ancestors:
+        raise ValueError(f"Escaping or cyclic fixture path: {directory}")
+    for entry in directory.iterdir():
+        target = entry.resolve()
+        if not target.is_relative_to(root):
+            raise ValueError(f"Fixture path escapes its root: {entry}")
+        if entry.is_dir():
+            validate_fixture_tree(entry, root, ancestors | {resolved})
+        elif not entry.is_file():
+            raise ValueError(f"Fixture entry is not a regular file or directory: {entry}")
+
+
 def setup_workspace(fixture_name: str) -> Path:
     """Copy a fixture agent dir into a temp workspace. Returns the workspace path."""
-    fixture_path = FIXTURES_DIR / fixture_name
-    if not fixture_path.exists():
+    fixture_path = contained_path(FIXTURES_DIR, fixture_name)
+    if not fixture_path.is_dir():
         raise FileNotFoundError(f"Fixture not found: {fixture_path}")
+    validate_fixture_tree(fixture_path, fixture_path)
 
     workspace = Path(tempfile.mkdtemp(prefix="skill-eval-"))
-    shutil.copytree(fixture_path, workspace / "agent", dirs_exist_ok=True)
+    try:
+        shutil.copytree(fixture_path, workspace / "agent", dirs_exist_ok=True)
+    except Exception:
+        shutil.rmtree(workspace)
+        raise
     return workspace
 
 
@@ -79,14 +112,21 @@ def find_new_or_modified_files(directory: Path, before: dict[str, str]) -> list[
 
 def setup_mocks(workspace: Path, mock_scripts: list[str]) -> None:
     """Copy mock scripts over real bundle.js files in the workspace."""
+    if not isinstance(mock_scripts, list):
+        raise ValueError("mock_scripts must be a list of relative file names")
+    scripts_dir = workspace / "scripts"
+    if scripts_dir.is_symlink():
+        raise ValueError("Workspace scripts directory must not be a symlink")
     for script_name in mock_scripts:
-        mock_src = MOCKS_DIR / script_name
+        mock_src = contained_path(MOCKS_DIR, script_name)
+        mock_dst = contained_path(scripts_dir, script_name)
         if not mock_src.exists():
             print(f"Warning: Mock not found: {mock_src}", file=sys.stderr)
             continue
+        if not mock_src.is_file():
+            raise ValueError(f"Mock is not a regular file: {mock_src}")
         # The skills reference scripts via ${CLAUDE_SKILL_DIR}/../../scripts/
         # In the workspace, we place them where they'd be found
-        mock_dst = workspace / "scripts" / script_name
         mock_dst.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(mock_src, mock_dst)
 

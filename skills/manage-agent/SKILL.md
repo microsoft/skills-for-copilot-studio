@@ -26,6 +26,15 @@ This is a new capability under active development. The manage-agent scripts (`ma
 2. **Azure AD app registration** (optional) — only needed for device code flow (`auth` command). If `--client-id` is omitted, the script uses VS Code's first-party client ID with interactive browser login instead.
 3. **Environment details** — tenant ID, environment ID, environment URL, and agent management URL. These come from the `.mcs/conn.json` inside a cloned agent workspace (created automatically during clone).
 
+Dataverse URLs must be HTTPS origins on an organization hostname under
+`crm.dynamics.com`, `crm<number>.dynamics.com`, `crm.microsoftdynamics.us`,
+`crm.appsplatform.us`, or `crm.dynamics.cn`, without credentials, custom ports,
+paths, queries, or fragments. Trailing slashes and the default HTTPS port are
+accepted. Tenant IDs must be GUIDs or tenant domain names; agent IDs must be GUIDs.
+Authenticated REST requests do not follow redirects. Accepting a sovereign-cloud
+Dataverse hostname does not add sovereign-cloud authentication or discovery;
+the existing authority and BAP endpoints are unchanged.
+
 ## Phase 0: Resolve Configuration
 
 Search for `.mcs/conn.json` in the workspace and nearby directories to find existing connection details. The script auto-reads environment details from `conn.json`. If no `conn.json` is found, ask the user for the required parameters.
