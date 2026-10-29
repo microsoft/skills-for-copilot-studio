@@ -1,4 +1,5 @@
 ---
+name: test-auth
 user-invocable: false
 description: >
   Authenticate for Copilot Studio evaluation API and SDK chat. Caches a token

@@ -1,4 +1,5 @@
 ---
+name: chat-with-agent
 user-invocable: false
 description: "DEPRECATED: Use /copilot-studio:detect-mode then /copilot-studio:chat-directline or /copilot-studio:chat-sdk instead."
 argument-hint: <utterance to send>

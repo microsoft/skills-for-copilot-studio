@@ -1,4 +1,5 @@
 ---
+name: run-tests-kit
 user-invocable: false
 description: >
   Run a batch test suite via the Copilot Studio Kit (Dataverse API).

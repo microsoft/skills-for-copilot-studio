@@ -1,4 +1,5 @@
 ---
+name: analyze-evals
 user-invocable: false
 description: >
   Analyze exported evaluation results from Copilot Studio's Evaluate tab.
