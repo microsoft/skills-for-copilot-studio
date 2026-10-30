@@ -15011,6 +15011,7 @@ var { randomUUID } = require("crypto");
 var path2 = require("path");
 var fs6 = require("fs");
 var os2 = require("os");
+var { fileURLToPath: fileURLToPath2 } = require("url");
 var { log, die, sleep } = require_shared_utils();
 var { validateTenantId, validateAgentId, validateDataverseUrl } = require_dataverse_validation();
 var {
@@ -15464,7 +15465,9 @@ function formatValidationOutput(diagnosticsMap, agentDir) {
     if (!diags || diags.length === 0) continue;
     let filePath = uri;
     try {
-      filePath = path2.relative(agentDir, decodeURIComponent(uri.replace(/^file:\/\/\//, "")));
+      const unc = process.platform === "win32" && uri.match(/^file:\/\/\/\/(.*)$/);
+      const localPath = unc ? "\\\\" + unc[1].split("/").map(decodeURIComponent).join("\\") : fileURLToPath2(uri);
+      filePath = path2.relative(agentDir, localPath);
     } catch {
     }
     const mapped = diags.map((d) => {

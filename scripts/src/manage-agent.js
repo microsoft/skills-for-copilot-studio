@@ -30,6 +30,7 @@ const { randomUUID } = require("crypto");
 const path = require("path");
 const fs = require("fs");
 const os = require("os");
+const { fileURLToPath } = require("url");
 const { log, die, sleep } = require("./shared-utils");
 const { validateTenantId, validateAgentId, validateDataverseUrl } = require("./dataverse-validation");
 const {
@@ -610,7 +611,13 @@ function formatValidationOutput(diagnosticsMap, agentDir) {
     if (!diags || diags.length === 0) continue;
     let filePath = uri;
     try {
-      filePath = path.relative(agentDir, decodeURIComponent(uri.replace(/^file:\/\/\//, "")));
+      // toFileUri writes a UNC path as file:////host/share/..., which fileURLToPath rejects
+      // (and for host "localhost" the URL parser would drop the host), so build the path directly.
+      const unc = process.platform === "win32" && uri.match(/^file:\/\/\/\/(.*)$/);
+      const localPath = unc
+        ? "\\\\" + unc[1].split("/").map(decodeURIComponent).join("\\")
+        : fileURLToPath(uri);
+      filePath = path.relative(agentDir, localPath);
     } catch {}
 
     const mapped = diags.map((d) => {
