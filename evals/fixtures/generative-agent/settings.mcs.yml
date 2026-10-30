@@ -1,0 +1,12 @@
+displayName: Eval Test Agent
+schemaName: eval_testAgent
+accessControlPolicy: ChatbotReaders
+authenticationMode: None
+configuration:
+  settings:
+    GenerativeActionsEnabled: true
+
+  recognizer:
+    kind: GenerativeAIRecognizer
+
+language: 1033

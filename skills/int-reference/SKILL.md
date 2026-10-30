@@ -28,6 +28,8 @@ Topics with `OnRecognizedIntent` have two routing mechanisms — which one matte
 
 System triggers (`OnConversationStart`, `OnUnknownIntent`, `OnError`, etc.) fire automatically and don't use either mechanism.
 
+**Enhanced Task Completion** (`SmartTaskCompletionEnabled: true` in `settings.mcs.yml`) is an experimental orchestration enhancement (as of 2026-04) that requires `GenerativeActionsEnabled: true`. When enabled, the agent can break down complex tasks, ask clarifying questions, chain tools intelligently, and adapt its approach based on tool outputs. Some features may not be supported when this is enabled — check the Copilot Studio UI for the current list of limitations.
+
 | Kind | Purpose |
 |------|---------|
 | `OnRecognizedIntent` | Trigger phrases matched |

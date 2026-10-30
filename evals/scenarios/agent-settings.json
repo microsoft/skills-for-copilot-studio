@@ -57,6 +57,39 @@
         "content_contains": ["GenerativeActionsEnabled: true"],
         "no_placeholders": true
       }
+    },
+    {
+      "id": 4,
+      "name": "Enable Enhanced Task Completion (generative actions off)",
+      "prompt": "Enable Enhanced Task Completion on the agent.",
+      "fixture": "basic-agent",
+      "mock_scripts": [],
+      "checks": {
+        "agent_invoked": "copilot-studio:Copilot Studio Author",
+        "skill_invoked": "copilot-studio:edit-agent",
+        "files_created": [
+          {"pattern": "settings.mcs.yml", "min_count": 1}
+        ],
+        "content_contains": ["SmartTaskCompletionEnabled: true"],
+        "no_placeholders": true
+      }
+    },
+    {
+      "id": 5,
+      "name": "Enable Enhanced Task Completion (generative actions already on)",
+      "prompt": "Enable Enhanced Task Completion on the agent.",
+      "fixture": "generative-agent",
+      "mock_scripts": [],
+      "checks": {
+        "agent_invoked": "copilot-studio:Copilot Studio Author",
+        "skill_invoked": "copilot-studio:edit-agent",
+        "files_created": [
+          {"pattern": "settings.mcs.yml", "min_count": 1}
+        ],
+        "content_contains": ["SmartTaskCompletionEnabled: true"],
+        "yaml_unchanged": [{"file": "agent.mcs.yml"}],
+        "no_placeholders": true
+      }
     }
   ]
 }

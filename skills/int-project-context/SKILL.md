@@ -71,3 +71,4 @@ Example skills include `/copilot-studio:new-topic` for creating new topics, `/co
 - **Template `_REPLACE`**: Always replace `_REPLACE` placeholder IDs with unique random IDs.
 - **Power Fx**: Expressions start with `=`. String interpolation uses `{}`. Only use supported functions (check `int-reference` skill).
 - **Generative Orchestration**: When `GenerativeActionsEnabled: true`, use topic inputs/outputs instead of hardcoded questions/messages.
+- **Enhanced Task Completion**: When `SmartTaskCompletionEnabled: true` (requires `GenerativeActionsEnabled: true`), the agent uses an advanced orchestrator that breaks down complex tasks step by step. Experimental as of 2026-04 — some features may not be supported when enabled.
