@@ -6,10 +6,14 @@ const { persistEnvironment } = require('./setup-env');
 
 // __dirname is the hooks/ directory; the plugin root is one level up
 const r = p.resolve(__dirname, '..');
-const d = process.env.CLAUDE_PLUGIN_DATA || process.env.COPILOT_PLUGIN_DATA;
+const d = process.env.CLAUDE_PLUGIN_DATA || process.env.COPILOT_PLUGIN_DATA || process.env.PLUGIN_DATA;
 const e = process.env.CLAUDE_ENV_FILE;
+const isAntigravity = process.argv.includes('--antigravity');
 
 if (!r || !d) {
+  if (isAntigravity) {
+    process.stdout.write('{}');
+  }
   process.exit(0);
 }
 
@@ -21,7 +25,7 @@ try {
 } catch {
   fs.mkdirSync(d, { recursive: true });
   fs.copyFileSync(src, dst);
-  cp.execSync('npm install --no-audit --no-fund', { cwd: d, stdio: 'inherit' });
+  cp.execSync('npm install --no-audit --no-fund', { cwd: d, stdio: ['ignore', process.stderr, process.stderr] });
 }
 
 var pd = p.join(os.homedir(), '.copilot-studio-cli');
@@ -33,4 +37,8 @@ fs.writeFileSync(
 
 if (e) {
   persistEnvironment(e, d, r);
+}
+
+if (isAntigravity) {
+  process.stdout.write('{}');
 }
