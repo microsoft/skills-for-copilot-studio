@@ -1,12 +1,12 @@
 # Skills for Copilot Studio
 
-A plugin for [Claude Code](https://docs.anthropic.com/en/docs/claude-code), [GitHub Copilot CLI](https://docs.github.com/en/copilot), and [VS Code](https://code.visualstudio.com/) that enables authoring, testing, and troubleshooting [Microsoft Copilot Studio](https://aka.ms/CopilotStudio) **STANDARD** agents through YAML files — directly from your terminal or editor.
+A plugin for [Claude Code](https://docs.anthropic.com/en/docs/claude-code), [GitHub Copilot CLI](https://docs.github.com/en/copilot), [VS Code](https://code.visualstudio.com/), and [Google Antigravity](https://antigravity.google/) that enables authoring, testing, and troubleshooting [Microsoft Copilot Studio](https://aka.ms/CopilotStudio) **STANDARD** agents through YAML files — directly from your terminal or editor.
 
 Looking for the plugin for GitHub Copilot harness agents? See the [New Microsoft Copilot Studio Plugin](https://github.com/microsoft/copilot-studio-plugin).
 
 ## Prerequisites
 
-- [Claude Code](https://docs.anthropic.com/en/docs/claude-code), [GitHub Copilot CLI](https://docs.github.com/en/copilot), or [VS Code](https://code.visualstudio.com/)
+- [Claude Code](https://docs.anthropic.com/en/docs/claude-code), [GitHub Copilot CLI](https://docs.github.com/en/copilot), [VS Code](https://code.visualstudio.com/), or [Google Antigravity](https://antigravity.google/) (CLI, IDE, or Antigravity 2.0)
 - [Node.js](https://nodejs.org/) 18+
 - [VS Code](https://code.visualstudio.com/) with the [Copilot Studio Extension](https://github.com/microsoft/vscode-copilotstudio) (required for push/pull/clone operations)
 
@@ -18,6 +18,19 @@ Looking for the plugin for GitHub Copilot harness agents? See the [New Microsoft
 /plugin marketplace add microsoft/skills-for-copilot-studio
 /plugin install copilot-studio@skills-for-copilot-studio
 ```
+
+### Google Antigravity (CLI, IDE, or Antigravity 2.0)
+
+```bash
+# Install directly from GitHub
+agy plugin install https://github.com/microsoft/skills-for-copilot-studio
+
+# Or install from a local clone
+agy plugin install /path/to/skills-for-copilot-studio
+```
+
+You can verify and toggle the installed plugin with `agy plugin list` or from the **Customizations** panel in Antigravity IDE / Antigravity 2.0.
+
 ### From VS Code Extensions Store (GitHub Copilot)
 
 Search for **Skills for Copilot Studio** in the VS Code Extensions using the **@agentPlugins** filter to view and click **Install**.
@@ -29,14 +42,17 @@ Search for **Skills for Copilot Studio** in the VS Code Extensions using the **@
 ```bash
 git clone https://github.com/microsoft/skills-for-copilot-studio.git
 
-# Load for a single session
+# Claude Code — load for a single session
 claude --plugin-dir /path/to/skills-for-copilot-studio
 
-# Or install persistently (user-wide)
+# Claude Code — install persistently (user-wide)
 claude plugin install /path/to/skills-for-copilot-studio --scope user
 
-# Or install for a specific project
+# Claude Code — install for a specific project
 claude plugin install /path/to/skills-for-copilot-studio --scope project
+
+# Antigravity — install from local clone
+agy plugin install /path/to/skills-for-copilot-studio
 ```
 
 ## Updating
@@ -48,6 +64,7 @@ The update process depends on how you installed the plugin:
 | **Claude Code CLI** | Auto-update (recommended) | Marketplace plugins update automatically. No action needed. |
 | **GitHub Copilot CLI** | Manual | Run `/plugin update skills-for-copilot-studio` in an interactive session, or `copilot plugin update skills-for-copilot-studio` from the terminal. |
 | **VS Code** | Extension auto-update | VS Code handles updates automatically when extension auto-update is enabled in settings. |
+| **Google Antigravity** | Manual | Re-run `agy plugin install https://github.com/microsoft/skills-for-copilot-studio` (or `git pull` and reinstall from your local clone). |
 
 ## Usage
 
@@ -59,6 +76,8 @@ The plugin provides four sub-agents, each backed by a specialized agent:
 /copilot-studio:copilot-studio-test         Test published agents — point-tests, batch suites, or evaluation analysis
 /copilot-studio:copilot-studio-advisor Design guidance, agent review, and troubleshooting
 ```
+
+In **Google Antigravity**, describe your Copilot Studio task in natural language and the coordinator automatically delegates to the appropriate role (`manage`, `author`, `test`, or `advisor`) using the bundled agent definitions.
 
 ## Quick Start
 

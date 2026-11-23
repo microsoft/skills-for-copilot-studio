@@ -7,11 +7,14 @@
 git clone https://github.com/microsoft/skills-for-copilot-studio.git
 cd skills-for-copilot-studio
 
-# Load the plugin from your local clone (one-off session)
+# Load the plugin from your local clone (one-off session in Claude Code)
 claude --plugin-dir /path/to/skills-for-copilot-studio
 
-# Or install persistently from your local clone
+# Or install persistently from your local clone (Claude Code)
 claude plugin install /path/to/skills-for-copilot-studio --scope user
+
+# Or install from your local clone in Google Antigravity
+agy plugin install /path/to/skills-for-copilot-studio
 ```
 
 ## Release workflow
@@ -22,7 +25,7 @@ The plugin follows a **weekly release branch** cadence. Release branches are mer
 
 1. **Every Thursday at 09:00 UTC**, the [`new-release`](.github/workflows/new-release.yml) workflow runs:
    - Creates a `release/YYYY-WNN` branch from `main` (e.g., `release/2026-W16`)
-   - Bumps the patch version in `plugin.json` and `marketplace.json`
+   - Bumps the patch version in `.claude-plugin/plugin.json`, `.claude-plugin/marketplace.json`, and `.antigravity-plugin/plugin.json`
    - Commits and pushes the branch
 
 2. **During the week**, fork feature branches from the release branch and PR back into it:
@@ -96,8 +99,10 @@ symlink destinations, and skips persistence when the variable is absent.
 ## Project structure
 
 ```
-.claude-plugin/          # Plugin manifest and marketplace config
+.claude-plugin/          # Claude Code / Copilot CLI plugin manifest and marketplace config
+.antigravity-plugin/     # Antigravity plugin manifest
 .github/plugin/          # GitHub Copilot Plugin manifest to speedup discovery
+hooks.json               # Antigravity lifecycle hooks (SessionStart)
 agents/                  # Sub-agent definitions (advisor, author, manage, test)
 evals/                   # Scenario-based eval framework (harness, report, fixtures)
   scenarios/             # Eval definitions per scenario (<name>.json)

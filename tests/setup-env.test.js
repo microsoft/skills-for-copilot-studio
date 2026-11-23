@@ -75,3 +75,117 @@ test("setup keeps Copilot data fallback, plugin-path registry, and optional pers
   }
   assert.equal(fs.readFileSync(envFile, "utf8").split("export CLAUDE_PLUGIN_DATA=").length, 2);
 });
+
+test("setup supports Antigravity PLUGIN_DATA and emits valid JSON stdout", (t) => {
+  const directory = tempDirectory(t);
+  const data = path.join(directory, "agy-plugin-data");
+  fs.mkdirSync(data);
+  fs.copyFileSync(path.join(__dirname, "../scripts/native-deps.json"), path.join(data, "package.json"));
+  const repoRoot = path.resolve(__dirname, "..");
+
+  const withData = spawnSync(process.execPath, [path.join(__dirname, "../hooks/setup.js"), "--antigravity"], {
+    env: {
+      ...process.env,
+      HOME: directory,
+      USERPROFILE: directory,
+      CLAUDE_PLUGIN_DATA: "",
+      CLAUDE_PLUGIN_ROOT: "",
+      COPILOT_PLUGIN_DATA: "",
+      COPILOT_CLI: "",
+      CLAUDE_ENV_FILE: "",
+      PLUGIN_DATA: data,
+      PLUGIN_ROOT: repoRoot,
+    },
+    encoding: "utf8",
+  });
+  assert.equal(withData.status, 0, withData.stderr);
+  assert.deepEqual(JSON.parse(withData.stdout), {});
+  const registry = JSON.parse(fs.readFileSync(path.join(directory, ".copilot-studio-cli/plugin-paths.json"), "utf8"));
+  assert.equal(registry.pluginData, data);
+  assert.equal(registry.pluginRoot, repoRoot);
+
+  const emptyHome = tempDirectory(t);
+  const withoutData = spawnSync(process.execPath, [path.join(__dirname, "../hooks/setup.js"), "--antigravity"], {
+    env: {
+      ...process.env,
+      HOME: emptyHome,
+      USERPROFILE: emptyHome,
+      CLAUDE_PLUGIN_DATA: "",
+      CLAUDE_PLUGIN_ROOT: "",
+      COPILOT_PLUGIN_DATA: "",
+      COPILOT_CLI: "",
+      CLAUDE_ENV_FILE: "",
+      PLUGIN_DATA: "",
+      PLUGIN_ROOT: repoRoot,
+    },
+    encoding: "utf8",
+  });
+  assert.equal(withoutData.status, 0, withoutData.stderr);
+  assert.deepEqual(JSON.parse(withoutData.stdout), {});
+  assert.equal(fs.existsSync(path.join(emptyHome, ".copilot-studio-cli/plugin-paths.json")), false);
+});
+
+test("print-prompt outputs host-appropriate formats for Claude Code, Copilot CLI, and Antigravity", () => {
+  const script = path.join(__dirname, "../hooks/print-prompt.js");
+  const systemPrompt = fs.readFileSync(path.join(__dirname, "../hooks/system-prompt.md"), "utf8");
+  const baseEnv = {
+    ...process.env,
+    CLAUDE_PLUGIN_ROOT: "",
+    COPILOT_CLI: "",
+    PLUGIN_ROOT: "",
+  };
+
+  const claude = spawnSync(process.execPath, [script], { env: baseEnv, encoding: "utf8" });
+  assert.equal(claude.status, 0, claude.stderr);
+  assert.equal(claude.stdout, systemPrompt);
+
+  const claudeWithStrayPluginRoot = spawnSync(process.execPath, [script], {
+    env: { ...baseEnv, PLUGIN_ROOT: "/stray/path" },
+    encoding: "utf8",
+  });
+  assert.equal(claudeWithStrayPluginRoot.status, 0, claudeWithStrayPluginRoot.stderr);
+  assert.equal(claudeWithStrayPluginRoot.stdout, systemPrompt);
+
+  const copilot = spawnSync(process.execPath, [script], {
+    env: { ...baseEnv, COPILOT_CLI: "1" },
+    encoding: "utf8",
+  });
+  assert.equal(copilot.status, 0, copilot.stderr);
+  assert.deepEqual(JSON.parse(copilot.stdout), { additionalContext: systemPrompt });
+
+  const customRoot = path.join(os.tmpdir(), "agy-root-example");
+  const agy = spawnSync(process.execPath, [script, "--antigravity"], {
+    env: { ...baseEnv, PLUGIN_ROOT: customRoot },
+    encoding: "utf8",
+  });
+  assert.equal(agy.status, 0, agy.stderr);
+  const payload = JSON.parse(agy.stdout);
+  assert.ok(Array.isArray(payload.injectSteps) && payload.injectSteps.length === 1);
+  const msg = payload.injectSteps[0]?.systemMessage?.systemMessage;
+  assert.equal(typeof msg, "string");
+  assert.ok(msg.startsWith(systemPrompt));
+  assert.ok(msg.includes(customRoot));
+  assert.ok(!msg.includes("{{PLUGIN_ROOT}}"));
+  assert.ok(msg.includes("CLAUDE_SKILL_DIR"));
+  assert.ok(msg.includes('TypeName: "self"'));
+  assert.ok(msg.includes("agents/copilot-studio-<role>.md"));
+});
+
+test("Antigravity manifest and root hooks stay aligned", () => {
+  const repoRoot = path.resolve(__dirname, "..");
+  const agyManifest = JSON.parse(fs.readFileSync(path.join(repoRoot, ".antigravity-plugin/plugin.json"), "utf8"));
+  const claudeManifest = JSON.parse(fs.readFileSync(path.join(repoRoot, ".claude-plugin/plugin.json"), "utf8"));
+  const marketplace = JSON.parse(fs.readFileSync(path.join(repoRoot, ".claude-plugin/marketplace.json"), "utf8"));
+
+  assert.equal(agyManifest.name, claudeManifest.name);
+  assert.equal(agyManifest.version, claudeManifest.version);
+  assert.equal(agyManifest.version, marketplace.plugins[0].version);
+
+  const rootHooks = JSON.parse(fs.readFileSync(path.join(repoRoot, "hooks.json"), "utf8"));
+  const sessionStart = rootHooks["copilot-studio"]?.SessionStart;
+  assert.ok(Array.isArray(sessionStart) && sessionStart.length === 2);
+  for (const handler of sessionStart) {
+    assert.equal(handler.type, "command");
+    assert.equal(typeof handler.command, "string");
+  }
+});

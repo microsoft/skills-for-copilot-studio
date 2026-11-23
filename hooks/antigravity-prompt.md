@@ -1,0 +1,7 @@
+## Antigravity Runtime Mapping
+
+- Plugin root directory: `{{PLUGIN_ROOT}}`
+- Skill instructions reference `${CLAUDE_SKILL_DIR}/../../`; resolve that path to `{{PLUGIN_ROOT}}` (or two levels up from the skill's `SKILL.md` path) when running bundled scripts (`scripts/*.bundle.js`) or reading `templates/` and `patterns/`.
+- Sub-agent delegation: the four bundled agent definitions (`agents/copilot-studio-advisor.md`, `agents/copilot-studio-author.md`, `agents/copilot-studio-manage.md`, `agents/copilot-studio-test.md`) omit a `tools:` allowlist for cross-host compatibility, so Antigravity loads them as read-only without file-edit or shell tools. Do NOT call those four bundled sub-agent names directly via `invoke_subagent`; instead delegate via Antigravity's built-in `self` sub-agent (`TypeName: "self"`, which inherits full read/write/edit/command tools) and instruct it to read and follow `{{PLUGIN_ROOT}}/agents/copilot-studio-<role>.md` plus the required `skills/<skill>/SKILL.md`, including the plugin root directory above in its prompt.
+- Map `/copilot-studio:<skill>` references to reading the matching `<skill>` `SKILL.md` file, and map Claude tool names (`Read`, `Write`, `Edit`, `Bash`, `Glob`/`Grep`) to Antigravity equivalents (`read_file`, `write_file`, `edit_file`, `run_command`, file search).
+- Shell commands: always double-quote script paths (`node "<path>/scripts/<name>.bundle.js" ...`) and emit single-line commands (flatten any multi-line `\` bash continuations) for Windows PowerShell/CMD compatibility.

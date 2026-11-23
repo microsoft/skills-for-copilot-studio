@@ -1,0 +1,14 @@
+{
+  "copilot-studio": {
+    "SessionStart": [
+      {
+        "type": "command",
+        "command": "node hooks/print-prompt.js --antigravity"
+      },
+      {
+        "type": "command",
+        "command": "node hooks/setup.js --antigravity"
+      }
+    ]
+  }
+}

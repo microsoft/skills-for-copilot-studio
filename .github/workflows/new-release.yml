@@ -64,9 +64,10 @@ jobs:
           fi
           echo "New version: $NEW_VERSION"
 
-          # Update both version files
+          # Update version files
           jq --arg v "$NEW_VERSION" '.version = $v' .claude-plugin/plugin.json > tmp.json && mv tmp.json .claude-plugin/plugin.json
           jq --arg v "$NEW_VERSION" '.plugins[0].version = $v' .claude-plugin/marketplace.json > tmp.json && mv tmp.json .claude-plugin/marketplace.json
+          jq --arg v "$NEW_VERSION" '.version = $v' .antigravity-plugin/plugin.json > tmp.json && mv tmp.json .antigravity-plugin/plugin.json
 
           # Configure git
           git config user.name "github-actions[bot]"
@@ -74,7 +75,7 @@ jobs:
 
           # Create branch, commit, and push
           git checkout -b "$BRANCH"
-          git add .claude-plugin/plugin.json .claude-plugin/marketplace.json
+          git add .claude-plugin/plugin.json .claude-plugin/marketplace.json .antigravity-plugin/plugin.json
           git commit -m "chore: bump version to ${NEW_VERSION} for ${BRANCH}"
           git push origin "$BRANCH"
 
